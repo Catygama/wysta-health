@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "scheme": "myapp",
+    "plugins": [
+      "expo-router"
+    ],
+    "name": "wysta",
+    "slug": "wysta"
+  }
+}
