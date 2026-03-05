@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Diagrama de Navegação - Wireframes</title>
+	<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+			background: #fff;
+		}
+		h1 {
+			text-align: center;
+			margin-bottom: 10px;
+		}
+		h2 {
+			margin-top: 30px;
+			margin-bottom: 10px;
+			border-bottom: 2px solid #000;
+			padding-bottom: 5px;
+		}
+		.mermaid {
+			display: flex;
+			justify-content: center;
+			margin: 20px 0;
+		}
+		.legend {
+			display: flex;
+			gap: 20px;
+			justify-content: center;
+			margin: 20px 0;
+			flex-wrap: wrap;
+		}
+		.legend-item {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+		.legend-color {
+			width: 20px;
+			height: 20px;
+			border: 1px solid #000;
+		}
+		.note {
+			background: #f5f5f5;
+			padding: 15px;
+			border: 1px solid #ccc;
+			margin: 20px 0;
+			font-size: 14px;
+		}
+	</style>
+</head>
+<body>
+	<h1>Diagrama de Navegação</h1>
+	<p style="text-align: center;">Plataforma de Saúde Sexual e Reprodutiva da Mulher</p>
+
+	<div class="legend">
+		<div class="legend-item">
+			<div class="legend-color" style="background: #e8f5e9;"></div>
+			<span>Comum</span>
+		</div>
+		<div class="legend-item">
+			<div class="legend-color" style="background: #e3f2fd;"></div>
+			<span>Utente</span>
+		</div>
+		<div class="legend-item">
+			<div class="legend-color" style="background: #fff3e0;"></div>
+			<span>Profissional</span>
+		</div>
+		<div class="legend-item">
+			<div class="legend-color" style="background: #fce4ec;"></div>
+			<span>Admin</span>
+		</div>
+	</div>
+
+	<h2>Visão Geral - Todos os Utilizadores</h2>
+	<div class="mermaid">
+flowchart TB
+	subgraph COMUM["🔓 Área Pública"]
+		C01[C-01<br/>Landing Page]
+		C02[C-02<br/>Login]
+		C03[C-03<br/>Registo]
+	end
+
+	subgraph UTENTE["👤 Área Utente"]
+		U01[U-01<br/>Dashboard]
+	end
+
+	subgraph PROF["🩺 Área Profissional"]
+		P01[P-01<br/>Dashboard]
+	end
+
+	subgraph ADMIN["⚙️ Área Admin"]
+		A01[A-01<br/>Dashboard]
+	end
+
+	C01 --> C02
+	C01 --> C03
+	C02 --> C03
+	C03 --> C02
+	
+	C02 -->|Login Utente| U01
+	C02 -->|Login Profissional| P01
+	C02 -->|Login Admin| A01
+	C03 --> U01
+
+	style COMUM fill:#e8f5e9
+	style UTENTE fill:#e3f2fd
+	style PROF fill:#fff3e0
+	style ADMIN fill:#fce4ec
+	</div>
+
+	<h2>Fluxo do Utente</h2>
+	<div class="mermaid">
+flowchart TB
+	subgraph DASH["Dashboard"]
+		U01[U-01<br/>Dashboard]
+	end
+
+	subgraph PERFIL["Perfil"]
+		U02[U-02<br/>Ver Perfil]
+		U03[U-03<br/>Editar Perfil]
+	end
+
+	subgraph CONTEUDOS["Conteúdos Educativos"]
+		U04[U-04<br/>Lista Conteúdos]
+		U05[U-05<br/>Detalhe Conteúdo]
+	end
+
+	subgraph QUEST["Questionário"]
+		U06[U-06<br/>Autoavaliação]
+	end
+
+	subgraph CHAT["Chat com Profissional"]
+		U07[U-07<br/>Escolher Tópico]
+		U08[U-08<br/>Triagem]
+		U09[U-09<br/>Onboarding]
+		U10[U-10<br/>Conversa]
+		U11[U-11<br/>Alerta Urgência]
+	end
+
+	U01 --> U02
+	U01 --> U04
+	U01 --> U06
+	U01 --> U10
+
+	U02 --> U03
+	U03 --> U02
+
+	U04 --> U05
+	U05 --> U07
+	U05 --> U04
+
+	U10 --> U07
+	U07 --> U08
+	U08 -->|Sintomas graves| U11
+	U08 -->|OK| U09
+	U09 --> U10
+	U11 -->|Continuar| U09
+	U11 -->|Voltar| U01
+
+	style DASH fill:#e3f2fd
+	style PERFIL fill:#e3f2fd
+	style CONTEUDOS fill:#e3f2fd
+	style QUEST fill:#e3f2fd
+	style CHAT fill:#e3f2fd
+	</div>
+
+	<h2>Fluxo do Profissional de Saúde</h2>
+	<div class="mermaid">
+flowchart TB
+	subgraph DASH["Dashboard"]
+		P01[P-01<br/>Lista de Chats]
+	end
+
+	subgraph CHAT["Gestão de Chat"]
+		P02[P-02<br/>Ver/Responder Chat]
+		P03[P-03<br/>Notas Internas]
+		P04[P-04<br/>Sumário IA]
+	end
+
+	subgraph UTENTE["Info Utente"]
+		P05[P-05<br/>Perfil Utente]
+		P06[P-06<br/>Bloquear Utente]
+	end
+
+	subgraph SESSAO["Sessão"]
+		P07[P-07<br/>Modal Logout]
+		LOGOUT[Logout]
+	end
+
+	P01 -->|Selecionar chat| P02
+	P01 -->|Atribuir chat| P02
+	
+	P02 <--> P03
+	P02 <--> P04
+	P02 --> P05
+	P02 --> P06
+	P05 --> P06
+
+	P01 --> P07
+	P07 -->|Des-atribuir e sair| LOGOUT
+	P07 -->|Manter e sair| LOGOUT
+	P07 -->|Cancelar| P01
+
+	style DASH fill:#fff3e0
+	style CHAT fill:#fff3e0
+	style UTENTE fill:#fff3e0
+	style SESSAO fill:#fff3e0
+	</div>
+
+	<h2>Fluxo do Administrador</h2>
+	<div class="mermaid">
+flowchart TB
+	subgraph DASH["Dashboard"]
+		A01[A-01<br/>Dashboard Admin]
+	end
+
+	subgraph USERS["Gestão Utilizadores"]
+		A02[A-02<br/>Lista Utentes]
+		A03[A-03<br/>Lista Profissionais]
+		A04[A-04<br/>Detalhe Utilizador]
+		A05[A-05<br/>Promover a Prof.]
+	end
+
+	subgraph CONFIG["Configurações"]
+		A06[A-06<br/>Gerir Conteúdos]
+		A07[A-07<br/>Gerir Tópicos]
+		A08[A-08<br/>Config. Perguntas]
+	end
+
+	A01 --> A02
+	A01 --> A03
+	A01 --> A06
+	A01 --> A07
+
+	A02 --> A04
+	A03 --> A04
+	A04 --> A05
+	A03 --> A05
+
+	A07 --> A08
+
+	style DASH fill:#fce4ec
+	style USERS fill:#fce4ec
+	style CONFIG fill:#fce4ec
+	</div>
+
+	<h2>Fluxo Completo do Chat (Utente → Profissional)</h2>
+	<div class="mermaid">
+flowchart LR
+	subgraph UTENTE["👤 Utente"]
+		U07[Escolher<br/>Tópico]
+		U08[Triagem]
+		U09[Onboarding]
+		U10[Chat]
+	end
+
+	subgraph SISTEMA["⚙️ Sistema"]
+		PRIORIDADE[Define<br/>Prioridade]
+		GUARDAR[Guarda<br/>no Perfil]
+	end
+
+	subgraph PROF["🩺 Profissional"]
+		P01[Lista Chats<br/>por Prioridade]
+		P02[Responder]
+		P03[Notas]
+	end
+
+	U07 --> U08
+	U08 --> PRIORIDADE
+	PRIORIDADE -->|Urgente| ALERTA[Alerta 112]
+	PRIORIDADE -->|OK| U09
+	U09 --> GUARDAR
+	GUARDAR --> U10
+	U10 <-->|Mensagens| P02
+	PRIORIDADE --> P01
+	P01 -->|Atribuir| P02
+	P02 --> P03
+
+	style UTENTE fill:#e3f2fd
+	style SISTEMA fill:#f5f5f5
+	style PROF fill:#fff3e0
+	</div>
+
+	<div class="note">
+		<strong>Notas:</strong>
+		<ul>
+			<li>O <strong>chat é único e contínuo</strong> - o utente pode mudar de tópico, mas a conversa continua no mesmo chat</li>
+			<li>Cada <strong>novo tópico</strong> desencadeia triagem (prioridade) e onboarding (informações)</li>
+			<li>O <strong>administrador não tem acesso</strong> ao conteúdo dos chats</li>
+			<li>Apenas <strong>profissionais com chat atribuído</strong> podem responder</li>
+		</ul>
+	</div>
+
+	<script>
+		mermaid.initialize({ 
+			startOnLoad: true,
+			theme: 'base',
+			themeVariables: {
+				primaryColor: '#fff',
+				primaryBorderColor: '#000',
+				lineColor: '#333',
+				fontFamily: 'Arial'
+			},
+			flowchart: {
+				useMaxWidth: true,
+				htmlLabels: true,
+				curve: 'basis'
+			}
+		});
+	</script>
+</body>
+</html>

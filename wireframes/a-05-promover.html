@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>A-05 Promover a Profissional</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<a href="index.html" class="back-link">← Mapa de Navegação</a>
+	
+	<div class="nav-bar">
+		<a href="a-03-lista-profissionais.html">← Voltar</a>
+		<span>Novo Profissional</span>
+	</div>
+
+	<div class="content">
+		<h1>Adicionar Profissional de Saúde</h1>
+
+		<div class="tabs">
+			<a href="#" class="active">Promover existente</a>
+			<a href="#">Criar novo</a>
+		</div>
+
+		<div class="card">
+			<div class="card-title">Promover Utilizador Existente</div>
+			<p class="text-small mb-20">Pesquise um utilizador registado para promover a profissional de saúde.</p>
+
+			<div class="input-group">
+				<label>Pesquisar utilizador</label>
+				<input type="search" placeholder="Nome ou email...">
+			</div>
+
+			<div class="list-item" style="background: #f0f8ff;">
+				<div>
+					<strong>Dr.ª Marta Nunes</strong>
+					<p class="text-small">marta.n@email.com</p>
+				</div>
+				<input type="radio" name="user" checked>
+			</div>
+
+			<div class="list-item">
+				<div>
+					<strong>Miguel Nunes</strong>
+					<p class="text-small">miguel.n@email.com</p>
+				</div>
+				<input type="radio" name="user">
+			</div>
+		</div>
+
+		<div class="card">
+			<div class="card-title">Informações Profissionais</div>
+			
+			<div class="input-group">
+				<label>Especialidade</label>
+				<select>
+					<option>Selecione...</option>
+					<option>Medicina Geral</option>
+					<option>Ginecologia/Obstetrícia</option>
+					<option>Enfermagem</option>
+					<option>Outra</option>
+				</select>
+			</div>
+
+			<div class="input-group">
+				<label>Número da Ordem (se aplicável)</label>
+				<input type="text" placeholder="Ex: 12345">
+			</div>
+
+			<div class="input-group">
+				<label>Instituição</label>
+				<input type="text" placeholder="Hospital, clínica...">
+			</div>
+		</div>
+
+		<a href="a-03-lista-profissionais.html" class="btn btn-primary">Promover a Profissional</a>
+		<a href="a-03-lista-profissionais.html" class="btn">Cancelar</a>
+	</div>
+
+</body>
+</html>

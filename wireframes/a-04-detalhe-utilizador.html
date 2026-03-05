@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>A-04 Detalhe Utilizador</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<a href="index.html" class="back-link">← Mapa de Navegação</a>
+	
+	<div class="nav-bar">
+		<a href="a-02-lista-utentes.html">← Lista</a>
+		<span>Detalhes</span>
+	</div>
+
+	<div class="content">
+		<h1>Maria Silva</h1>
+		<span class="priority-badge" style="background: #cfc;">Ativa</span>
+
+		<div class="card mt-20">
+			<div class="card-title">Informações da Conta</div>
+			<p><strong>Email:</strong> maria@email.com</p>
+			<p><strong>Data registo:</strong> 15 Dez 2025</p>
+			<p><strong>Último acesso:</strong> Hoje, 11:05</p>
+			<p><strong>Tipo:</strong> Utente</p>
+		</div>
+
+		<div class="card">
+			<div class="card-title">Atividade (sem ver conteúdo)</div>
+			<p class="text-small">Total de mensagens enviadas: 23</p>
+			<p class="text-small">Tópicos abordados: 2</p>
+			<p class="text-small">Anexos enviados: 3</p>
+			<p class="text-small">Questionários respondidos: 1</p>
+		</div>
+
+		<div class="card">
+			<div class="card-title">Historial de Atendimento</div>
+			<p class="text-small">Profissionais que atenderam:</p>
+			<ul style="padding-left: 20px; margin-top: 5px;">
+				<li class="text-small">Dr.ª Ana Costa (atual)</li>
+				<li class="text-small">Dr. Pedro Martins</li>
+			</ul>
+		</div>
+
+		<h2 class="mt-20">Ações</h2>
+
+		<a href="a-05-promover.html" class="btn">👤→🩺 Promover a Profissional</a>
+		
+		<a href="#" class="btn btn-danger">🚫 Bloquear Utilizador</a>
+
+		<div class="modal mt-20" style="display: none;">
+			<div class="modal-title">Confirmar Bloqueio</div>
+			<p class="text-center">Tem a certeza que deseja bloquear este utilizador?</p>
+			<div class="input-group">
+				<label>Motivo</label>
+				<select>
+					<option>Comportamento abusivo</option>
+					<option>Uso indevido</option>
+					<option>Outro</option>
+				</select>
+			</div>
+			<a href="a-02-lista-utentes.html" class="btn btn-danger">Confirmar</a>
+			<a href="#" class="btn">Cancelar</a>
+		</div>
+	</div>
+
+</body>
+</html>

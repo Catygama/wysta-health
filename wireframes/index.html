@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Wireframes - Mapa de Navegação</title>
+	<link rel="stylesheet" href="style.css">
+	<style>
+		body { max-width: 800px; border: none; }
+		.section { margin-bottom: 30px; }
+		.section h2 { 
+			background: #000; 
+			color: #fff; 
+			padding: 10px; 
+			margin-bottom: 15px; 
+		}
+		.wireframe-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+			gap: 10px;
+		}
+		.wireframe-link {
+			border: 1px solid #000;
+			padding: 15px;
+			text-decoration: none;
+			color: #000;
+			display: block;
+		}
+		.wireframe-link:hover {
+			background: #f0f0f0;
+		}
+		.wireframe-link .id {
+			font-weight: bold;
+			font-size: 12px;
+			color: #666;
+		}
+		.wireframe-link .name {
+			margin-top: 5px;
+		}
+	</style>
+</head>
+<body>
+	<h1>Wireframes - Plataforma Saúde da Mulher</h1>
+	<p class="mb-20">Clica num wireframe para abrir. Cada wireframe tem navegação para os relacionados.</p>
+
+	<div class="section">
+		<h2>Comum (Autenticação)</h2>
+		<div class="wireframe-grid">
+			<a href="c-01-landing.html" class="wireframe-link">
+				<span class="id">C-01</span>
+				<span class="name">Landing Page</span>
+			</a>
+			<a href="c-02-login.html" class="wireframe-link">
+				<span class="id">C-02</span>
+				<span class="name">Login</span>
+			</a>
+			<a href="c-03-registo.html" class="wireframe-link">
+				<span class="id">C-03</span>
+				<span class="name">Registo</span>
+			</a>
+		</div>
+	</div>
+
+	<div class="section">
+		<h2>Utente</h2>
+		<div class="wireframe-grid">
+			<a href="u-01-dashboard.html" class="wireframe-link">
+				<span class="id">U-01</span>
+				<span class="name">Dashboard</span>
+			</a>
+			<a href="u-02-perfil.html" class="wireframe-link">
+				<span class="id">U-02</span>
+				<span class="name">Perfil</span>
+			</a>
+			<a href="u-03-editar-perfil.html" class="wireframe-link">
+				<span class="id">U-03</span>
+				<span class="name">Editar Perfil</span>
+			</a>
+			<a href="u-04-conteudos-lista.html" class="wireframe-link">
+				<span class="id">U-04</span>
+				<span class="name">Conteúdos Educativos (Lista)</span>
+			</a>
+			<a href="u-05-conteudo-detalhe.html" class="wireframe-link">
+				<span class="id">U-05</span>
+				<span class="name">Conteúdo (Detalhe)</span>
+			</a>
+			<a href="u-06-questionario.html" class="wireframe-link">
+				<span class="id">U-06</span>
+				<span class="name">Questionário Autoavaliação</span>
+			</a>
+			<a href="u-07-chat-topico.html" class="wireframe-link">
+				<span class="id">U-07</span>
+				<span class="name">Chat - Escolher Tópico</span>
+			</a>
+			<a href="u-08-chat-triagem.html" class="wireframe-link">
+				<span class="id">U-08</span>
+				<span class="name">Chat - Triagem</span>
+			</a>
+			<a href="u-09-chat-onboarding.html" class="wireframe-link">
+				<span class="id">U-09</span>
+				<span class="name">Chat - Onboarding Tópico</span>
+			</a>
+			<a href="u-10-chat-conversa.html" class="wireframe-link">
+				<span class="id">U-10</span>
+				<span class="name">Chat - Conversa</span>
+			</a>
+			<a href="u-11-alerta-urgencia.html" class="wireframe-link">
+				<span class="id">U-11</span>
+				<span class="name">Alerta de Urgência</span>
+			</a>
+		</div>
+	</div>
+
+	<div class="section">
+		<h2>Profissional de Saúde</h2>
+		<div class="wireframe-grid">
+			<a href="p-01-dashboard.html" class="wireframe-link">
+				<span class="id">P-01</span>
+				<span class="name">Dashboard / Lista Chats</span>
+			</a>
+			<a href="p-02-chat.html" class="wireframe-link">
+				<span class="id">P-02</span>
+				<span class="name">Chat - Ver/Responder</span>
+			</a>
+			<a href="p-03-nota-interna.html" class="wireframe-link">
+				<span class="id">P-03</span>
+				<span class="name">Chat - Nota Interna</span>
+			</a>
+			<a href="p-04-sumario-ia.html" class="wireframe-link">
+				<span class="id">P-04</span>
+				<span class="name">Chat - Sumário IA</span>
+			</a>
+			<a href="p-05-perfil-utente.html" class="wireframe-link">
+				<span class="id">P-05</span>
+				<span class="name">Ver Perfil Utente</span>
+			</a>
+			<a href="p-06-bloquear.html" class="wireframe-link">
+				<span class="id">P-06</span>
+				<span class="name">Bloquear Utente</span>
+			</a>
+			<a href="p-07-logout.html" class="wireframe-link">
+				<span class="id">P-07</span>
+				<span class="name">Modal Logout</span>
+			</a>
+		</div>
+	</div>
+
+	<div class="section">
+		<h2>Administrador</h2>
+		<div class="wireframe-grid">
+			<a href="a-01-dashboard.html" class="wireframe-link">
+				<span class="id">A-01</span>
+				<span class="name">Dashboard</span>
+			</a>
+			<a href="a-02-lista-utentes.html" class="wireframe-link">
+				<span class="id">A-02</span>
+				<span class="name">Lista de Utentes</span>
+			</a>
+			<a href="a-03-lista-profissionais.html" class="wireframe-link">
+				<span class="id">A-03</span>
+				<span class="name">Lista de Profissionais</span>
+			</a>
+			<a href="a-04-detalhe-utilizador.html" class="wireframe-link">
+				<span class="id">A-04</span>
+				<span class="name">Detalhes Utilizador</span>
+			</a>
+			<a href="a-05-promover.html" class="wireframe-link">
+				<span class="id">A-05</span>
+				<span class="name">Promover a Profissional</span>
+			</a>
+			<a href="a-06-conteudos.html" class="wireframe-link">
+				<span class="id">A-06</span>
+				<span class="name">Gerir Conteúdos</span>
+			</a>
+			<a href="a-07-topicos.html" class="wireframe-link">
+				<span class="id">A-07</span>
+				<span class="name">Gerir Tópicos</span>
+			</a>
+			<a href="a-08-perguntas.html" class="wireframe-link">
+				<span class="id">A-08</span>
+				<span class="name">Configurar Perguntas</span>
+			</a>
+		</div>
+	</div>
+
+</body>
+</html>

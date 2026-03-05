@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>P-03 Nota Interna</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<a href="index.html" class="back-link">← Mapa de Navegação</a>
+	
+	<div class="nav-bar">
+		<a href="p-01-dashboard.html">← Lista</a>
+		<a href="p-05-perfil-utente.html">Ver Perfil</a>
+	</div>
+
+	<div class="content">
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+			<div>
+				<strong>Maria Silva</strong>
+				<span class="priority-badge priority-high">ALTA</span>
+			</div>
+			<span class="text-small">Gravidez</span>
+		</div>
+
+		<div class="tabs">
+			<a href="p-02-chat.html">Chat</a>
+			<a href="p-03-nota-interna.html" class="active">Notas</a>
+			<a href="p-04-sumario-ia.html">Sumário IA</a>
+		</div>
+
+		<div class="card" style="background: #fffbf0; border-style: dashed;">
+			<p class="text-small" style="color: #666;">⚠️ Notas internas - visíveis apenas para profissionais</p>
+		</div>
+
+		<div class="note-internal">
+			<p class="text-small"><strong>Dr.ª Ana Costa</strong> • 15 Jan, 11:15</p>
+			<p>Valores de glicose ligeiramente elevados (98 mg/dL). Recomendado repetir PTGO. Acompanhar evolução.</p>
+		</div>
+
+		<div class="note-internal">
+			<p class="text-small"><strong>Dr. Pedro Martins</strong> • 10 Jan, 14:30</p>
+			<p>Utente com historial de ansiedade. Mostrou-se preocupada com resultados das análises. Necessita de explicação detalhada e tranquilização.</p>
+		</div>
+
+		<div class="note-internal">
+			<p class="text-small"><strong>Dr.ª Ana Costa</strong> • 5 Jan, 09:00</p>
+			<p>Primeira consulta via chat. Gravidez de 18 semanas, sem complicações até agora. Tem acompanhamento no CS local.</p>
+		</div>
+
+		<div class="card mt-20">
+			<div class="card-title">Adicionar Nota</div>
+			<div class="input-group">
+				<textarea placeholder="Escreva a nota interna..." rows="4"></textarea>
+			</div>
+			<a href="p-03-nota-interna.html" class="btn btn-primary">Guardar Nota</a>
+		</div>
+	</div>
+
+</body>
+</html>

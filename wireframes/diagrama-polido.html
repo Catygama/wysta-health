@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Mapa de Navegação</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--text-primary: #1a1a1a;
+			--text-secondary: #666;
+			--text-muted: #999;
+			--border: #ccc;
+			--bg-card: #fff;
+			--color-public: #2e7d32;
+			--color-utente: #1565c0;
+			--color-prof: #e65100;
+			--color-admin: #6a1b9a;
+			--color-alert: #c62828;
+			--color-decision: #f57c00;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: 'Source Sans 3', -apple-system, sans-serif;
+			background: #fff;
+			color: var(--text-primary);
+			line-height: 1.5;
+		}
+
+		.page {
+			max-width: 800px;
+			margin: 0 auto;
+			padding: 40px;
+		}
+
+		.header {
+			text-align: center;
+			margin-bottom: 40px;
+			padding-bottom: 24px;
+			border-bottom: 2px solid var(--text-primary);
+		}
+
+		h1 {
+			font-size: 28px;
+			font-weight: 600;
+			margin-bottom: 8px;
+		}
+
+		.subtitle {
+			font-size: 14px;
+			color: var(--text-secondary);
+		}
+
+		.legend {
+			display: flex;
+			justify-content: center;
+			gap: 24px;
+			margin-bottom: 40px;
+			padding: 12px 20px;
+			border: 1px solid var(--border);
+			border-radius: 6px;
+		}
+
+		.legend-item {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-size: 12px;
+			color: var(--text-secondary);
+		}
+
+		.legend-dot {
+			width: 10px;
+			height: 10px;
+			border-radius: 2px;
+		}
+
+		.section-header {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			margin: 36px 0 16px 0;
+		}
+
+		.section-number {
+			font-size: 12px;
+			font-weight: 600;
+			color: #fff;
+			background: var(--text-primary);
+			width: 24px;
+			height: 24px;
+			border-radius: 4px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		h2 {
+			font-size: 16px;
+			font-weight: 600;
+		}
+
+		.flow-section {
+			padding: 24px 0;
+		}
+
+		.diagram-svg {
+			display: block;
+			margin: 0 auto;
+		}
+
+		.note {
+			margin-top: 16px;
+			padding: 12px 16px;
+			border-left: 3px solid var(--color-decision);
+			font-size: 12px;
+			color: var(--text-secondary);
+		}
+
+		.note strong {
+			color: var(--text-primary);
+		}
+
+		.page-divider {
+			margin: 40px 0;
+			border-top: 1px solid var(--border);
+		}
+
+		@media print {
+			.page { padding: 20px; }
+			.flow-section { background: #fff; }
+		}
+	</style>
+</head>
+<body>
+
+<div class="page">
+
+	<header class="header">
+		<h1>Mapa de Navegação</h1>
+		<p class="subtitle">Soluções Digitais para a Saúde Sexual e Reprodutiva da Mulher</p>
+	</header>
+
+	<div class="legend">
+		<div class="legend-item">
+			<div class="legend-dot" style="background: var(--color-public);"></div>
+			<span>Área Pública</span>
+		</div>
+		<div class="legend-item">
+			<div class="legend-dot" style="background: var(--color-utente);"></div>
+			<span>Utente</span>
+		</div>
+		<div class="legend-item">
+			<div class="legend-dot" style="background: var(--color-prof);"></div>
+			<span>Profissional</span>
+		</div>
+		<div class="legend-item">
+			<div class="legend-dot" style="background: var(--color-admin);"></div>
+			<span>Administrador</span>
+		</div>
+	</div>
+
+	<!-- VISÃO GERAL -->
+	<div class="section-header">
+		<div class="section-number">1</div>
+		<h2>Visão Geral do Sistema</h2>
+	</div>
+	
+	<div class="flow-section">
+		<svg class="diagram-svg" width="720" height="280" viewBox="0 0 720 280">
+			<defs>
+				<marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+					<path d="M0,0 L0,6 L8,3 z" fill="#999"/>
+				</marker>
+			</defs>
+			
+			<!-- Landing Page -->
+			<rect x="285" y="10" width="150" height="45" rx="4" fill="#fff" stroke="#2e7d32" stroke-width="2"/>
+			<text x="360" y="28" text-anchor="middle" font-size="9" fill="#999">C-01</text>
+			<text x="360" y="42" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Landing Page</text>
+			
+			<!-- Lines -->
+			<path d="M360,55 L360,75 M260,75 L460,75 M260,75 L260,95 M460,75 L460,95" stroke="#ccc" stroke-width="1.5" fill="none"/>
+			<path d="M260,95 L260,105" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M460,95 L460,105" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Login -->
+			<rect x="185" y="115" width="150" height="45" rx="4" fill="#fff" stroke="#2e7d32" stroke-width="2"/>
+			<text x="260" y="133" text-anchor="middle" font-size="9" fill="#999">C-02</text>
+			<text x="260" y="147" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Login</text>
+			
+			<!-- Registo -->
+			<rect x="385" y="115" width="150" height="45" rx="4" fill="#fff" stroke="#2e7d32" stroke-width="2"/>
+			<text x="460" y="133" text-anchor="middle" font-size="9" fill="#999">C-03</text>
+			<text x="460" y="147" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Registo</text>
+			
+			<!-- Lines to dashboards -->
+			<path d="M260,160 L260,180 M460,160 L460,180 M260,180 L460,180 M120,180 L600,180" stroke="#ccc" stroke-width="1.5" fill="none"/>
+			<path d="M120,180 L120,200" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M360,180 L360,200" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M600,180 L600,200" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Dashboard Utente -->
+			<rect x="35" y="210" width="170" height="50" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="120" y="230" text-anchor="middle" font-size="9" fill="#999">U-01</text>
+			<text x="120" y="245" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Dashboard Utente</text>
+			
+			<!-- Dashboard Profissional -->
+			<rect x="275" y="210" width="170" height="50" rx="4" fill="#fff" stroke="#e65100" stroke-width="2"/>
+			<text x="360" y="230" text-anchor="middle" font-size="9" fill="#999">P-01</text>
+			<text x="360" y="245" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Dashboard Prof.</text>
+			
+			<!-- Dashboard Admin -->
+			<rect x="515" y="210" width="170" height="50" rx="4" fill="#fff" stroke="#6a1b9a" stroke-width="2"/>
+			<text x="600" y="230" text-anchor="middle" font-size="9" fill="#999">A-01</text>
+			<text x="600" y="245" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Dashboard Admin</text>
+		</svg>
+	</div>
+
+	<!-- FLUXO UTENTE -->
+	<div class="section-header">
+		<div class="section-number">2</div>
+		<h2>Navegação do Utente</h2>
+	</div>
+
+	<div class="flow-section">
+		<svg class="diagram-svg" width="720" height="260" viewBox="0 0 720 260">
+			<!-- Dashboard -->
+			<rect x="285" y="10" width="150" height="45" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="360" y="28" text-anchor="middle" font-size="9" fill="#999">U-01</text>
+			<text x="360" y="42" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Dashboard</text>
+			
+			<!-- Lines -->
+			<path d="M360,55 L360,75 M90,75 L630,75" stroke="#ccc" stroke-width="1.5" fill="none"/>
+			<path d="M90,75 L90,100" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M270,75 L270,100" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M450,75 L450,100" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M630,75 L630,100" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Perfil -->
+			<rect x="20" y="110" width="140" height="45" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="90" y="128" text-anchor="middle" font-size="9" fill="#999">U-02</text>
+			<text x="90" y="142" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Perfil</text>
+			
+			<!-- Conteúdos -->
+			<rect x="200" y="110" width="140" height="45" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="270" y="128" text-anchor="middle" font-size="9" fill="#999">U-04</text>
+			<text x="270" y="142" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Conteúdos</text>
+			
+			<!-- Questionário -->
+			<rect x="380" y="110" width="140" height="45" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="450" y="128" text-anchor="middle" font-size="9" fill="#999">U-06</text>
+			<text x="450" y="142" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Questionário</text>
+			
+			<!-- Chat -->
+			<rect x="560" y="110" width="140" height="45" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="630" y="128" text-anchor="middle" font-size="9" fill="#999">U-10</text>
+			<text x="630" y="142" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Chat</text>
+			
+			<!-- Sub-levels -->
+			<path d="M90,155 L90,185" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M270,155 L270,185" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Editar Perfil -->
+			<rect x="20" y="195" width="140" height="45" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="90" y="213" text-anchor="middle" font-size="9" fill="#999">U-03</text>
+			<text x="90" y="227" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Editar Perfil</text>
+			
+			<!-- Detalhe -->
+			<rect x="200" y="195" width="140" height="45" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="270" y="213" text-anchor="middle" font-size="9" fill="#999">U-05</text>
+			<text x="270" y="227" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Detalhe</text>
+		</svg>
+	</div>
+
+	<!-- FLUXO CHAT -->
+	<div class="section-header">
+		<div class="section-number">3</div>
+		<h2>Fluxo do Chat — Triagem e Onboarding</h2>
+	</div>
+
+	<div class="flow-section">
+		<svg class="diagram-svg" width="720" height="320" viewBox="0 0 720 320">
+			<!-- Escolher Tópico -->
+			<rect x="40" y="15" width="150" height="45" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="115" y="33" text-anchor="middle" font-size="9" fill="#999">U-07</text>
+			<text x="115" y="47" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Escolher Tópico</text>
+			
+			<path d="M190,37 L240,37" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Triagem -->
+			<rect x="250" y="15" width="150" height="45" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="325" y="33" text-anchor="middle" font-size="9" fill="#999">U-08</text>
+			<text x="325" y="47" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Triagem</text>
+			
+			<path d="M400,37 L450,37" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Decision -->
+			<path d="M530,10 L590,37 L530,64 L470,37 Z" fill="#fff" stroke="#f57c00" stroke-width="2"/>
+			<text x="530" y="41" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">Urgência?</text>
+			
+			<!-- Branch lines -->
+			<path d="M530,64 L530,90 M220,90 L620,90" stroke="#ccc" stroke-width="1.5" fill="none"/>
+			<text x="220" y="108" text-anchor="middle" font-size="10" fill="#999">Sintomas graves</text>
+			<text x="620" y="108" text-anchor="middle" font-size="10" fill="#999">Caso normal</text>
+			<path d="M220,90 L220,130" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M620,90 L620,130" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Alerta Urgência -->
+			<rect x="120" y="140" width="200" height="55" rx="4" fill="#fff" stroke="#c62828" stroke-width="2"/>
+			<text x="220" y="160" text-anchor="middle" font-size="9" fill="#999">U-11</text>
+			<text x="220" y="176" text-anchor="middle" font-size="12" font-weight="600" fill="#c62828">Alerta Urgência</text>
+			<text x="220" y="189" text-anchor="middle" font-size="10" fill="#999">Ligar 112 / SNS24</text>
+			
+			<!-- Onboarding -->
+			<rect x="520" y="140" width="200" height="55" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="620" y="160" text-anchor="middle" font-size="9" fill="#999">U-09</text>
+			<text x="620" y="176" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Onboarding</text>
+			<text x="620" y="189" text-anchor="middle" font-size="10" fill="#999">Perguntas do tópico</text>
+			
+			<!-- Arrow to Chat -->
+			<path d="M620,195 L620,230" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Chat -->
+			<rect x="520" y="240" width="200" height="55" rx="4" fill="#fff" stroke="#1565c0" stroke-width="2"/>
+			<text x="620" y="260" text-anchor="middle" font-size="9" fill="#999">U-10</text>
+			<text x="620" y="276" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Chat</text>
+			<text x="620" y="289" text-anchor="middle" font-size="10" fill="#999">Conversa com profissional</text>
+		</svg>
+		
+		<div class="note">
+			<strong>Nota:</strong> As respostas de onboarding são guardadas automaticamente no perfil do utente.
+		</div>
+	</div>
+
+	<div class="page-divider"></div>
+
+	<!-- FLUXO PROFISSIONAL -->
+	<div class="section-header">
+		<div class="section-number">4</div>
+		<h2>Navegação do Profissional de Saúde</h2>
+	</div>
+
+	<div class="flow-section">
+		<svg class="diagram-svg" width="720" height="350" viewBox="0 0 720 350">
+			<!-- Lista de Chats -->
+			<rect x="260" y="10" width="200" height="55" rx="4" fill="#fff" stroke="#e65100" stroke-width="2"/>
+			<text x="360" y="30" text-anchor="middle" font-size="9" fill="#999">P-01</text>
+			<text x="360" y="46" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Lista de Chats</text>
+			<text x="360" y="59" text-anchor="middle" font-size="10" fill="#999">Filtros por prioridade</text>
+			
+			<path d="M360,65 L360,90" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<text x="360" y="83" text-anchor="middle" font-size="9" fill="#999">Selecionar</text>
+			
+			<!-- Chat -->
+			<rect x="260" y="100" width="200" height="55" rx="4" fill="#fff" stroke="#e65100" stroke-width="2"/>
+			<text x="360" y="120" text-anchor="middle" font-size="9" fill="#999">P-02</text>
+			<text x="360" y="136" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Chat</text>
+			<text x="360" y="149" text-anchor="middle" font-size="10" fill="#999">Ver e responder</text>
+			
+			<!-- Spread -->
+			<path d="M360,155 L360,175 M90,175 L630,175" stroke="#ccc" stroke-width="1.5" fill="none"/>
+			<path d="M90,175 L90,205" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M270,175 L270,205" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M450,175 L450,205" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M630,175 L630,205" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Notas -->
+			<rect x="20" y="215" width="140" height="55" rx="4" fill="#fff" stroke="#e65100" stroke-width="2"/>
+			<text x="90" y="235" text-anchor="middle" font-size="9" fill="#999">P-03</text>
+			<text x="90" y="251" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Notas Internas</text>
+			<text x="90" y="264" text-anchor="middle" font-size="10" fill="#999">Só profissionais</text>
+			
+			<!-- Sumário -->
+			<rect x="200" y="215" width="140" height="55" rx="4" fill="#fff" stroke="#e65100" stroke-width="2"/>
+			<text x="270" y="235" text-anchor="middle" font-size="9" fill="#999">P-04</text>
+			<text x="270" y="251" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Sumário IA</text>
+			<text x="270" y="264" text-anchor="middle" font-size="10" fill="#999">Histórico auto.</text>
+			
+			<!-- Perfil Utente -->
+			<rect x="380" y="215" width="140" height="55" rx="4" fill="#fff" stroke="#e65100" stroke-width="2"/>
+			<text x="450" y="235" text-anchor="middle" font-size="9" fill="#999">P-05</text>
+			<text x="450" y="251" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Perfil Utente</text>
+			<text x="450" y="264" text-anchor="middle" font-size="10" fill="#999">Dados e anexos</text>
+			
+			<!-- Bloquear -->
+			<rect x="560" y="215" width="140" height="55" rx="4" fill="#fff" stroke="#c62828" stroke-width="2"/>
+			<text x="630" y="235" text-anchor="middle" font-size="9" fill="#999">P-06</text>
+			<text x="630" y="251" text-anchor="middle" font-size="12" font-weight="600" fill="#c62828">Bloquear</text>
+			<text x="630" y="264" text-anchor="middle" font-size="10" fill="#999">Utilizador</text>
+			
+			<!-- Logout -->
+			<path d="M360,270 L360,300" stroke="#ccc" stroke-width="1.5" stroke-dasharray="4,3" fill="none" marker-end="url(#arrow)"/>
+			<rect x="290" y="310" width="140" height="20" rx="4" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="4,3"/>
+			<text x="360" y="324" text-anchor="middle" font-size="10" fill="#999">P-07 · Logout</text>
+		</svg>
+		
+		<div class="note">
+			<strong>Logout:</strong> Ao sair, o profissional pode des-atribuir os seus chats ativos.
+		</div>
+	</div>
+
+	<!-- FLUXO ADMIN -->
+	<div class="section-header">
+		<div class="section-number">5</div>
+		<h2>Navegação do Administrador</h2>
+	</div>
+
+	<div class="flow-section">
+		<svg class="diagram-svg" width="720" height="230" viewBox="0 0 720 230">
+			<!-- Dashboard -->
+			<rect x="260" y="10" width="200" height="55" rx="4" fill="#fff" stroke="#6a1b9a" stroke-width="2"/>
+			<text x="360" y="30" text-anchor="middle" font-size="9" fill="#999">A-01</text>
+			<text x="360" y="46" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Dashboard</text>
+			<text x="360" y="59" text-anchor="middle" font-size="10" fill="#999">Estatísticas</text>
+			
+			<!-- Spread -->
+			<path d="M360,65 L360,80 M90,80 L630,80" stroke="#ccc" stroke-width="1.5" fill="none"/>
+			<path d="M90,80 L90,95" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M270,80 L270,95" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M450,80 L450,95" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M630,80 L630,95" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Utentes -->
+			<rect x="20" y="105" width="140" height="45" rx="4" fill="#fff" stroke="#6a1b9a" stroke-width="2"/>
+			<text x="90" y="123" text-anchor="middle" font-size="9" fill="#999">A-02</text>
+			<text x="90" y="137" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Utentes</text>
+			
+			<!-- Profissionais -->
+			<rect x="200" y="105" width="140" height="45" rx="4" fill="#fff" stroke="#6a1b9a" stroke-width="2"/>
+			<text x="270" y="123" text-anchor="middle" font-size="9" fill="#999">A-03</text>
+			<text x="270" y="137" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Profissionais</text>
+			
+			<!-- Conteúdos -->
+			<rect x="380" y="105" width="140" height="45" rx="4" fill="#fff" stroke="#6a1b9a" stroke-width="2"/>
+			<text x="450" y="123" text-anchor="middle" font-size="9" fill="#999">A-06</text>
+			<text x="450" y="137" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Conteúdos</text>
+			
+			<!-- Tópicos -->
+			<rect x="560" y="105" width="140" height="45" rx="4" fill="#fff" stroke="#6a1b9a" stroke-width="2"/>
+			<text x="630" y="123" text-anchor="middle" font-size="9" fill="#999">A-07</text>
+			<text x="630" y="137" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Tópicos</text>
+			
+			<!-- Sub-levels -->
+			<path d="M90,150 L90,165" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M270,150 L270,165" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			<path d="M630,150 L630,165" stroke="#ccc" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+			
+			<!-- Detalhes -->
+			<rect x="20" y="175" width="140" height="45" rx="4" fill="#fff" stroke="#6a1b9a" stroke-width="2"/>
+			<text x="90" y="193" text-anchor="middle" font-size="9" fill="#999">A-04</text>
+			<text x="90" y="207" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Detalhes</text>
+			
+			<!-- Promover -->
+			<rect x="200" y="175" width="140" height="45" rx="4" fill="#fff" stroke="#6a1b9a" stroke-width="2"/>
+			<text x="270" y="193" text-anchor="middle" font-size="9" fill="#999">A-05</text>
+			<text x="270" y="207" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Promover</text>
+			
+			<!-- Perguntas -->
+			<rect x="560" y="175" width="140" height="50" rx="4" fill="#fff" stroke="#6a1b9a" stroke-width="2"/>
+			<text x="630" y="193" text-anchor="middle" font-size="9" fill="#999">A-08</text>
+			<text x="630" y="207" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Perguntas</text>
+			<text x="630" y="219" text-anchor="middle" font-size="10" fill="#999">Triagem/Onboarding</text>
+		</svg>
+		
+		<div class="note">
+			<strong>Privacidade:</strong> O administrador não tem acesso ao conteúdo dos chats — apenas metadados e estatísticas.
+		</div>
+	</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>P-02 Chat Profissional</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<a href="index.html" class="back-link">← Mapa de Navegação</a>
+	
+	<div class="nav-bar">
+		<a href="p-01-dashboard.html">← Lista</a>
+		<a href="p-05-perfil-utente.html">Ver Perfil</a>
+	</div>
+
+	<div class="content">
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+			<div>
+				<strong>Maria Silva</strong>
+				<span class="priority-badge priority-high">ALTA</span>
+			</div>
+			<span class="text-small">Gravidez</span>
+		</div>
+		
+		<div class="text-small mb-10" style="color: #666;">
+			Atribuído a: Dr.ª Ana Costa
+		</div>
+
+		<div class="tabs">
+			<a href="p-02-chat.html" class="active">Chat</a>
+			<a href="p-03-nota-interna.html">Notas</a>
+			<a href="p-04-sumario-ia.html">Sumário IA</a>
+		</div>
+
+		<div class="chat-container">
+			<p class="text-small text-center" style="color: #999; margin-bottom: 10px;">— 15 Jan 2026 —</p>
+			
+			<div class="chat-bubble system">
+				<p class="text-small"><strong>Sistema:</strong></p>
+				<p>Tópico: Gravidez • 20 semanas • 1ª gravidez • Com obstetra</p>
+			</div>
+
+			<div class="chat-bubble">
+				<p>Olá, tenho uma dúvida sobre as análises do 1º trimestre.</p>
+				<p class="text-small" style="color: #666; margin-top: 5px;">Maria • 10:30</p>
+			</div>
+
+			<div class="chat-bubble user">
+				<p>Olá Maria! Claro, posso ajudá-la com isso. Que dúvidas tem sobre as análises?</p>
+				<p class="text-small" style="color: #666; margin-top: 5px;">Dr.ª Ana • 10:45</p>
+			</div>
+
+			<div class="chat-bubble">
+				<p>O valor da glicose está um pouco acima do normal, devo preocupar-me?</p>
+				<p class="text-small" style="color: #666; margin-top: 5px;">Maria • 10:50</p>
+			</div>
+
+			<div class="chat-bubble user">
+				<p>Pode enviar-me uma foto das análises para eu poder ver os valores exatos?</p>
+				<p class="text-small" style="color: #666; margin-top: 5px;">Dr.ª Ana • 11:00</p>
+			</div>
+
+			<div class="chat-bubble">
+				<div style="border: 1px dashed #999; padding: 10px; text-align: center;">
+					📎 analises_jan2026.pdf <a href="#">[Ver]</a>
+				</div>
+				<p class="text-small" style="color: #666; margin-top: 5px;">Maria • 11:05</p>
+			</div>
+		</div>
+
+		<div class="chat-input">
+			<input type="text" placeholder="Escreva a sua resposta...">
+			<button>📎</button>
+			<button>➤</button>
+		</div>
+
+		<div class="mt-20" style="display: flex; gap: 10px;">
+			<a href="p-03-nota-interna.html" class="btn" style="flex: 1; font-size: 12px;">+ Nota interna</a>
+			<a href="p-06-bloquear.html" class="btn" style="flex: 1; font-size: 12px;">Bloquear</a>
+		</div>
+	</div>
+
+</body>
+</html>

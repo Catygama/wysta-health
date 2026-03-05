@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>P-07 Logout</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<a href="index.html" class="back-link">← Mapa de Navegação</a>
+	
+	<div class="nav-bar">
+		<span>Dr.ª Ana Costa</span>
+		<span>Sair</span>
+	</div>
+
+	<div class="content">
+		<div class="modal">
+			<div class="modal-title">Terminar Sessão</div>
+			
+			<p class="text-center mb-20">
+				Tem <strong>3 chats</strong> atribuídos a si.
+			</p>
+
+			<div class="card" style="background: #fff;">
+				<p class="text-small"><strong>O que deseja fazer com os chats?</strong></p>
+				
+				<div style="margin-top: 15px;">
+					<div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 8px;">
+						<input type="radio" name="logout_option" id="opt1" checked>
+						<label for="opt1">
+							<strong>Des-atribuir todos</strong>
+							<p class="text-small" style="margin-left: 20px; color: #666;">
+								Os chats ficam disponíveis para outros profissionais
+							</p>
+						</label>
+					</div>
+					
+					<div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 8px;">
+						<input type="radio" name="logout_option" id="opt2">
+						<label for="opt2">
+							<strong>Manter atribuídos</strong>
+							<p class="text-small" style="margin-left: 20px; color: #666;">
+								Continuam atribuídos a si quando voltar
+							</p>
+						</label>
+					</div>
+				</div>
+			</div>
+
+			<div class="card" style="background: #fffbf0; border-style: dashed;">
+				<p class="text-small">💡 <strong>Recomendação:</strong> Se vai ficar ausente mais de 24h, des-atribua os chats para garantir resposta atempada aos utentes.</p>
+			</div>
+
+			<a href="c-02-login.html" class="btn btn-primary">Confirmar e Sair</a>
+			<a href="p-01-dashboard.html" class="btn">Cancelar</a>
+		</div>
+	</div>
+
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>A-08 Configurar Perguntas</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<a href="index.html" class="back-link">← Mapa de Navegação</a>
+	
+	<div class="nav-bar">
+		<a href="a-07-topicos.html">← Tópicos</a>
+		<span>Perguntas</span>
+	</div>
+
+	<div class="content">
+		<h1>🤰 Gravidez</h1>
+		<p class="text-small mb-20">Configurar perguntas de triagem e onboarding para este tópico.</p>
+
+		<div class="tabs">
+			<a href="#" class="active">Triagem</a>
+			<a href="#">Onboarding</a>
+		</div>
+
+		<div class="card" style="background: #fffbf0; border-style: dashed;">
+			<p class="text-small">⚠️ <strong>Perguntas de triagem</strong> identificam urgências e definem a prioridade do chat. Certas respostas podem ativar o alerta de urgência (112/SNS24).</p>
+		</div>
+
+		<div class="card">
+			<div style="display: flex; justify-content: space-between; align-items: start;">
+				<div>
+					<p><strong>1. Está a ter sangramento vaginal?</strong></p>
+					<p class="text-small" style="color: #666;">Tipo: Sim/Não</p>
+					<p class="text-small" style="color: #c00;">Se "Sim" → Alerta urgência</p>
+				</div>
+				<a href="#" class="text-small">Editar</a>
+			</div>
+		</div>
+
+		<div class="card">
+			<div style="display: flex; justify-content: space-between; align-items: start;">
+				<div>
+					<p><strong>2. Tem dor abdominal intensa?</strong></p>
+					<p class="text-small" style="color: #666;">Tipo: Sim/Não</p>
+					<p class="text-small" style="color: #c00;">Se "Sim" → Alerta urgência</p>
+				</div>
+				<a href="#" class="text-small">Editar</a>
+			</div>
+		</div>
+
+		<div class="card">
+			<div style="display: flex; justify-content: space-between; align-items: start;">
+				<div>
+					<p><strong>3. Tem febre (>38°C)?</strong></p>
+					<p class="text-small" style="color: #666;">Tipo: Sim/Não</p>
+					<p class="text-small" style="color: #f90;">Se "Sim" → Prioridade Alta</p>
+				</div>
+				<a href="#" class="text-small">Editar</a>
+			</div>
+		</div>
+
+		<div class="card">
+			<div style="display: flex; justify-content: space-between; align-items: start;">
+				<div>
+					<p><strong>4. Sente o bebé a mexer normalmente?</strong></p>
+					<p class="text-small" style="color: #666;">Tipo: Sim/Não/Não sei</p>
+					<p class="text-small" style="color: #f90;">Se "Não" → Prioridade Alta</p>
+				</div>
+				<a href="#" class="text-small">Editar</a>
+			</div>
+		</div>
+
+		<a href="#" class="btn">+ Adicionar Pergunta</a>
+
+		<div class="card mt-20">
+			<div class="card-title">Configurar Nova Pergunta</div>
+			<div class="input-group">
+				<label>Texto da pergunta</label>
+				<input type="text" placeholder="Ex: Tem algum sintoma?">
+			</div>
+			<div class="input-group">
+				<label>Tipo de resposta</label>
+				<select>
+					<option>Sim / Não</option>
+					<option>Escolha múltipla</option>
+					<option>Texto livre</option>
+					<option>Número</option>
+					<option>Data</option>
+				</select>
+			</div>
+			<div class="input-group">
+				<label>Ação se resposta positiva</label>
+				<select>
+					<option>Nenhuma</option>
+					<option>Aumentar prioridade</option>
+					<option>Mostrar alerta urgência</option>
+				</select>
+			</div>
+			<a href="#" class="btn btn-primary">Guardar Pergunta</a>
+		</div>
+	</div>
+
+</body>
+</html>

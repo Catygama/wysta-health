@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>U-03 Editar Perfil</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<a href="index.html" class="back-link">← Mapa de Navegação</a>
+	
+	<div class="nav-bar">
+		<a href="u-02-perfil.html">← Cancelar</a>
+		<span>Editar</span>
+	</div>
+
+	<div class="content">
+		<h1>Editar Perfil</h1>
+
+		<div class="card">
+			<div class="card-title">Dados Pessoais</div>
+			<div class="input-group">
+				<label>Nome</label>
+				<input type="text" value="Maria Silva">
+			</div>
+			<div class="input-group">
+				<label>Email</label>
+				<input type="email" value="maria@email.com">
+			</div>
+			<div class="input-group">
+				<label>Data de Nascimento</label>
+				<input type="date" value="1990-03-15">
+			</div>
+		</div>
+
+		<div class="card">
+			<div class="card-title">Tópico: Contraceção</div>
+			<div class="input-group">
+				<label>Método contracetivo atual</label>
+				<select>
+					<option>DIU</option>
+					<option>Pílula</option>
+					<option>Implante</option>
+					<option>Preservativo</option>
+					<option>Nenhum</option>
+					<option>Outro</option>
+				</select>
+			</div>
+			<div class="input-group">
+				<label>Última consulta de planeamento</label>
+				<input type="month" value="2025-01">
+			</div>
+		</div>
+
+		<div class="card">
+			<div class="card-title">Tópico: Gravidez</div>
+			<div class="input-group">
+				<label>Gestações anteriores</label>
+				<input type="number" value="1">
+			</div>
+			<div class="input-group">
+				<label>Está grávida atualmente?</label>
+				<select>
+					<option>Não</option>
+					<option>Sim</option>
+					<option>Não sei</option>
+				</select>
+			</div>
+		</div>
+
+		<a href="u-02-perfil.html" class="btn btn-primary">Guardar Alterações</a>
+	</div>
+
+</body>
+</html>

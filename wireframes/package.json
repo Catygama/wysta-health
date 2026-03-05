@@ -1,0 +1,11 @@
+{
+	"name": "wireframes-to-images",
+	"version": "1.0.0",
+	"description": "Convert HTML wireframes to PNG images",
+	"scripts": {
+		"convert": "node screenshot.js"
+	},
+	"dependencies": {
+		"puppeteer": "^23.0.0"
+	}
+}

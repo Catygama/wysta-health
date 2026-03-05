@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>P-06 Bloquear Utente</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<a href="index.html" class="back-link">← Mapa de Navegação</a>
+	
+	<div class="nav-bar">
+		<a href="p-02-chat.html">← Voltar</a>
+		<span>Bloquear</span>
+	</div>
+
+	<div class="content">
+		<div class="modal">
+			<div class="modal-title">⚠️ Bloquear Utente</div>
+			
+			<p class="text-center mb-20">
+				Tem a certeza que deseja bloquear <strong>Maria Silva</strong>?
+			</p>
+
+			<div class="card" style="background: #fff;">
+				<p class="text-small">Ao bloquear esta utente:</p>
+				<ul style="padding-left: 20px; margin-top: 10px;">
+					<li class="text-small" style="margin-bottom: 5px;">A utente não poderá enviar mais mensagens</li>
+					<li class="text-small" style="margin-bottom: 5px;">A utente será notificada do bloqueio</li>
+					<li class="text-small" style="margin-bottom: 5px;">Apenas um administrador pode desbloquear</li>
+				</ul>
+			</div>
+
+			<div class="input-group mt-20">
+				<label>Motivo do bloqueio (obrigatório)</label>
+				<select>
+					<option value="">Selecione o motivo...</option>
+					<option>Comportamento abusivo</option>
+					<option>Linguagem inapropriada</option>
+					<option>Uso indevido da plataforma</option>
+					<option>Outro</option>
+				</select>
+			</div>
+
+			<div class="input-group">
+				<label>Notas adicionais (opcional)</label>
+				<textarea placeholder="Descreva a situação..." rows="3"></textarea>
+			</div>
+
+			<a href="p-01-dashboard.html" class="btn btn-danger">Confirmar Bloqueio</a>
+			<a href="p-02-chat.html" class="btn">Cancelar</a>
+		</div>
+	</div>
+
+</body>
+</html>

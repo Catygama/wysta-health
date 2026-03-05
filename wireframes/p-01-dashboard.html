@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>P-01 Dashboard Profissional</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<a href="index.html" class="back-link">← Mapa de Navegação</a>
+	
+	<div class="nav-bar">
+		<span>Dr.ª Ana Costa</span>
+		<a href="p-07-logout.html">Sair</a>
+	</div>
+
+	<div class="content">
+		<h1>Lista de Chats</h1>
+
+		<div class="stats-grid">
+			<div class="stat-box">
+				<div class="stat-number">3</div>
+				<div class="stat-label">Meus chats</div>
+			</div>
+			<div class="stat-box">
+				<div class="stat-number">5</div>
+				<div class="stat-label">Não atribuídos</div>
+			</div>
+		</div>
+
+		<div class="filter-bar">
+			<a href="#" class="active">Meus chats</a>
+			<a href="#">Não atribuídos</a>
+			<a href="#">Todos</a>
+		</div>
+
+		<div class="filter-bar">
+			<a href="#">Urgente</a>
+			<a href="#">Alta</a>
+			<a href="#">Normal</a>
+			<a href="#">Baixa</a>
+		</div>
+
+		<a href="p-02-chat.html" class="list-item" style="text-decoration: none;">
+			<div>
+				<strong>Maria Silva</strong>
+				<span class="priority-badge priority-high">ALTA</span>
+				<p class="text-small">Gravidez • Última msg: 10min</p>
+				<p class="text-small" style="color: #666;">"O valor da glicose está..."</p>
+			</div>
+			<span>→</span>
+		</a>
+
+		<a href="p-02-chat.html" class="list-item" style="text-decoration: none;">
+			<div>
+				<strong>Joana Ferreira</strong>
+				<span class="priority-badge">Normal</span>
+				<p class="text-small">Contraceção • Última msg: 2h</p>
+				<p class="text-small" style="color: #666;">"Tenho dúvidas sobre..."</p>
+			</div>
+			<span>→</span>
+		</a>
+
+		<a href="p-02-chat.html" class="list-item" style="text-decoration: none;">
+			<div>
+				<strong>Sofia Santos</strong>
+				<span class="priority-badge">Normal</span>
+				<p class="text-small">Ciclo Menstrual • Última msg: 1d</p>
+				<p class="text-small" style="color: #666;">"Obrigada pela ajuda!"</p>
+			</div>
+			<span>→</span>
+		</a>
+
+		<div class="mt-20" style="border-top: 1px dashed #ccc; padding-top: 15px;">
+			<p class="text-small" style="color: #666;">Chats não atribuídos:</p>
+		</div>
+
+		<div class="list-item" style="background: #f9f9f9;">
+			<div>
+				<strong>Rita Gomes</strong>
+				<span class="priority-badge priority-high">URGENTE</span>
+				<p class="text-small">IST • À espera há 30min</p>
+			</div>
+			<a href="p-02-chat.html" class="btn" style="margin: 0; padding: 8px 12px;">Atribuir</a>
+		</div>
+
+		<div class="list-item" style="background: #f9f9f9;">
+			<div>
+				<strong>Carla Dias</strong>
+				<span class="priority-badge">Normal</span>
+				<p class="text-small">Menopausa • À espera há 1h</p>
+			</div>
+			<a href="p-02-chat.html" class="btn" style="margin: 0; padding: 8px 12px;">Atribuir</a>
+		</div>
+	</div>
+
+</body>
+</html>

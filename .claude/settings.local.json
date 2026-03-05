@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:labs.convex.dev)",
+      "WebFetch(domain:better-auth.com)"
+    ]
+  }
+}
