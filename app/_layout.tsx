@@ -1,6 +1,13 @@
-// app/_layout.tsx
+import { ConvexAuthProvider } from '@convex-dev/auth/react';
+import { ConvexReactClient } from 'convex/react';
 import { Stack } from 'expo-router';
 
+const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!);
+
 export default function RootLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <ConvexAuthProvider client={convex}>
+      <Stack screenOptions={{ headerShown: false }} />
+    </ConvexAuthProvider>
+  );
 }
