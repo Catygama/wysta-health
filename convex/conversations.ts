@@ -140,6 +140,11 @@ export const escalate = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
+    const profile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+    if (profile?.role !== 'professional' && profile?.role !== 'admin') throw new Error('Unauthorized');
     await ctx.db.patch(args.id, {
       status: 'escalated',
       priority: 'urgent',
