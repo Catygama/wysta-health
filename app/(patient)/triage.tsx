@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -28,10 +28,11 @@ export default function Triage() {
   }
 
   async function createConversationAndNavigate() {
+    if (!topic) return;
     setLoading(true);
     try {
       const id = await createConversation({
-        topic: topic!,
+        topic,
         title: `${topicInfo?.label} — nova conversa`,
         priority: 'low',
       });
@@ -52,25 +53,24 @@ export default function Triage() {
     await createConversationAndNavigate();
   }
 
+  if (!topic) return null;
+
+  if (triage === undefined) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
   if (!triage) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: spacing.lg,
-          gap: spacing.md,
-        }}
-      >
-        <Text style={{ ...typography.lg, color: colors.text.primary }}>
-          {topicInfo?.emoji} {topicInfo?.label}
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md }}>
+        <Text style={{ fontSize: 48 }}>{topicInfo?.emoji}</Text>
+        <Text style={{ ...typography.lg, fontWeight: '600', color: colors.text.primary }}>
+          {topicInfo?.label}
         </Text>
-        <Button
-          label="Iniciar conversa"
-          onPress={createConversationAndNavigate}
-          loading={loading}
-        />
+        <Button label="Iniciar conversa" onPress={createConversationAndNavigate} loading={loading} />
       </View>
     );
   }
@@ -114,18 +114,11 @@ export default function Triage() {
                     borderRadius: radius.md,
                     borderWidth: 1.5,
                     borderColor: answers[q.id] === opt ? colors.primary : colors.border,
-                    backgroundColor:
-                      answers[q.id] === opt ? colors.primaryLight : colors.background.primary,
+                    backgroundColor: answers[q.id] === opt ? colors.primaryLight : colors.background.primary,
                     alignItems: 'center',
                   }}
                 >
-                  <Text
-                    style={{
-                      ...typography.base,
-                      fontWeight: '500',
-                      color: answers[q.id] === opt ? colors.primary : colors.text.primary,
-                    }}
-                  >
+                  <Text style={{ ...typography.base, fontWeight: '500', color: answers[q.id] === opt ? colors.primary : colors.text.primary }}>
                     {opt === 'yes' ? 'Sim' : 'Não'}
                   </Text>
                 </Pressable>
@@ -144,16 +137,10 @@ export default function Triage() {
                     borderRadius: radius.md,
                     borderWidth: 1.5,
                     borderColor: answers[q.id] === opt ? colors.primary : colors.border,
-                    backgroundColor:
-                      answers[q.id] === opt ? colors.primaryLight : colors.background.primary,
+                    backgroundColor: answers[q.id] === opt ? colors.primaryLight : colors.background.primary,
                   }}
                 >
-                  <Text
-                    style={{
-                      ...typography.base,
-                      color: answers[q.id] === opt ? colors.primary : colors.text.primary,
-                    }}
-                  >
+                  <Text style={{ ...typography.base, color: answers[q.id] === opt ? colors.primary : colors.text.primary }}>
                     {opt}
                   </Text>
                 </Pressable>

@@ -1,4 +1,4 @@
-import { View, Text, Pressable, Linking } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { colors, spacing, typography, radius } from '@/constants/theme';
 import { strings } from '@/constants/strings';
 
@@ -24,32 +24,24 @@ export function UrgencyAlert({ onDismiss }: Props) {
       <Text style={{ ...typography.base, color: colors.text.primary }}>
         {strings.urgency.message}
       </Text>
-      <Pressable
-        onPress={() => Linking.openURL('tel:808242424')}
+      <View
         style={{
-          backgroundColor: colors.primary,
+          backgroundColor: colors.background.primary,
           borderRadius: radius.md,
           padding: spacing.md,
-          alignItems: 'center',
+          gap: spacing.xs,
         }}
       >
-        <Text style={{ ...typography.base, fontWeight: '600', color: '#fff' }}>
-          {strings.urgency.snsCta}
+        <Text style={{ ...typography.sm, fontWeight: '600', color: colors.text.primary }}>
+          Contactos de emergência:
         </Text>
-      </Pressable>
-      <Pressable
-        onPress={() => Linking.openURL('tel:112')}
-        style={{
-          backgroundColor: colors.danger,
-          borderRadius: radius.md,
-          padding: spacing.md,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={{ ...typography.base, fontWeight: '600', color: '#fff' }}>
-          {strings.urgency.emergencyCta}
+        <Text style={{ ...typography.base, color: colors.primary, fontWeight: '600' }} selectable>
+          SNS 24: 808 24 24 24
         </Text>
-      </Pressable>
+        <Text style={{ ...typography.base, color: colors.danger, fontWeight: '600' }} selectable>
+          Emergência: 112
+        </Text>
+      </View>
       <Pressable onPress={onDismiss}>
         <Text
           style={{
