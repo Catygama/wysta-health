@@ -16,11 +16,15 @@ export default function Login() {
   const [error, setError] = useState('');
 
   async function handleLogin() {
+    console.log('[login] handleLogin called', { email, password });
     setError('');
     setLoading(true);
+    console.log('[login] calling signIn...');
     try {
       await signIn('password', { email, password, flow: 'signIn' });
-    } catch {
+      router.replace('/');
+    } catch (e) {
+      console.error('[login] signIn error:', e);
       setError('Email ou palavra-passe incorretos.');
     } finally {
       setLoading(false);

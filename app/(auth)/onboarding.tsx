@@ -16,6 +16,7 @@ const PREGNANCY_OPTIONS = [
 
 export default function Onboarding() {
   const router = useRouter();
+  const ensureProfile = useMutation(api.users.ensureProfile);
   const updateProfile = useMutation(api.users.updateProfile);
   const [ageRange, setAgeRange] = useState('');
   const [pregnancyStatus, setPregnancyStatus] = useState('');
@@ -24,8 +25,9 @@ export default function Onboarding() {
   async function handleContinue() {
     setLoading(true);
     try {
+      await ensureProfile();
       await updateProfile({ ageRange, pregnancyStatus });
-      router.replace('/(patient)');
+      router.replace('/');
     } finally {
       setLoading(false);
     }
