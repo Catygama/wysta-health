@@ -41,8 +41,9 @@ export default function ProfessionalLogin() {
       await signIn('anonymous');
       await ensureProfile({ role: 'professional', isGuest: true });
       router.replace('/');
-    } catch {
-      setError('Não foi possível entrar como profissional convidado.');
+    } catch (e: any) {
+      const message = e?.message ?? String(e);
+      setError(`Guest professional falhou: ${message}`);
     } finally {
       setGuestLoading(false);
     }

@@ -41,8 +41,9 @@ export default function Login() {
       await signIn('anonymous');
       await ensureProfile({ role: 'patient', isGuest: true });
       router.replace('/');
-    } catch {
-      setError('Não foi possível entrar como convidada.');
+    } catch (e: any) {
+      const message = e?.message ?? String(e);
+      setError(`Guest falhou: ${message}`);
     } finally {
       setGuestLoading(false);
     }
