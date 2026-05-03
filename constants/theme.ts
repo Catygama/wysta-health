@@ -1,26 +1,38 @@
+import { Platform, PlatformColor } from 'react-native';
+
+// PlatformColor is only called on iOS — safely skipped on web/Android
+const ios = (name: string, fallback: string) =>
+  Platform.OS === 'ios' ? PlatformColor(name) : fallback;
+
 export const colors = {
   primary: '#7C3AED',
-  primaryLight: '#EDE9FE',
+  primaryLight: ios('systemFill', '#EDE9FE'),
   primaryDark: '#5B21B6',
-  danger: '#DC2626',
-  dangerLight: '#FEE2E2',
-  warning: '#D97706',
-  warningLight: '#FEF3C7',
-  success: '#059669',
-  successLight: '#D1FAE5',
+
+  danger: ios('systemRed', '#DC2626'),
+  dangerLight: ios('systemFill', '#FEE2E2'),
+  warning: ios('systemOrange', '#D97706'),
+  warningLight: ios('secondarySystemFill', '#FEF3C7'),
+  success: ios('systemGreen', '#059669'),
+  successLight: ios('tertiarySystemFill', '#D1FAE5'),
+
   text: {
-    primary: '#111827',
-    secondary: '#6B7280',
-    tertiary: '#9CA3AF',
+    primary: ios('label', '#111827'),
+    secondary: ios('secondaryLabel', '#6B7280'),
+    tertiary: ios('tertiaryLabel', '#9CA3AF'),
     inverse: '#FFFFFF',
   },
+
   background: {
-    primary: '#FFFFFF',
-    secondary: '#F9FAFB',
-    tertiary: '#F3F4F6',
+    primary: ios('systemBackground', '#FFFFFF'),
+    secondary: ios('secondarySystemBackground', '#F9FAFB'),
+    tertiary: ios('tertiarySystemBackground', '#F3F4F6'),
+    grouped: ios('systemGroupedBackground', '#F9FAFB'),
+    groupedSecondary: ios('secondarySystemGroupedBackground', '#FFFFFF'),
   },
-  border: '#E5E7EB',
-  borderLight: '#F3F4F6',
+
+  border: ios('separator', '#E5E7EB'),
+  borderOpaque: ios('opaqueSeparator', '#D1D5DB'),
 };
 
 export const spacing = {

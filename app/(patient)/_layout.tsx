@@ -1,7 +1,7 @@
-import { Redirect, Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Redirect } from 'expo-router';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { colors } from '@/constants/theme';
+import { TabBarProvider, useTabBar } from '@/contexts/TabBarContext';
 
 export default function PatientLayout() {
   const { user, isLoading, role } = useCurrentUser();
@@ -9,42 +9,40 @@ export default function PatientLayout() {
   if (!user || role !== 'patient') return <Redirect href="/" />;
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.text.secondary,
-        headerShown: false,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Início',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="conversations"
-        options={{
-          title: 'Conversas',
-          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="education"
-        options={{
-          title: 'Saúde',
-          tabBarIcon: ({ color, size }) => <Ionicons name="book-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen name="triage" options={{ href: null }} />
-    </Tabs>
+    <TabBarProvider>
+      <PatientTabs />
+    </TabBarProvider>
+  );
+}
+
+function PatientTabs() {
+  const { isTabBarHidden } = useTabBar();
+  return (
+    <NativeTabs hidden={isTabBarHidden}>
+      <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
+        <NativeTabs.Trigger.Label>Início</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="conversations">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'bubble.left.and.bubble.right', selected: 'bubble.left.and.bubble.right.fill' }}
+          md="chat_bubble"
+        />
+        <NativeTabs.Trigger.Label>Conversas</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="education">
+        <NativeTabs.Trigger.Icon sf={{ default: 'book', selected: 'book.fill' }} md="book" />
+        <NativeTabs.Trigger.Label>Saúde</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Icon sf={{ default: 'person', selected: 'person.fill' }} md="person" />
+        <NativeTabs.Trigger.Label>Perfil</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="triage" hidden />
+    </NativeTabs>
   );
 }

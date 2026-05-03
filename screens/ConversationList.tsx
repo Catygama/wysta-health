@@ -2,6 +2,7 @@ import { View, Text, Pressable, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, spacing, typography, radius } from '@/constants/theme';
 import { TOPICS } from '@/constants/topics';
+import { Icon } from '@/components/ui/Icon';
 
 type Conversation = {
   _id: string;
@@ -59,9 +60,12 @@ export function ConversationList({ conversations, basePath }: Props) {
             })}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ ...typography.base, fontWeight: '600', color: colors.text.primary }}>
-                {topic?.emoji} {topic?.label ?? item.topic}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                {topic && <Icon name={topic.icon} size={18} color={colors.primary} />}
+                <Text style={{ ...typography.base, fontWeight: '600', color: colors.text.primary }}>
+                  {topic?.label ?? item.topic}
+                </Text>
+              </View>
               <View
                 style={{
                   backgroundColor: statusColor + '20',

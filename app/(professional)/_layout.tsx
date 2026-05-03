@@ -1,7 +1,7 @@
-import { Redirect, Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Redirect } from 'expo-router';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { colors } from '@/constants/theme';
+import { TabBarProvider, useTabBar } from '@/contexts/TabBarContext';
 
 export default function ProfessionalLayout() {
   const { user, isLoading, role } = useCurrentUser();
@@ -9,27 +9,28 @@ export default function ProfessionalLayout() {
   if (!user || role !== 'professional') return <Redirect href="/" />;
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.text.secondary,
-        headerShown: false,
-      }}
-    >
-      <Tabs.Screen
-        name="queue"
-        options={{
-          title: 'Fila',
-          tabBarIcon: ({ color, size }) => <Ionicons name="list-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="education"
-        options={{
-          title: 'Saúde',
-          tabBarIcon: ({ color, size }) => <Ionicons name="book-outline" size={size} color={color} />,
-        }}
-      />
-    </Tabs>
+    <TabBarProvider>
+      <ProfessionalTabs />
+    </TabBarProvider>
+  );
+}
+
+function ProfessionalTabs() {
+  const { isTabBarHidden } = useTabBar();
+  return (
+    <NativeTabs hidden={isTabBarHidden}>
+      <NativeTabs.Trigger name="queue">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'list.bullet.clipboard', selected: 'list.bullet.clipboard.fill' }}
+          md="assignment"
+        />
+        <NativeTabs.Trigger.Label>Fila</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="education">
+        <NativeTabs.Trigger.Icon sf={{ default: 'book', selected: 'book.fill' }} md="book" />
+        <NativeTabs.Trigger.Label>Saúde</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }

@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
+import { Icon } from '@/components/ui/Icon';
 import { colors, spacing, typography } from '@/constants/theme';
 
 export default function PatientConversations() {
@@ -18,7 +19,11 @@ export default function PatientConversations() {
           padding: spacing.lg,
         }}
       >
-        <Text style={{ fontSize: 48 }}>💬</Text>
+        <Icon
+          name={{ sf: 'bubble.left.and.bubble.right.fill', ion: 'chatbubbles-outline' }}
+          size={48}
+          color={colors.text.tertiary}
+        />
         <Text style={{ ...typography.lg, fontWeight: '600', color: colors.text.primary }}>
           Sem conversas ainda
         </Text>

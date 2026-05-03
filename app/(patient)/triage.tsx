@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import { UrgencyAlert } from '@/screens/UrgencyAlert';
 import { colors, spacing, typography, radius } from '@/constants/theme';
 import { TOPICS, type TopicId } from '@/constants/topics';
@@ -66,7 +67,7 @@ export default function Triage() {
   if (!triage) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md }}>
-        <Text style={{ fontSize: 48 }}>{topicInfo?.emoji}</Text>
+        {topicInfo && <Icon name={topicInfo.icon} size={48} color={colors.primary} />}
         <Text style={{ ...typography.lg, fontWeight: '600', color: colors.text.primary }}>
           {topicInfo?.label}
         </Text>
@@ -84,9 +85,12 @@ export default function Triage() {
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.xl }}
       contentInsetAdjustmentBehavior="automatic"
     >
-      <Text style={{ ...typography['2xl'], fontWeight: '700', color: colors.text.primary }}>
-        {topicInfo?.emoji} {topicInfo?.label}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        {topicInfo && <Icon name={topicInfo.icon} size={28} color={colors.primary} />}
+        <Text style={{ ...typography['2xl'], fontWeight: '700', color: colors.text.primary }}>
+          {topicInfo?.label}
+        </Text>
+      </View>
       <Text style={{ ...typography.base, color: colors.text.secondary }}>
         Responde a algumas perguntas para que o profissional de saúde te possa ajudar melhor.
       </Text>

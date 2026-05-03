@@ -1,13 +1,12 @@
 import { useState, useRef } from 'react';
+import { View, Text, FlatList, TextInput, Pressable } from 'react-native';
 import {
-  View,
-  Text,
-  FlatList,
-  TextInput,
-  Pressable,
   KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+  useReanimatedKeyboardAnimation,
+} from 'react-native-keyboard-controller';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { colors, spacing, typography, radius } from '@/constants/theme';
@@ -24,6 +23,13 @@ export function MessageThread({ conversationId, currentUserId, isProfessional }:
   const [text, setText] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const listRef = useRef<FlatList>(null);
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+  const { progress } = useReanimatedKeyboardAnimation();
+
+  const animatedFooterPadding = useAnimatedStyle(() => ({
+    paddingBottom: spacing.md + insets.bottom * (1 - progress.value),
+  }));
 
   async function handleSend() {
     if (!text.trim()) return;
@@ -40,7 +46,8 @@ export function MessageThread({ conversationId, currentUserId, isProfessional }:
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
+      keyboardVerticalOffset={headerHeight}
     >
       <FlatList
         ref={listRef}
@@ -84,14 +91,18 @@ export function MessageThread({ conversationId, currentUserId, isProfessional }:
         }}
       />
 
-      <View
-        style={{
-          padding: spacing.md,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          gap: spacing.sm,
-          backgroundColor: colors.background.primary,
-        }}
+      <Animated.View
+        style={[
+          {
+            paddingTop: spacing.md,
+            paddingHorizontal: spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            gap: spacing.sm,
+            backgroundColor: colors.background.primary,
+          },
+          animatedFooterPadding,
+        ]}
       >
         {isProfessional && (
           <Pressable
@@ -151,7 +162,7 @@ export function MessageThread({ conversationId, currentUserId, isProfessional }:
             <Text style={{ color: '#fff', fontSize: 18 }}>↑</Text>
           </Pressable>
         </View>
-      </View>
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }

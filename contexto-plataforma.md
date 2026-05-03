@@ -10,7 +10,6 @@ Disponibilizar uma plataforma de comunicação assíncrona entre utentes e profi
 - Suporte contínuo em saúde ginecológica, obstétrica e saúde sexual
 - Acesso facilitado a informação clara e baseada em evidência
 - Triagem inteligente de sintomas e situações clínicas
-- Integração com o sistema nacional de saúde (SNS)
 
 ## Público-Alvo
 
@@ -127,7 +126,7 @@ A plataforma **não substitui** o acompanhamento presencial, mas **complementa-o
 ## Lacunas que a Plataforma Colmata
 
 Comparativamente às soluções internacionais existentes (Flo, Maven Clinic, Nurx, Planned Parenthood Direct), a Wysta distingue-se por:
-- Sistema de alerta de urgência integrado com SNS24/112
+- Sistema de alerta de urgência mostra aviso ao utilizador para contactar SNS24/112
 - Chat estruturado por tópicos específicos
 - Onboarding automático por domínio clínico
 - Notas internas entre profissionais

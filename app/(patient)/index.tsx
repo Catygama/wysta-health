@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { TOPICS } from '@/constants/topics';
+import { Icon } from '@/components/ui/Icon';
 import { colors, spacing, typography, radius } from '@/constants/theme';
 
 export default function PatientHome() {
@@ -12,9 +13,12 @@ export default function PatientHome() {
       contentInsetAdjustmentBehavior="automatic"
     >
       <View style={{ gap: spacing.xs }}>
-        <Text style={{ ...typography['2xl'], fontWeight: '700', color: colors.text.primary }}>
-          Olá 👋
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Text style={{ ...typography['2xl'], fontWeight: '700', color: colors.text.primary }}>
+            Olá
+          </Text>
+          <Icon name={{ sf: 'hand.wave.fill', ion: 'hand-left' }} size={28} color={colors.primary} />
+        </View>
         <Text style={{ ...typography.base, color: colors.text.secondary }}>
           Sobre o que precisas de ajuda hoje?
         </Text>
@@ -44,7 +48,7 @@ export default function PatientHome() {
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             })}
           >
-            <Text style={{ fontSize: 36 }}>{topic.emoji}</Text>
+            <Icon name={topic.icon} size={36} color={colors.primary} />
             <View style={{ flex: 1 }}>
               <Text
                 style={{

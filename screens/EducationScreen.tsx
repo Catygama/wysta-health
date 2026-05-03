@@ -4,6 +4,7 @@ import { useRouter, useSegments } from 'expo-router';
 import { api } from '@/convex/_generated/api';
 import { colors, spacing, typography, radius } from '@/constants/theme';
 import { TOPICS } from '@/constants/topics';
+import { Icon } from '@/components/ui/Icon';
 
 export function EducationScreen() {
   const articles = useQuery(api.education.listByTopic, {}) ?? [];
@@ -20,7 +21,11 @@ export function EducationScreen() {
       contentInsetAdjustmentBehavior="automatic"
       ListEmptyComponent={
         <View style={{ padding: spacing.xl, alignItems: 'center', gap: spacing.md }}>
-          <Text style={{ fontSize: 48 }}>📚</Text>
+          <Icon
+            name={{ sf: 'book.fill', ion: 'book-outline' }}
+            size={48}
+            color={colors.text.tertiary}
+          />
           <Text style={{ ...typography.base, color: colors.text.secondary, textAlign: 'center' }}>
             Ainda não há conteúdos disponíveis.
           </Text>
@@ -41,9 +46,20 @@ export function EducationScreen() {
             })}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <View style={{ backgroundColor: colors.primaryLight, paddingVertical: 2, paddingHorizontal: spacing.sm, borderRadius: radius.full }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: colors.primaryLight,
+                  paddingVertical: 2,
+                  paddingHorizontal: spacing.sm,
+                  borderRadius: radius.full,
+                }}
+              >
+                {topic && <Icon name={topic.icon} size={12} color={colors.primary} />}
                 <Text style={{ ...typography.xs, fontWeight: '600', color: colors.primary }}>
-                  {topic?.emoji} {topic?.label ?? item.topic}
+                  {topic?.label ?? item.topic}
                 </Text>
               </View>
               <Text style={{ ...typography.xs, color: colors.text.tertiary }}>

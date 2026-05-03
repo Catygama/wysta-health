@@ -2,9 +2,14 @@
   "expo": {
     "scheme": "myapp",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-secure-store",
+      "expo-font"
     ],
     "name": "wysta",
-    "slug": "wysta"
+    "slug": "wysta",
+    "ios": {
+      "bundleIdentifier": "com.filipe.fernandes.mojo.wysta"
+    }
   }
 }

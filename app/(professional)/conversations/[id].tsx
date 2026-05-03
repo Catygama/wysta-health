@@ -1,9 +1,11 @@
+import { useCallback } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { MessageThread } from '@/screens/MessageThread';
 import { colors, spacing, typography, radius } from '@/constants/theme';
+import { useTabBar } from '@/contexts/TabBarContext';
 
 export default function ProfessionalConversation() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -11,6 +13,14 @@ export default function ProfessionalConversation() {
   const conversation = useQuery(api.conversations.get, id ? { id: id as any } : 'skip');
   const assign = useMutation(api.conversations.assign);
   const close = useMutation(api.conversations.close);
+  const { setIsTabBarHidden } = useTabBar();
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsTabBarHidden(true);
+      return () => setIsTabBarHidden(false);
+    }, [setIsTabBarHidden]),
+  );
 
   if (!user || conversation === undefined || !id) {
     return (
