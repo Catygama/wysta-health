@@ -10,7 +10,9 @@
     "build:web": "expo export -p web",
     "build:cf": "convex deploy --cmd 'bun run build:web'",
     "reset-project": "node ./scripts/reset-project.js",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "deploy": "bun run build:web && wrangler deploy",
+    "preview": "bun run build:web && wrangler dev"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.91",
@@ -43,7 +45,8 @@
     "@types/react": "~19.2.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~55.0.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "wrangler": "^4.87.0"
   },
   "private": true
 }
