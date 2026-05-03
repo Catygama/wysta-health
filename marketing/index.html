@@ -1,137 +1,441 @@
 <!doctype html>
-<html lang="pt-PT">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Wysta — Saúde sexual e reprodutiva feminina</title>
-    <meta
-      name="description"
-      content="Plataforma digital de saúde sexual e reprodutiva feminina. Comunicação assíncrona com profissionais de saúde, em português."
-    />
-    <meta name="theme-color" content="#7C3AED" />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237C3AED'/%3E%3Ctext x='50%25' y='55%25' text-anchor='middle' dominant-baseline='middle' font-family='system-ui' font-size='18' font-weight='700' fill='white'%3EW%3C/text%3E%3C/svg%3E"
-    />
-    <style>
-      :root {
-        --primary: #7c3aed;
-        --primary-dark: #5b21b6;
-        --text: #111827;
-        --text-secondary: #6b7280;
-        --bg: #ffffff;
-        --bg-soft: #f9fafb;
-        --border: #e5e7eb;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-        color: var(--text);
-        background: var(--bg);
-        -webkit-font-smoothing: antialiased;
-        line-height: 1.5;
-      }
-      main {
-        min-height: 100vh;
-        max-width: 720px;
-        margin: 0 auto;
-        padding: 64px 24px;
-        display: flex;
-        flex-direction: column;
-      }
-      header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 64px;
-      }
-      .logo {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        background: var(--primary);
-        color: white;
-        display: grid;
-        place-items: center;
-        font-weight: 700;
-        font-size: 18px;
-      }
-      .brand {
-        font-weight: 600;
-        font-size: 18px;
-        letter-spacing: -0.01em;
-      }
-      h1 {
-        font-size: clamp(32px, 5vw, 48px);
-        line-height: 1.1;
-        letter-spacing: -0.02em;
-        margin: 0 0 24px;
-        font-weight: 700;
-      }
-      h1 em {
-        font-style: normal;
-        color: var(--primary);
-      }
-      .lede {
-        font-size: 18px;
-        color: var(--text-secondary);
-        margin: 0 0 40px;
-        max-width: 56ch;
-      }
-      .cta {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--primary);
-        color: white;
-        text-decoration: none;
-        font-weight: 600;
-        padding: 12px 20px;
-        border-radius: 12px;
-        transition: background 120ms ease;
-      }
-      .cta:hover {
-        background: var(--primary-dark);
-      }
-      .meta {
-        margin-top: auto;
-        padding-top: 64px;
-        font-size: 14px;
-        color: var(--text-secondary);
-        border-top: 1px solid var(--border);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px 16px;
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <header>
-        <div class="logo" aria-hidden="true">W</div>
-        <div class="brand">Wysta</div>
+<html lang="pt-PT" data-pairing="sourceserif" data-secondary="terracota" data-density="regular" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Wysta — Saúde sexual e reprodutiva, em conversa.</title>
+  <meta name="description" content="Plataforma digital de saúde sexual e reprodutiva feminina. Comunicação assíncrona com profissionais de saúde, em português, ao teu ritmo. Infraestrutura europeia, conforme RGPD.">
+  <meta name="theme-color" content="#F2EDE4">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Wysta — Saúde sexual e reprodutiva, em conversa.">
+  <meta property="og:description" content="Plataforma digital de saúde feminina em Portugal. Conversa assíncrona com profissionais, ao teu ritmo. RGPD, infraestrutura europeia.">
+  <meta property="og:locale" content="pt_PT">
+  <meta property="og:url" content="https://wysta.health">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Schema.org -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "MedicalBusiness",
+    "name": "Wysta",
+    "description": "Plataforma digital de saúde sexual e reprodutiva feminina, em Portugal.",
+    "url": "https://wysta.health",
+    "areaServed": "PT",
+    "availableLanguage": "pt-PT",
+    "medicalSpecialty": ["Gynecology", "Obstetrics", "ReproductiveHealth"]
+  }
+  </script>
+
+  <!-- Fonts (self-host in production; using Google Fonts here as static-friendly source) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Instrument+Serif:ital@0;1&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ── Nav ──────────────────────────────────────────────────── -->
+  <nav class="nav" aria-label="Principal">
+    <a href="#" class="brand" aria-label="Wysta — início">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Wysta</span>
+    </a>
+    <div class="nav-links">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#topicos">Tópicos</a>
+      <a href="#privacidade">Privacidade</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a class="nav-cta" href="https://app.wysta.health">
+      Aceder à aplicação
+      <span class="arrow" aria-hidden="true">↗</span>
+    </a>
+  </nav>
+
+  <main>
+    <!-- ── Hero ──────────────────────────────────────────────── -->
+    <section class="hero shell" aria-labelledby="hero-title">
+      <div>
+        <div class="hero-eyebrow eyebrow" data-reveal>Saúde feminina, ao teu ritmo</div>
+        <h1 class="hero-headline serif" id="hero-title" data-headline data-reveal style="--reveal-delay: 60ms">
+          Saúde sexual<br>e reprodutiva, <em>em conversa.</em>
+        </h1>
+        <p class="hero-sub" data-reveal style="--reveal-delay: 160ms">
+          Escreve a uma profissional de saúde — ou pergunta primeiro à nossa IA, treinada para saúde da mulher. Tu escolhes, a cada conversa. Em português, sem fila, sem videochamada.
+        </p>
+        <div class="hero-actions" data-reveal style="--reveal-delay: 240ms">
+          <a class="btn btn-primary" href="https://app.wysta.health">
+            Aceder à aplicação
+            <span class="arrow" aria-hidden="true">↗</span>
+          </a>
+          <a class="btn btn-ghost" href="#como-funciona">Ver como funciona</a>
+        </div>
+        <div class="hero-meta" data-reveal style="--reveal-delay: 360ms">
+          <div>
+            <span class="label">Com IA</span>
+            <span class="value">Resposta imediata</span>
+          </div>
+          <div>
+            <span class="label">Com profissional</span>
+            <span class="value">Sob 4 horas, 7 dias</span>
+          </div>
+          <div>
+            <span class="label">Modo anónimo</span>
+            <span class="value">Sem registo no histórico</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Animated chat mock -->
+      <aside class="chat-mock" data-reveal style="--reveal-delay: 200ms" aria-label="Exemplo de conversa">
+        <header class="chat-header">
+          <span class="chat-topic">
+            <span class="dot"></span>
+            <span data-chat-topic-label>Contraceção</span>
+          </span>
+          <div class="chat-mode-toggle" role="tablist" aria-label="Modo de conversa">
+            <button data-chat-mode="pro" aria-pressed="true">Profissional</button>
+            <button data-chat-mode="ai" aria-pressed="false">IA</button>
+          </div>
+        </header>
+        <div class="chat-feed" data-chat-feed></div>
+        <div class="chat-composer" aria-hidden="true">
+          <span class="field">A escrever<span class="caret"></span></span>
+          <span class="send">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ── Como funciona ─────────────────────────────────────── -->
+    <section class="section shell" id="como-funciona" aria-labelledby="how-title">
+      <header class="section-head">
+        <div>
+          <span class="eyebrow" data-reveal>01 · Como funciona</span>
+        </div>
+        <div>
+          <h2 data-reveal style="--reveal-delay: 80ms">Três passos. <em>Sem agendamentos.</em></h2>
+          <p class="lede" data-reveal style="--reveal-delay: 160ms">Pensámos a Wysta para a vida real — entre reuniões, depois de adormeceres a criança, na pausa do almoço. Tu escreves quando puderes; respondemos com peso e tempo.</p>
+        </div>
       </header>
 
-      <h1>Cuidados de saúde sexual e reprodutiva, <em>em conversa.</em></h1>
-      <p class="lede">
-        Comunicação assíncrona com profissionais de saúde, em português.
-        Privacidade primeiro, sem videochamadas, ao seu ritmo.
+      <div class="steps">
+        <article class="step" data-reveal>
+          <span class="step-num">i.</span>
+          <h3 class="step-title">Escolhes o tópico e descreves o caso.</h3>
+          <p class="step-body">Contraceção, gravidez, IST, ciclo menstrual, saúde geral. Histórico curto, idade, medicação atual — só o necessário para responder bem.</p>
+          <span class="step-meta">3–5 minutos</span>
+        </article>
+        <article class="step" data-reveal style="--reveal-delay: 100ms">
+          <span class="step-num">ii.</span>
+          <h3 class="step-title">Decides com quem queres falar.</h3>
+          <p class="step-body">IA para resposta imediata e dúvidas a qualquer hora. Profissional de saúde para casos que precisam de avaliação clínica ou encaminhamento. Podes alternar.</p>
+          <span class="step-meta">À tua escolha</span>
+        </article>
+        <article class="step" data-reveal style="--reveal-delay: 200ms">
+          <span class="step-num">iii.</span>
+          <h3 class="step-title">A conversa fica aberta enquanto precisares.</h3>
+          <p class="step-body">Voltas a escrever sem reabrir consulta. Encaminhamos para análises, presencial ou urgência se for o caminho certo.</p>
+          <span class="step-meta">Sem fim arbitrário</span>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── Tópicos ───────────────────────────────────────────── -->
+    <section class="section shell" id="topicos" aria-labelledby="topics-title">
+      <header class="section-head">
+        <div>
+          <span class="eyebrow" data-reveal>02 · Tópicos cobertos</span>
+        </div>
+        <div>
+          <h2 id="topics-title" data-reveal style="--reveal-delay: 80ms">Cinco áreas. <em>Sem caixas.</em></h2>
+          <p class="lede" data-reveal style="--reveal-delay: 160ms">Não tentamos ser tudo para todos. Cobrimos o que sabemos cobrir bem — e dizemos-te quando o teu caso precisa de outro lugar.</p>
+        </div>
+      </header>
+
+      <div class="topics">
+        <div class="topics-list" role="tablist" aria-label="Tópicos clínicos" data-reveal>
+          <button class="topic-item" data-topic="contracecao" role="tab"><span class="num">01</span>Contraceção</button>
+          <button class="topic-item" data-topic="gravidez" role="tab"><span class="num">02</span>Gravidez</button>
+          <button class="topic-item" data-topic="ist" role="tab"><span class="num">03</span>Infeções sexualmente transmissíveis</button>
+          <button class="topic-item" data-topic="ciclo" role="tab"><span class="num">04</span>Ciclo menstrual</button>
+          <button class="topic-item" data-topic="geral" role="tab"><span class="num">05</span>Saúde geral</button>
+        </div>
+        <div class="topic-detail" data-topic-detail role="tabpanel" aria-live="polite" data-reveal style="--reveal-delay: 100ms"></div>
+      </div>
+    </section>
+
+    <!-- ── Humano + IA (Quem responde) ──────────────────────── -->
+    <section class="section shell" id="quem-responde" aria-labelledby="pros-title">
+      <header class="section-head">
+        <div>
+          <span class="eyebrow" data-reveal>03 · Quem responde</span>
+        </div>
+        <div>
+          <h2 id="pros-title" data-reveal style="--reveal-delay: 80ms">Humano <em>ou</em> IA — <em>tu</em> escolhes.</h2>
+          <p class="lede" data-reveal style="--reveal-delay: 160ms">A cada conversa decides se queres uma resposta humana ou da nossa IA, treinada para saúde da mulher. Podes alternar a meio, ou pedir uma segunda leitura humana sobre o que a IA respondeu.</p>
+        </div>
+      </header>
+
+      <div class="modes">
+        <article class="mode mode-pro" data-reveal>
+          <span class="mode-tag">Resposta humana</span>
+          <h3 class="mode-title">Lê o teu caso. Pensa. Responde.</h3>
+          <p class="mode-body">Lê o histórico que partilhaste, considera o contexto, escreve uma resposta clínica ponderada. Pode pedir análises ou encaminhar para presencial quando o caso o justifica.</p>
+          <ul class="mode-list">
+            <li><span>Resposta inicial</span><span>Sob 4 horas, 7 dias</span></li>
+            <li><span>Tipo de resposta</span><span>Avaliação clínica ponderada</span></li>
+            <li><span>Encaminhamento</span><span>Para presencial quando indicado</span></li>
+          </ul>
+        </article>
+        <article class="mode mode-ai" data-reveal style="--reveal-delay: 100ms">
+          <span class="mode-tag">Resposta IA</span>
+          <h3 class="mode-title">Resposta agora, à uma da manhã.</h3>
+          <p class="mode-body">Treinada para saúde da mulher em português europeu. Para perguntas que não precisam de avaliação clínica humana — interpretação de sintomas, dúvidas sobre medicação, o que esperar a seguir.</p>
+          <ul class="mode-list">
+            <li><span>Resposta</span><span>Imediata, em segundos</span></li>
+            <li><span>Modo anónimo</span><span>Não fica no histórico</span></li>
+            <li><span>Em caso de dúvida</span><span>Encaminha para resposta humana</span></li>
+          </ul>
+        </article>
+      </div>
+
+      <p class="modes-note" data-reveal>
+        <em>Nunca</em> usamos IA sem te dizer que é IA. Resposta humana é sempre escrita por humano — a IA não fala em nome de ninguém.
       </p>
+    </section>
 
-      <a class="cta" href="https://app.wysta.health">Aceder à aplicação →</a>
+    <!-- ── Privacidade ───────────────────────────────────────── -->
+    <section class="section shell" id="privacidade" aria-labelledby="priv-title">
+      <div class="privacy" data-reveal>
+        <h2 class="privacy-headline" id="priv-title">
+          Os teus dados <em>não</em> treinam o modelo de ninguém.
+        </h2>
+        <div class="privacy-points">
+          <div class="privacy-point">
+            <span class="ix">i.</span>
+            <div>
+              <p class="label">Os teus dados ficam na Europa</p>
+              <p class="desc">A plataforma e os teus dados clínicos são processados em infraestrutura europeia, conforme RGPD. Nenhuma transferência para fora da UE sem base legal explícita.</p>
+            </div>
+          </div>
+          <div class="privacy-point">
+            <span class="ix">ii.</span>
+            <div>
+              <p class="label">A IA não aprende contigo</p>
+              <p class="desc">Os fornecedores que usamos têm acordo contratual de não-treino — opt-out explícito e retenção mínima. As tuas conversas não alimentam modelos de inteligência artificial.</p>
+            </div>
+          </div>
+          <div class="privacy-point">
+            <span class="ix">iii.</span>
+            <div>
+              <p class="label">Modo anónimo no chat com IA</p>
+              <p class="desc">Para temas sensíveis, ativas o modo anónimo: a conversa não fica ligada ao teu histórico, não é visível para quem responde, é eliminada quando fechas a sessão.</p>
+            </div>
+          </div>
+          <div class="privacy-point">
+            <span class="ix">iv.</span>
+            <div>
+              <p class="label">Apagas, exportas, decides</p>
+              <p class="desc">Exporta tudo o que escreveste em qualquer momento. Apaga a conta e os dados clínicos são eliminados nos prazos legais aplicáveis. Sem perguntas, sem retenção comercial.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      <footer class="meta">
-        <span>© Wysta</span>
-        <span>Em conformidade com o RGPD</span>
-      </footer>
-    </main>
-  </body>
+    <!-- ── FAQ ───────────────────────────────────────────────── -->
+    <section class="section shell" id="faq" aria-labelledby="faq-title">
+      <header class="section-head">
+        <div>
+          <span class="eyebrow" data-reveal>04 · Perguntas frequentes</span>
+        </div>
+        <div>
+          <h2 id="faq-title" data-reveal style="--reveal-delay: 80ms">Antes de <em>perguntares.</em></h2>
+        </div>
+      </header>
+
+      <div class="faq-list" data-reveal>
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>Como funciona o chat com IA?</span>
+            <span class="faq-toggle" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">
+            <p>É um modelo de IA treinado especificamente para saúde da mulher em português europeu. Responde em segundos, com referências quando faz sentido, e diz claramente quando o teu caso precisa de uma resposta humana.</p>
+            <p>A IA nunca passa por humana: vês sempre quem está do outro lado.</p>
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>Posso falar sobre temas sensíveis sem ficar registado?</span>
+            <span class="faq-toggle" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">
+            <p>Sim. No chat com IA tens um <em>modo anónimo</em>: a conversa não fica no teu histórico, não é associada ao teu perfil clínico, é eliminada ao fechar a sessão.</p>
+            <p>Pensado para o que ainda não estás pronta a dizer em voz alta — questões sobre identidade, violência, dependências, dúvidas que parecem demasiado pequenas para ocupar tempo de profissional.</p>
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>Quanto custa?</span>
+            <span class="faq-toggle" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">
+            <p>Subscrição mensal de 14&thinsp;€, sem fidelização. Inclui conversas ilimitadas em todos os tópicos cobertos.</p>
+            <p>Cancela quando quiseres, com efeito no fim do ciclo em curso.</p>
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>E se for uma urgência?</span>
+            <span class="faq-toggle" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">
+            <p>Wysta não é serviço de urgência. Se houver risco imediato — hemorragia, dor torácica, ideação suicida, sinais de gravidez ectópica — liga 112 ou desloca-te ao serviço de urgência mais próximo.</p>
+            <p>Para dúvidas urgentes não emergentes, a SNS 24 (808 24 24 24) está disponível 24 horas. Indicamos o caminho certo dentro da própria conversa sempre que necessário.</p>
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>Quem tem acesso ao que escrevo?</span>
+            <span class="faq-toggle" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">
+            <p>Apenas a pessoa designada para o teu caso quando estás em modo humano. A nossa equipa técnica não acede ao conteúdo das conversas em circunstâncias normais.</p>
+            <p>No chat com IA, as mensagens são processadas com acordo de não-treino e retenção mínima. No modo anónimo, nada é guardado depois da sessão.</p>
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>Em quanto tempo respondem?</span>
+            <span class="faq-toggle" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">
+            <p>Resposta inicial sob 4 horas, em média 38 minutos, 7 dias por semana entre as 8h e as 23h. Mensagens fora deste horário são lidas e respondidas pela manhã seguinte.</p>
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>Substitui o meu médico de família?</span>
+            <span class="faq-toggle" aria-hidden="true"></span>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner">
+            <p>Não. Wysta complementa — não substitui — o acompanhamento presencial, a tua médica de família ou ginecologista. Encaminhamos para presencial sempre que o caso o justifique e podemos enviar relatório clínico para a tua equipa.</p>
+          </div></div>
+        </div>
+
+
+      </div>
+    </section>
+
+    <!-- ── CTA final ─────────────────────────────────────────── -->
+    <section class="cta shell" aria-labelledby="cta-title">
+      <h2 class="cta-headline" id="cta-title" data-reveal>
+        A primeira <em>pergunta</em> é a mais difícil.
+      </h2>
+      <p class="cta-sub" data-reveal style="--reveal-delay: 100ms">
+        A partir daí, é só conversa.
+      </p>
+      <div class="cta-actions" data-reveal style="--reveal-delay: 200ms">
+        <a class="btn btn-primary" href="https://app.wysta.health">
+          Aceder à aplicação
+          <span class="arrow" aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ── Footer ───────────────────────────────────────────── -->
+    <footer class="footer shell">
+      <div>
+        <a href="#" class="brand" aria-label="Wysta">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>Wysta</span>
+        </a>
+        <p style="margin: 16px 0 0; max-width: 32ch; color: var(--ink-3); font-size: 13px; line-height: 1.55;">
+          Saúde sexual e reprodutiva feminina, em conversa.
+        </p>
+      </div>
+      <div>
+        <h4>Plataforma</h4>
+        <ul>
+          <li><a href="https://app.wysta.health">Aceder à aplicação</a></li>
+          <li><a href="#como-funciona">Como funciona</a></li>
+          <li><a href="#topicos">Tópicos</a></li>
+          <li><a href="#faq">Perguntas frequentes</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="/termos">Termos de utilização</a></li>
+          <li><a href="/privacidade">Política de privacidade</a></li>
+          <li><a href="/rgpd">RGPD &amp; dados</a></li>
+          <li><a href="mailto:dpo@wysta.health">DPO</a></li>
+        </ul>
+      </div>
+      <div class="colophon">
+        <span>© 2026 Wysta</span>
+        <span>Em caso de emergência: 112 · SNS 24: 808 24 24 24</span>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ── Tweaks panel ─────────────────────────────────────── -->
+  <button class="tweaks-fab" aria-label="Abrir Tweaks">TW</button>
+  <aside class="tweaks-panel" aria-label="Tweaks">
+    <button class="tw-close" aria-label="Fechar">×</button>
+    <h4 class="tw-title serif">Tweaks</h4>
+
+    <div class="tw-section">
+      <h5>Tipografia (serif editorial)</h5>
+      <div class="tw-row">
+        <button class="tw-opt" data-tweak="pairing" data-value="newsreader">Newsreader</button>
+        <button class="tw-opt" data-tweak="pairing" data-value="instrument">Instrument</button>
+        <button class="tw-opt" data-tweak="pairing" data-value="fraunces">Fraunces</button>
+        <button class="tw-opt" data-tweak="pairing" data-value="sourceserif">Source Serif</button>
+      </div>
+    </div>
+
+    <div class="tw-section">
+      <h5>Cor secundária</h5>
+      <div class="tw-row">
+        <button class="tw-opt" data-tweak="secondary" data-value="tinta">Azul-tinta</button>
+        <button class="tw-opt" data-tweak="secondary" data-value="terracota">Terracota</button>
+        <button class="tw-opt" data-tweak="secondary" data-value="verde">Verde</button>
+        <button class="tw-opt" data-tweak="secondary" data-value="none">Só roxo</button>
+      </div>
+    </div>
+
+    <div class="tw-section">
+      <h5>Densidade</h5>
+      <div class="tw-row">
+        <button class="tw-opt" data-tweak="density" data-value="regular">Regular</button>
+        <button class="tw-opt" data-tweak="density" data-value="large">Larga</button>
+      </div>
+    </div>
+
+    <div class="tw-section">
+      <h5>Tema</h5>
+      <div class="tw-row">
+        <button class="tw-opt" data-tweak="theme" data-value="auto">Automático</button>
+        <button class="tw-opt" data-tweak="theme" data-value="light">Claro</button>
+        <button class="tw-opt" data-tweak="theme" data-value="dark">Escuro</button>
+      </div>
+    </div>
+  </aside>
+
+  <script src="script.js" defer></script>
+</body>
 </html>
