@@ -1,0 +1,40 @@
+export const STATUS_LABELS: Record<string, string> = {
+  waiting: 'A aguardar',
+  active: 'Em curso',
+  escalated: 'Escalada',
+  closed: 'Encerrada',
+};
+
+export const STATUS_COLORS: Record<string, string> = {
+  waiting: '#D97706',
+  active: '#059669',
+  escalated: '#DC2626',
+  closed: '#6B7280',
+};
+
+export const PRIORITY_LABELS: Record<string, string> = {
+  urgent: 'Urgente',
+  high: 'Alta',
+  medium: 'Média',
+  low: 'Baixa',
+};
+
+export const PRIORITY_COLORS: Record<string, string> = {
+  urgent: '#DC2626',
+  high: '#EA580C',
+  medium: '#D97706',
+  low: '#059669',
+};
+
+export const RISK_LABELS: Record<string, string> = {
+  high: 'Alto',
+  medium: 'Médio',
+  low: 'Baixo',
+};
+
+export const ESCALATION_LEVEL_LABELS: Record<string, string> = {
+  routine: 'Consulta de rotina',
+  urgent: 'Consulta urgente (48h)',
+  'same-day': 'Urgência no próprio dia',
+  emergency: 'Emergência imediata',
+};
