@@ -1,5 +1,6 @@
 import { mutation } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
+import { getAuthUserId } from '@convex-dev/auth/server';
 
 type Topic =
   | 'contraception'
@@ -402,9 +403,32 @@ async function upsertArticle(ctx: MutationCtx, seed: ArticleSeed) {
   return 'inserted' as const;
 }
 
+async function isAdminOrEmpty(ctx: MutationCtx) {
+  const anyAdmin = await ctx.db
+    .query('userProfiles')
+    .filter((q) => q.eq(q.field('role'), 'admin'))
+    .first();
+  // Bootstrap path: if no admin exists yet, allow first authenticated caller
+  // to seed. Once an admin exists, only admins can call seedAll.
+  if (!anyAdmin) {
+    const userId = await getAuthUserId(ctx);
+    return userId !== null;
+  }
+  const userId = await getAuthUserId(ctx);
+  if (!userId) return false;
+  const profile = await ctx.db
+    .query('userProfiles')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .unique();
+  return profile?.role === 'admin';
+}
+
 export const seedAll = mutation({
   args: {},
   handler: async (ctx) => {
+    if (!(await isAdminOrEmpty(ctx))) {
+      throw new Error('Apenas administradores podem executar seed.');
+    }
     const triageResults = await Promise.all(TRIAGE.map((t) => upsertTriage(ctx, t)));
     const articleResults = await Promise.all(ARTICLES.map((a) => upsertArticle(ctx, a)));
     return {
