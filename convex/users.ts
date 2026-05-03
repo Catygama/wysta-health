@@ -37,9 +37,12 @@ export const ensureProfile = mutation({
 
 export const updateProfile = mutation({
   args: {
+    displayName: v.optional(v.string()),
     ageRange: v.optional(v.string()),
+    location: v.optional(v.string()),
     pregnancyStatus: v.optional(v.string()),
     conditions: v.optional(v.array(v.string())),
+    medications: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
