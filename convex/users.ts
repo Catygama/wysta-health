@@ -56,6 +56,35 @@ export const updateProfile = mutation({
   },
 });
 
+export const bootstrapAdmin = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const callerId = await getAuthUserId(ctx);
+    if (!callerId) throw new Error('Not authenticated');
+    const anyAdmin = await ctx.db
+      .query('userProfiles')
+      .filter((q) => q.eq(q.field('role'), 'admin'))
+      .first();
+    if (anyAdmin) {
+      throw new Error('Já existe um administrador.');
+    }
+    let profile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', callerId))
+      .unique();
+    if (!profile) {
+      const id = await ctx.db.insert('userProfiles', {
+        userId: callerId,
+        role: 'admin',
+      });
+      profile = await ctx.db.get(id);
+    } else {
+      await ctx.db.patch(profile._id, { role: 'admin' });
+    }
+    return profile;
+  },
+});
+
 export const setRole = mutation({
   args: {
     targetUserId: v.id('users'),
