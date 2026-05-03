@@ -142,22 +142,26 @@ export const get = query({
       profile?.role === 'professional' ||
       profile?.role === 'admin';
     if (!hasAccess) return null;
+    const isProfessional =
+      profile?.role === 'professional' || profile?.role === 'admin';
     const patient = await ctx.db.get(conv.patientId);
     const patientProfile = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', conv.patientId))
       .unique();
-    return {
-      ...conv,
-      patient: patient
-        ? {
-            email: patient.email,
-            displayName: patientProfile?.displayName,
-            ageRange: patientProfile?.ageRange,
-            pregnancyStatus: patientProfile?.pregnancyStatus,
-          }
-        : null,
-    };
+    const patientPayload = patient
+      ? {
+          email: patient.email,
+          displayName: patientProfile?.displayName,
+          ageRange: patientProfile?.ageRange,
+          location: patientProfile?.location,
+          pregnancyStatus: patientProfile?.pregnancyStatus,
+          // Clinical fields only exposed to professionals/admins
+          conditions: isProfessional ? patientProfile?.conditions : undefined,
+          medications: isProfessional ? patientProfile?.medications : undefined,
+        }
+      : null;
+    return { ...conv, patient: patientPayload };
   },
 });
 

@@ -134,15 +134,36 @@ export default function ProfessionalConversation() {
         </View>
 
         {conversation.patient && (
-          <Text style={{ ...typography.sm, color: colors.text.secondary }}>
-            {conversation.patient.displayName ?? conversation.patient.email}
-            {conversation.patient.ageRange
-              ? ` • ${conversation.patient.ageRange}`
-              : ''}
-            {conversation.patient.pregnancyStatus
-              ? ` • ${conversation.patient.pregnancyStatus}`
-              : ''}
-          </Text>
+          <View style={{ gap: spacing.xs }}>
+            <Text style={{ ...typography.sm, color: colors.text.secondary }}>
+              {conversation.patient.displayName ?? conversation.patient.email}
+              {conversation.patient.ageRange
+                ? ` • ${conversation.patient.ageRange}`
+                : ''}
+              {conversation.patient.location
+                ? ` • ${conversation.patient.location}`
+                : ''}
+              {conversation.patient.pregnancyStatus
+                ? ` • ${conversation.patient.pregnancyStatus}`
+                : ''}
+            </Text>
+            {(conversation.patient.conditions?.length ?? 0) > 0 && (
+              <Text
+                style={{ ...typography.xs, color: colors.text.secondary }}
+              >
+                <Text style={{ fontWeight: '600' }}>Condições: </Text>
+                {conversation.patient.conditions?.join(', ')}
+              </Text>
+            )}
+            {(conversation.patient.medications?.length ?? 0) > 0 && (
+              <Text
+                style={{ ...typography.xs, color: colors.text.secondary }}
+              >
+                <Text style={{ fontWeight: '600' }}>Medicação: </Text>
+                {conversation.patient.medications?.join(', ')}
+              </Text>
+            )}
+          </View>
         )}
 
         {triageMessage?.metadata?.triageData && (
