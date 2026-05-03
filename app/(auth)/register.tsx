@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import { colors, spacing, typography } from '@/constants/theme';
 import { strings } from '@/constants/strings';
 
@@ -75,9 +76,37 @@ export default function Register() {
         <Button label={strings.auth.register} onPress={handleRegister} loading={loading} />
       </View>
 
-      <Pressable onPress={() => router.back()}>
+      <Pressable onPress={() => router.back()} hitSlop={8}>
         <Text style={{ ...typography.sm, color: colors.primary, textAlign: 'center' }}>
           {strings.auth.hasAccount} {strings.auth.login}
+        </Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => router.push('/(auth)/professional-signup')}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.xs,
+          paddingVertical: spacing.sm,
+          opacity: pressed ? 0.7 : 1,
+        })}
+        hitSlop={8}
+      >
+        <Icon
+          name={{ sf: 'stethoscope', ion: 'medkit' }}
+          size={16}
+          color={colors.text.secondary}
+        />
+        <Text
+          style={{
+            ...typography.sm,
+            color: colors.text.secondary,
+            fontWeight: '500',
+          }}
+        >
+          Sou profissional de saúde →
         </Text>
       </Pressable>
     </ScrollView>

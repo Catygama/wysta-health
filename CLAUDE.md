@@ -8,7 +8,7 @@ Plataforma digital de saúde sexual e reprodutiva feminina, contexto português.
 
 - **Frontend**: Expo SDK 55 (React Native 0.83) + Expo Router 55 — iOS, Android, Web
 - **Backend**: Convex (realtime, DB, file storage) — deploy prod em EU-west-1 (`loyal-dolphin-681`)
-- **Auth**: @convex-dev/auth (email/password)
+- **Auth**: @convex-dev/auth — providers `Password` + `Anonymous` (guest)
 - **Package manager**: bun
 - **Hosting**: Cloudflare Pages (web app + landing), domínios `app.wysta.health` e `wysta.health`
 
@@ -52,6 +52,7 @@ docs/                           # ENGINEERING.md, TASKS.md, plans/
 ## Convenções
 
 - **Idioma**: código e comentários em inglês; strings visíveis ao utilizador em PT
+- **Campos de profissional** no schema sempre prefixados (`professionalLicenseNumber`, `professionalSpecialty`, `professionalVerificationStatus`, `professionalVerificationDocuments`, `professionalVerificationNotes`) para distinguir de campos de utente
 - **Routing**: Expo Router com grupos `(auth)`, `(patient)`, `(professional)`, `(admin)`
 - **Tabs**: layout duplo `_layout.tsx` (NativeTabs via `expo-router/unstable-native-tabs`) e `_layout.web.tsx` (`Tabs` standard) — Metro escolhe a variante por plataforma
 - **Ícones**: `components/ui/Icon.tsx` mapeia SF Symbols (iOS) ↔ Ionicons (Android/web). Nas tabs nativas usa-se diretamente `NativeTabs.Trigger.Icon` com `sf` + `md`
@@ -59,6 +60,14 @@ docs/                           # ENGINEERING.md, TASKS.md, plans/
 - **Tema**: `constants/theme.ts` usa `PlatformColor` em iOS e fallbacks hex noutras plataformas
 - **Lógica de negócio no backend Convex**, não no frontend
 - **Notas internas de profissionais**: campo `isInternal: true` em `messages`, filtradas no backend
+
+## Auth flows
+
+- `(auth)/login.tsx` — utente: email/password, "Entrar como convidada" (anónimo), link para profissional
+- `(auth)/register.tsx` — utente signup
+- `(auth)/professional-login.tsx` — profissional: login + guest mode
+- `(auth)/professional-signup.tsx` — pedido de verificação multi-secção (conta, identificação, cédula, documentos, notas). Auto-verifica para já — TODO no backend (`users.submitProfessionalVerification`) para passar a `pending` quando existir UI de aprovação.
+- Guest controlado por `EXPO_PUBLIC_GUEST_AUTH` — qualquer valor que não seja `false` ou `0` mantém os botões visíveis (default: ativo).
 
 ## Deploy
 

@@ -28,7 +28,7 @@ export default function Onboarding() {
   async function handleContinue() {
     setLoading(true);
     try {
-      await ensureProfile();
+      await ensureProfile({});
       await updateProfile({
         displayName: displayName.trim() || undefined,
         ageRange,
@@ -43,7 +43,7 @@ export default function Onboarding() {
   async function handleSkip() {
     setLoading(true);
     try {
-      await ensureProfile();
+      await ensureProfile({});
       router.replace('/');
     } finally {
       setLoading(false);

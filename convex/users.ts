@@ -18,8 +18,17 @@ export const currentUser = query({
 });
 
 export const ensureProfile = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    role: v.optional(
+      v.union(
+        v.literal('patient'),
+        v.literal('professional'),
+        v.literal('admin')
+      )
+    ),
+    isGuest: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
     const existing = await ctx.db
@@ -27,11 +36,78 @@ export const ensureProfile = mutation({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
     if (existing) return existing;
+    const role = args.role ?? 'patient';
     const id = await ctx.db.insert('userProfiles', {
       userId,
-      role: 'patient',
+      role,
+      isGuest: args.isGuest,
+      // TODO: remove auto-verify before launching to real professionals.
+      // Guest professionals are auto-verified to keep the testing flow simple;
+      // real professional accounts must go through submitProfessionalVerification.
+      ...(role === 'professional'
+        ? { professionalVerificationStatus: 'verified' as const }
+        : {}),
     });
     return ctx.db.get(id);
+  },
+});
+
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+    return ctx.storage.generateUploadUrl();
+  },
+});
+
+export const submitProfessionalVerification = mutation({
+  args: {
+    displayName: v.optional(v.string()),
+    professionalLicenseNumber: v.string(),
+    professionalSpecialty: v.string(),
+    professionalVerificationDocuments: v.array(v.id('_storage')),
+    professionalVerificationNotes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+    if (!args.professionalLicenseNumber.trim()) {
+      throw new Error('Cédula obrigatória.');
+    }
+    if (!args.professionalSpecialty.trim()) {
+      throw new Error('Especialidade obrigatória.');
+    }
+    if (args.professionalVerificationDocuments.length === 0) {
+      throw new Error('Pelo menos um documento é obrigatório.');
+    }
+
+    const existing = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+
+    // TODO: remove auto-verify — change to 'pending' once admin review UI
+    // is in place so accounts must be manually approved before granting
+    // professional access.
+    const professionalVerificationStatus = 'verified' as const;
+
+    const data = {
+      role: 'professional' as const,
+      displayName: args.displayName?.trim() || existing?.displayName,
+      professionalLicenseNumber: args.professionalLicenseNumber.trim(),
+      professionalSpecialty: args.professionalSpecialty.trim(),
+      professionalVerificationDocuments: args.professionalVerificationDocuments,
+      professionalVerificationNotes:
+        args.professionalVerificationNotes?.trim() || undefined,
+      professionalVerificationStatus,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, data);
+      return existing._id;
+    }
+    return ctx.db.insert('userProfiles', { userId, ...data });
   },
 });
 

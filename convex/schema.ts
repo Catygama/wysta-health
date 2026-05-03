@@ -52,6 +52,21 @@ export default defineSchema({
     pregnancyStatus: v.optional(v.string()),
     conditions: v.optional(v.array(v.string())),
     medications: v.optional(v.array(v.string())),
+    // Professional-only fields (always prefixed with "professional"
+    // for clarity; never re-used for other roles).
+    professionalLicenseNumber: v.optional(v.string()),
+    professionalSpecialty: v.optional(v.string()),
+    professionalVerificationStatus: v.optional(
+      v.union(
+        v.literal('pending'),
+        v.literal('verified'),
+        v.literal('rejected')
+      )
+    ),
+    professionalVerificationDocuments: v.optional(v.array(v.id('_storage'))),
+    professionalVerificationNotes: v.optional(v.string()),
+    // Guest sessions (Anonymous provider) — for testing only
+    isGuest: v.optional(v.boolean()),
   }).index('by_user', ['userId']),
 
   conversations: defineTable({
