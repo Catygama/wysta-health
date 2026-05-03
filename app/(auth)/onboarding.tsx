@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Icon } from '@/components/ui/Icon';
 import { colors, spacing, typography, radius } from '@/constants/theme';
 
 const AGE_RANGES = ['18-25', '26-35', '36-45', '46+'];
@@ -18,6 +20,7 @@ export default function Onboarding() {
   const router = useRouter();
   const ensureProfile = useMutation(api.users.ensureProfile);
   const updateProfile = useMutation(api.users.updateProfile);
+  const [displayName, setDisplayName] = useState('');
   const [ageRange, setAgeRange] = useState('');
   const [pregnancyStatus, setPregnancyStatus] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,7 +29,21 @@ export default function Onboarding() {
     setLoading(true);
     try {
       await ensureProfile();
-      await updateProfile({ ageRange, pregnancyStatus });
+      await updateProfile({
+        displayName: displayName.trim() || undefined,
+        ageRange,
+        pregnancyStatus,
+      });
+      router.replace('/');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSkip() {
+    setLoading(true);
+    try {
+      await ensureProfile();
       router.replace('/');
     } finally {
       setLoading(false);
@@ -37,19 +54,55 @@ export default function Onboarding() {
     <ScrollView
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.xl }}
       contentInsetAdjustmentBehavior="automatic"
+      keyboardShouldPersistTaps="handled"
     >
       <View style={{ gap: spacing.sm }}>
-        <Text style={{ ...typography['2xl'], fontWeight: '700', color: colors.text.primary }}>
-          Bem-vinda à Wysta
-        </Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+          }}
+        >
+          <Icon
+            name={{ sf: 'sparkles', ion: 'sparkles' }}
+            size={28}
+            color={colors.primary}
+          />
+          <Text
+            style={{
+              ...typography['2xl'],
+              fontWeight: '700',
+              color: colors.text.primary,
+            }}
+          >
+            Bem-vinda à Wysta
+          </Text>
+        </View>
         <Text style={{ ...typography.base, color: colors.text.secondary }}>
-          Algumas perguntas rápidas para personalizarmos a tua experiência.
+          Algumas perguntas rápidas para personalizarmos a tua experiência. Podes saltar e completar mais tarde.
         </Text>
       </View>
 
       <View style={{ gap: spacing.md }}>
-        <Text style={{ ...typography.base, fontWeight: '600', color: colors.text.primary }}>
-          Qual a tua faixa etária?
+        <Input
+          label="Como queres ser tratada? (opcional)"
+          value={displayName}
+          onChangeText={setDisplayName}
+          placeholder="ex.: Maria"
+          autoCapitalize="words"
+        />
+      </View>
+
+      <View style={{ gap: spacing.md }}>
+        <Text
+          style={{
+            ...typography.base,
+            fontWeight: '600',
+            color: colors.text.primary,
+          }}
+        >
+          Faixa etária
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {AGE_RANGES.map((age) => (
@@ -81,7 +134,13 @@ export default function Onboarding() {
       </View>
 
       <View style={{ gap: spacing.md }}>
-        <Text style={{ ...typography.base, fontWeight: '600', color: colors.text.primary }}>
+        <Text
+          style={{
+            ...typography.base,
+            fontWeight: '600',
+            color: colors.text.primary,
+          }}
+        >
           Estado de gravidez atual
         </Text>
         {PREGNANCY_OPTIONS.map((opt) => (
@@ -115,12 +174,20 @@ export default function Onboarding() {
         ))}
       </View>
 
-      <Button
-        label="Continuar"
-        onPress={handleContinue}
-        loading={loading}
-        disabled={!ageRange || !pregnancyStatus}
-      />
+      <View style={{ gap: spacing.sm }}>
+        <Button
+          label="Continuar"
+          onPress={handleContinue}
+          loading={loading}
+          disabled={!ageRange || !pregnancyStatus}
+        />
+        <Button
+          label="Saltar por agora"
+          variant="secondary"
+          onPress={handleSkip}
+          loading={loading}
+        />
+      </View>
     </ScrollView>
   );
 }

@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { MessageThread } from '@/screens/MessageThread';
@@ -74,6 +74,7 @@ export default function ProfessionalConversation() {
 
   return (
     <View style={{ flex: 1 }}>
+      <Stack.Screen options={{ title: topic?.label ?? 'Conversa' }} />
       <ScrollView
         style={{ flexGrow: 0, maxHeight: '45%' }}
         contentContainerStyle={{

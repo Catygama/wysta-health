@@ -1,5 +1,5 @@
 import { ScrollView, View, Text, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
@@ -36,6 +36,7 @@ export function ArticleScreen() {
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}
       contentInsetAdjustmentBehavior="automatic"
     >
+      <Stack.Screen options={{ title: topic?.label ?? 'Artigo' }} />
       <View style={{ gap: spacing.sm }}>
         {topic && (
           <View
