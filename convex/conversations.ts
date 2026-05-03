@@ -285,7 +285,14 @@ export const close = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
     await requireProfessional(ctx, userId);
-    await ctx.db.patch(args.id, { status: 'closed' });
+    const now = Date.now();
+    await ctx.db.patch(args.id, { status: 'closed', lastMessageAt: now });
+    await ctx.db.insert('messages', {
+      conversationId: args.id,
+      senderId: userId,
+      content: 'Conversa encerrada pelo profissional de saúde.',
+      messageType: 'system',
+    });
     await ctx.db.insert('auditLog', {
       conversationId: args.id,
       professionalId: userId,
@@ -306,11 +313,20 @@ export const escalate = mutation({
     if (!userId) throw new Error('Not authenticated');
     await requireProfessional(ctx, userId);
     if (!args.notes.trim()) throw new Error('Notas obrigatórias');
+    const now = Date.now();
     await ctx.db.patch(args.id, {
       status: 'escalated',
       priority: 'urgent',
       escalationLevel: args.level,
       escalationNotes: args.notes,
+      lastMessageAt: now,
+    });
+    await ctx.db.insert('messages', {
+      conversationId: args.id,
+      senderId: userId,
+      content:
+        'A tua conversa foi escalada e tem agora prioridade urgente. Em breve receberás resposta.',
+      messageType: 'system',
     });
     await ctx.db.insert('auditLog', {
       conversationId: args.id,
