@@ -9,7 +9,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { Icon } from '@/components/ui/Icon';
+import { RISK_LABELS } from '@/constants/conversation';
 import { colors, spacing, typography, radius } from '@/constants/theme';
+import { relativeTime } from '@/lib/format';
 
 type Props = {
   conversationId: string;
@@ -17,11 +20,24 @@ type Props = {
   isProfessional?: boolean;
 };
 
-export function MessageThread({ conversationId, currentUserId, isProfessional }: Props) {
-  const messages = useQuery(api.messages.list, { conversationId: conversationId as any }) ?? [];
+const RISK_COLORS: Record<string, string> = {
+  high: '#DC2626',
+  medium: '#D97706',
+  low: '#059669',
+};
+
+export function MessageThread({
+  conversationId,
+  currentUserId,
+  isProfessional,
+}: Props) {
+  const messages =
+    useQuery(api.messages.list, { conversationId: conversationId as any }) ??
+    [];
   const sendMessage = useMutation(api.messages.send);
   const [text, setText] = useState('');
   const [isInternal, setIsInternal] = useState(false);
+  const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -32,15 +48,21 @@ export function MessageThread({ conversationId, currentUserId, isProfessional }:
   }));
 
   async function handleSend() {
-    if (!text.trim()) return;
-    await sendMessage({
-      conversationId: conversationId as any,
-      content: text.trim(),
-      messageType: 'text',
-      isInternal: isProfessional && isInternal ? true : undefined,
-    });
-    setText('');
-    listRef.current?.scrollToEnd();
+    const value = text.trim();
+    if (!value || sending) return;
+    setSending(true);
+    try {
+      await sendMessage({
+        conversationId: conversationId as any,
+        content: value,
+        messageType: 'text',
+        isInternal: isProfessional && isInternal ? true : undefined,
+      });
+      setText('');
+      listRef.current?.scrollToEnd();
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -56,13 +78,59 @@ export function MessageThread({ conversationId, currentUserId, isProfessional }:
         contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
         contentInsetAdjustmentBehavior="automatic"
         onContentSizeChange={() => listRef.current?.scrollToEnd()}
+        ListEmptyComponent={
+          <View
+            style={{
+              padding: spacing.xl,
+              alignItems: 'center',
+              gap: spacing.sm,
+            }}
+          >
+            <Icon
+              name={{
+                sf: 'bubble.left.and.bubble.right',
+                ion: 'chatbubbles-outline',
+              }}
+              size={32}
+              color={colors.text.tertiary}
+            />
+            <Text
+              style={{
+                ...typography.sm,
+                color: colors.text.secondary,
+                textAlign: 'center',
+              }}
+            >
+              {isProfessional
+                ? 'Sem mensagens nesta conversa.'
+                : 'Escreve a primeira mensagem para o profissional.'}
+            </Text>
+          </View>
+        }
         renderItem={({ item }) => {
+          if (item.messageType === 'triage-response' && item.metadata?.triageData) {
+            return <TriageMessage data={item.metadata.triageData} />;
+          }
+          if (item.messageType === 'system') {
+            return <SystemMessage content={item.content} />;
+          }
           const isOwn = item.senderId === currentUserId;
           const isInternalMsg = item.isInternal;
           return (
-            <View style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+            <View
+              style={{
+                alignSelf: isOwn ? 'flex-end' : 'flex-start',
+                maxWidth: '80%',
+              }}
+            >
               {isInternalMsg && (
-                <Text style={{ ...typography.xs, color: colors.warning, marginBottom: 2 }}>
+                <Text
+                  style={{
+                    ...typography.xs,
+                    color: colors.warning,
+                    marginBottom: 2,
+                  }}
+                >
                   Nota interna
                 </Text>
               )}
@@ -80,12 +148,25 @@ export function MessageThread({ conversationId, currentUserId, isProfessional }:
                 }}
               >
                 <Text
-                  style={{ ...typography.base, color: isOwn ? '#fff' : colors.text.primary }}
+                  style={{
+                    ...typography.base,
+                    color: isOwn ? '#fff' : colors.text.primary,
+                  }}
                   selectable
                 >
                   {item.content}
                 </Text>
               </View>
+              <Text
+                style={{
+                  ...typography.xs,
+                  color: colors.text.tertiary,
+                  marginTop: 2,
+                  textAlign: isOwn ? 'right' : 'left',
+                }}
+              >
+                {relativeTime(item._creationTime)}
+              </Text>
             </View>
           );
         }}
@@ -107,7 +188,12 @@ export function MessageThread({ conversationId, currentUserId, isProfessional }:
         {isProfessional && (
           <Pressable
             onPress={() => setIsInternal((v) => !v)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.xs,
+            }}
+            hitSlop={4}
           >
             <View
               style={{
@@ -123,35 +209,57 @@ export function MessageThread({ conversationId, currentUserId, isProfessional }:
             >
               {isInternal && <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>}
             </View>
-            <Text style={{ ...typography.sm, color: colors.text.secondary }}>
+            <Text
+              style={{
+                ...typography.sm,
+                color: isInternal ? colors.warning : colors.text.secondary,
+                fontWeight: isInternal ? '600' : '400',
+              }}
+            >
               Nota interna (não visível pela utente)
             </Text>
           </Pressable>
         )}
 
-        <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: spacing.sm,
+            alignItems: 'flex-end',
+          }}
+        >
           <TextInput
             value={text}
             onChangeText={setText}
-            placeholder="Escreve uma mensagem..."
+            placeholder={
+              isInternal
+                ? 'Escreve uma nota interna...'
+                : 'Escreve uma mensagem...'
+            }
+            placeholderTextColor={colors.text.tertiary as any}
             multiline
             style={{
               flex: 1,
               borderWidth: 1,
               borderColor: isInternal ? colors.warning : colors.border,
               borderRadius: radius.lg,
-              padding: spacing.md,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm,
               ...typography.base,
               color: colors.text.primary,
               maxHeight: 120,
-              backgroundColor: isInternal ? colors.warningLight : colors.background.primary,
+              minHeight: 44,
+              backgroundColor: isInternal
+                ? colors.warningLight
+                : colors.background.primary,
             }}
           />
           <Pressable
             onPress={handleSend}
-            disabled={!text.trim()}
+            disabled={!text.trim() || sending}
             style={{
-              backgroundColor: text.trim() ? colors.primary : colors.border,
+              backgroundColor:
+                text.trim() && !sending ? colors.primary : colors.border,
               borderRadius: radius.full,
               width: 44,
               height: 44,
@@ -159,10 +267,88 @@ export function MessageThread({ conversationId, currentUserId, isProfessional }:
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: '#fff', fontSize: 18 }}>↑</Text>
+            <Icon
+              name={{ sf: 'arrow.up', ion: 'arrow-up' }}
+              size={18}
+              color="#fff"
+            />
           </Pressable>
         </View>
       </Animated.View>
     </KeyboardAvoidingView>
+  );
+}
+
+function TriageMessage({
+  data,
+}: {
+  data: { topic: string; responses: Record<string, unknown>; riskLevel: string };
+}) {
+  const color = RISK_COLORS[data.riskLevel] ?? colors.text.secondary;
+  return (
+    <View
+      style={{
+        backgroundColor: colors.background.tertiary,
+        borderRadius: radius.md,
+        padding: spacing.md,
+        gap: spacing.xs,
+        borderWidth: 1,
+        borderColor: colors.border,
+      }}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+        }}
+      >
+        <Icon
+          name={{ sf: 'doc.text.fill', ion: 'document-text' }}
+          size={14}
+          color={colors.text.secondary}
+        />
+        <Text
+          style={{
+            ...typography.xs,
+            fontWeight: '700',
+            color: colors.text.secondary,
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+            flex: 1,
+          }}
+        >
+          Triagem concluída
+        </Text>
+        <Text
+          style={{
+            ...typography.xs,
+            fontWeight: '700',
+            color,
+          }}
+        >
+          Risco {RISK_LABELS[data.riskLevel] ?? data.riskLevel}
+        </Text>
+      </View>
+      <Text style={{ ...typography.sm, color: colors.text.secondary }}>
+        Respostas guardadas para o profissional de saúde.
+      </Text>
+    </View>
+  );
+}
+
+function SystemMessage({ content }: { content: string }) {
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: spacing.xs }}>
+      <Text
+        style={{
+          ...typography.xs,
+          color: colors.text.tertiary,
+          textAlign: 'center',
+        }}
+      >
+        {content}
+      </Text>
+    </View>
   );
 }

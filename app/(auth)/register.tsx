@@ -17,19 +17,16 @@ export default function Register() {
   const [error, setError] = useState('');
 
   async function handleRegister() {
-    console.log('[register] handleRegister called', { email, password });
     setError('');
     if (password !== confirm) {
       setError(strings.errors.passwordMismatch);
       return;
     }
     setLoading(true);
-    console.log('[register] calling signIn...');
     try {
       await signIn('password', { email, password, flow: 'signUp' });
       router.replace('/');
-    } catch (e) {
-      console.error('[register] signIn error:', e);
+    } catch {
       setError(strings.errors.generic);
     } finally {
       setLoading(false);
