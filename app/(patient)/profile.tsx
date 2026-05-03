@@ -17,7 +17,7 @@ import { Icon } from '@/components/ui/Icon';
 import { colors, spacing, typography, radius } from '@/constants/theme';
 
 const AGE_RANGES = ['18-25', '26-35', '36-45', '46+'];
-const PREGNANCY_OPTIONS: Array<{ value: string; label: string }> = [
+const PREGNANCY_OPTIONS: { value: string; label: string }[] = [
   { value: 'not-pregnant', label: 'Não estou grávida' },
   { value: 'pregnant', label: 'Estou grávida' },
   { value: 'trying', label: 'Estou a tentar engravidar' },

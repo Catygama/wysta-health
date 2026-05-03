@@ -37,7 +37,10 @@ export default function Triage() {
   const [loading, setLoading] = useState(false);
 
   const topicInfo = TOPICS.find((t) => t.id === topic);
-  const questions = (triage?.questions ?? []) as Question[];
+  const questions = useMemo(
+    () => (triage?.questions ?? []) as Question[],
+    [triage]
+  );
   const total = questions.length;
   const current = questions[step];
   const isLast = step === total - 1;

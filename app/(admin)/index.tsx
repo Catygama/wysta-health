@@ -6,6 +6,7 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useQuery, useMutation } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
@@ -176,6 +177,40 @@ export default function AdminPanel() {
           >
             Utilizadores
           </Text>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.sm,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: radius.md,
+              paddingHorizontal: spacing.md,
+              backgroundColor: colors.background.primary,
+            }}
+          >
+            <Icon
+              name={{ sf: 'magnifyingglass', ion: 'search' }}
+              size={16}
+              color={colors.text.tertiary}
+            />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Pesquisar por email ou role..."
+              placeholderTextColor={colors.text.tertiary as any}
+              autoCapitalize="none"
+              autoCorrect={false}
+              clearButtonMode="while-editing"
+              style={{
+                flex: 1,
+                paddingVertical: spacing.sm,
+                ...typography.base,
+                color: colors.text.primary,
+              }}
+            />
+          </View>
         </View>
       }
       ListEmptyComponent={

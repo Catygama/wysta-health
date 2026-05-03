@@ -10,20 +10,20 @@ type Status = 'waiting' | 'active' | 'escalated' | 'closed';
 type Scope = 'mine' | 'unassigned' | 'all';
 type Priority = 'urgent' | 'high' | 'medium' | 'low';
 
-const STATUS_FILTERS: Array<{ label: string; value: Status | undefined }> = [
+const STATUS_FILTERS: { label: string; value: Status | undefined }[] = [
   { label: 'Todas', value: undefined },
   { label: 'A aguardar', value: 'waiting' },
   { label: 'Em curso', value: 'active' },
   { label: 'Escaladas', value: 'escalated' },
 ];
 
-const SCOPE_FILTERS: Array<{ label: string; value: Scope }> = [
+const SCOPE_FILTERS: { label: string; value: Scope }[] = [
   { label: 'Minhas', value: 'mine' },
   { label: 'Não atribuídas', value: 'unassigned' },
   { label: 'Todas', value: 'all' },
 ];
 
-const PRIORITY_FILTERS: Array<{ label: string; value: Priority; color: string }> = [
+const PRIORITY_FILTERS: { label: string; value: Priority; color: string }[] = [
   { label: 'Urgente', value: 'urgent', color: '#DC2626' },
   { label: 'Alta', value: 'high', color: '#EA580C' },
   { label: 'Média', value: 'medium', color: '#D97706' },
