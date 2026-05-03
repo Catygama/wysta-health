@@ -1,13 +1,20 @@
 import type { IconName } from '@/components/ui/Icon';
 
-export type TopicId = 'contraception' | 'pregnancy' | 'sti' | 'menstrual-cycle';
+export type TopicId =
+  | 'contraception'
+  | 'pregnancy'
+  | 'sti'
+  | 'menstrual-cycle'
+  | 'general';
 
-export const TOPICS: Array<{
+export type Topic = {
   id: TopicId;
   label: string;
   icon: IconName;
   description: string;
-}> = [
+};
+
+export const TOPICS: Topic[] = [
   {
     id: 'contraception',
     label: 'Contraceção',
@@ -32,4 +39,19 @@ export const TOPICS: Array<{
     icon: { sf: 'calendar', ion: 'calendar' },
     description: 'Irregularidades, dor e alterações',
   },
+  {
+    id: 'general',
+    label: 'Saúde Geral',
+    icon: { sf: 'heart.text.square.fill', ion: 'heart' },
+    description: 'Outras questões de saúde',
+  },
 ];
+
+export const TOPIC_BY_ID: Record<TopicId, Topic> = TOPICS.reduce(
+  (acc, t) => ({ ...acc, [t.id]: t }),
+  {} as Record<TopicId, Topic>
+);
+
+export function topicLabel(id: string): string {
+  return TOPIC_BY_ID[id as TopicId]?.label ?? id;
+}

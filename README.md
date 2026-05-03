@@ -1,84 +1,85 @@
-# Starter Template with Convex
+# Wysta
 
-This is a minimal starter template using [Convex](https://docs.convex.dev/quickstart/react-native).
+Plataforma digital de saúde sexual e reprodutiva feminina, em português. Comunicação assíncrona (chat por tópicos) entre utentes e profissionais de saúde. Sem videochamadas. Privacidade primeiro, RGPD.
 
-## Launch your own
+- **Web app**: https://app.wysta.health
+- **Landing**: https://wysta.health
 
-[![Launch with Expo](https://github.com/expo/examples/blob/master/.gh-assets/launch.svg?raw=true)](https://launch.expo.dev/?github=https://github.com/expo/examples/tree/master/with-convex)
+## Stack
 
-It includes the following a simple list of products that update in real-time. It works on Android, iOS and Web.
+| Camada | Tecnologia |
+|--------|-----------|
+| Frontend (iOS, Android, Web) | Expo SDK 55 + Expo Router 55 |
+| Backend / DB / Realtime / Storage | Convex |
+| Auth | `@convex-dev/auth` (email/password) |
+| Hosting | Cloudflare Pages (web + landing) |
+| Package manager | bun |
 
-## Getting Started
+## Estrutura
 
-1. Create a new project using this template:
+```
+app/                # Expo Router — grupos (auth) / (patient) / (professional) / (admin)
+convex/             # Schema + funções backend (queries, mutations, http)
+components/ui/      # Button, Input, Icon
+contexts/           # TabBarContext
+hooks/              # useCurrentUser
+lib/                # storage.ts (+.web.ts) — SecureStore / localStorage
+constants/          # theme, topics, strings
+screens/            # Componentes de ecrã partilhados
+marketing/          # Landing estática (wysta.health)
+docs/               # ENGINEERING.md, TASKS.md, plans/
+```
 
-   ```sh
-   npx create-expo-app --example with-convex
-   yarn create expo-app --example with-convex
-   pnpm create expo-app --example with-convex
-   bun create expo-app --example with-convex
-   ```
+Routing usa layouts separados por plataforma:
+- `_layout.tsx` → `NativeTabs` (`expo-router/unstable-native-tabs`) em iOS/Android
+- `_layout.web.tsx` → `Tabs` standard com Ionicons em web
 
-## Running the app
+## Setup
 
-- Install the dependencies:
+Pré-requisitos: [bun](https://bun.sh), Xcode (iOS), Android Studio (Android).
 
-  ```sh
-  npx expo install
-  ```
+```sh
+bun install
+bunx convex dev    # inicia deployment dev e gera .env.local + convex/_generated
+bun run start      # Expo dev server (i = iOS, a = Android, w = web)
+```
 
-- Set up a [Convex dev deployment](https://docs.convex.dev/quickstart/react-native):
+`convex dev` deve continuar a correr em paralelo durante o desenvolvimento para sincronizar o schema/funções.
 
-  ```sh
-  npx convex dev
-  ```
+## Scripts
 
-  This will prompt you to log in with GitHub, create a project, and save your production and deployment URLs.
+| Comando | Efeito |
+|---------|--------|
+| `bun run start` | Expo dev server |
+| `bun run ios` / `android` / `web` | Lançar plataforma específica |
+| `bun run lint` | ESLint (config Expo) |
+| `bun run build:web` | `expo export -p web` → `dist/` |
+| `bun run build:cf` | `convex deploy --cmd 'bun run build:web'` (usado pelo CI da CF Pages) |
 
-  It will also create a `.env.local` file with neccessary env variables and a `convex/` folder for you to write your backend API functions in. The dev command will then continue running to sync your functions with your dev deployment in the cloud.
+## Deploy
 
-- Add sample products to your database
+Dois projetos separados na **Cloudflare Pages**, ambos ligados a este repositório:
 
-  ```sh
-  npx convex import --table products sampleData.jsonl
-  ```
+**App** (`app.wysta.health`)
+- Build command: `bun run build:cf`
+- Output: `dist/`
+- Env vars: `CONVEX_DEPLOY_KEY`, `NODE_VERSION=20`
+- SPA fallback: auto-detectado pela CF Pages (sem `404.html` em `dist/`)
 
-- Add convex queries
+**Landing** (`wysta.health`, `www.wysta.health`)
+- Build command: `exit 0`
+- Output: `marketing/`
 
-  Create a new file named `products.ts` in the generated `convex/` folder and paste the following code:
+A CF Pages dispara em cada push para `main`. O `--cmd` do `convex deploy` garante que o backend é publicado **antes** do upload do bundle web, evitando incompatibilidades de schema em produção.
 
-  ```ts
-  import { query, mutation } from "./_generated/server";
-  import { v } from "convex/values";
+## Domínios e localização
 
-  export const getProducts = query({
-    args: {},
-    handler: async (ctx) => {
-      return await ctx.db.query("products").collect();
-    },
-  });
+- Backend Convex prod em **EU-west-1** (`loyal-dolphin-681.eu-west-1.convex.cloud`) por requisitos RGPD
+- UI strings em PT-PT; código e comentários em inglês
 
-  export const purchase = mutation({
-    args: { id: v.id("products") },
-    handler: async (ctx, args) => {
-      const product = await ctx.db.get(args.id);
-      if (!product || product.quantity <= 0) return;
-      await ctx.db.patch(args.id, { quantity: product.quantity - 1 });
-    },
-  });
-  ```
+## Documentação
 
-  Feel free to add more queries and mutations. Learn more about [queries with Convex](https://docs.convex.dev/functions/query-functions)
-
-- Start the development server:
-
-  ```sh
-  npx expo start
-  ```
-
-- In the terminal running the development server, press `i` to open the iOS simulator, `a` to open the Android device or emulator, or `w` to open the web browser.
-
-## Resources
-
-- [Convex React Native documentation](https://docs.convex.dev/quickstart/react-native)
-- [Expo documentation](https://docs.expo.dev/)
+- `CLAUDE.md` — contexto rápido para o assistente
+- `docs/ENGINEERING.md` — schema, decisões de arquitetura
+- `docs/TASKS.md` — roadmap e estado das fases
+- `contexto-plataforma.md` — visão de produto

@@ -5,15 +5,17 @@ import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
 import { colors, spacing, typography, radius } from '@/constants/theme';
 
-const FILTERS = [
+const FILTERS: Array<{ label: string; value: StatusFilter }> = [
   { label: 'Todas', value: undefined },
   { label: 'A aguardar', value: 'waiting' },
   { label: 'Em curso', value: 'active' },
   { label: 'Escaladas', value: 'escalated' },
 ];
 
+type StatusFilter = 'waiting' | 'active' | 'escalated' | 'closed' | undefined;
+
 export default function Queue() {
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(undefined);
   const conversations =
     useQuery(api.conversations.listForProfessional, { status: statusFilter }) ?? [];
 

@@ -28,14 +28,14 @@ export default function Triage() {
     );
   }
 
-  async function createConversationAndNavigate() {
+  async function createConversationAndNavigate(includeTriage: boolean) {
     if (!topic) return;
     setLoading(true);
     try {
       const id = await createConversation({
         topic,
         title: `${topicInfo?.label} — nova conversa`,
-        priority: 'low',
+        triageData: includeTriage ? { responses: answers } : undefined,
       });
       router.replace({
         pathname: '/(patient)/conversations/[id]',
@@ -51,7 +51,7 @@ export default function Triage() {
       setShowUrgency(true);
       return;
     }
-    await createConversationAndNavigate();
+    await createConversationAndNavigate(true);
   }
 
   if (!topic) return null;
@@ -71,7 +71,7 @@ export default function Triage() {
         <Text style={{ ...typography.lg, fontWeight: '600', color: colors.text.primary }}>
           {topicInfo?.label}
         </Text>
-        <Button label="Iniciar conversa" onPress={createConversationAndNavigate} loading={loading} />
+        <Button label="Iniciar conversa" onPress={() => createConversationAndNavigate(false)} loading={loading} />
       </View>
     );
   }

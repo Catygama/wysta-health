@@ -12,7 +12,7 @@ export default function PatientLayoutWeb() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.text.secondary,
+        tabBarInactiveTintColor: colors.text.secondary as string,
         headerShown: false,
       }}
     >

@@ -2,6 +2,40 @@ import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 import { authTables } from '@convex-dev/auth/server';
 
+const topic = v.union(
+  v.literal('contraception'),
+  v.literal('pregnancy'),
+  v.literal('sti'),
+  v.literal('menstrual-cycle'),
+  v.literal('general')
+);
+
+const priority = v.union(
+  v.literal('low'),
+  v.literal('medium'),
+  v.literal('high'),
+  v.literal('urgent')
+);
+
+const status = v.union(
+  v.literal('waiting'),
+  v.literal('active'),
+  v.literal('escalated'),
+  v.literal('closed')
+);
+
+const escalationLevel = v.union(
+  v.literal('routine'),
+  v.literal('urgent'),
+  v.literal('same-day'),
+  v.literal('emergency')
+);
+
+const riskBucket = v.object({
+  criteria: v.array(v.string()),
+  guidance: v.string(),
+});
+
 export default defineSchema({
   ...authTables,
 
@@ -12,34 +46,24 @@ export default defineSchema({
       v.literal('professional'),
       v.literal('admin')
     ),
+    displayName: v.optional(v.string()),
     ageRange: v.optional(v.string()),
+    location: v.optional(v.string()),
     pregnancyStatus: v.optional(v.string()),
     conditions: v.optional(v.array(v.string())),
+    medications: v.optional(v.array(v.string())),
   }).index('by_user', ['userId']),
 
   conversations: defineTable({
     patientId: v.id('users'),
     professionalId: v.optional(v.id('users')),
-    topic: v.union(
-      v.literal('contraception'),
-      v.literal('pregnancy'),
-      v.literal('sti'),
-      v.literal('menstrual-cycle')
-    ),
-    priority: v.union(
-      v.literal('low'),
-      v.literal('medium'),
-      v.literal('high'),
-      v.literal('urgent')
-    ),
-    status: v.union(
-      v.literal('waiting'),
-      v.literal('active'),
-      v.literal('escalated'),
-      v.literal('closed')
-    ),
+    topic,
+    priority,
+    status,
     title: v.string(),
     lastMessageAt: v.number(),
+    riskLevel: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
+    escalationLevel: v.optional(escalationLevel),
     escalationNotes: v.optional(v.string()),
   })
     .index('by_patient', ['patientId'])
@@ -59,15 +83,21 @@ export default defineSchema({
     ),
     imageId: v.optional(v.id('_storage')),
     isInternal: v.optional(v.boolean()),
+    metadata: v.optional(
+      v.object({
+        triageData: v.optional(
+          v.object({
+            topic: v.string(),
+            responses: v.record(v.string(), v.any()),
+            riskLevel: v.string(),
+          })
+        ),
+      })
+    ),
   }).index('by_conversation', ['conversationId']),
 
   triageQuestions: defineTable({
-    topic: v.union(
-      v.literal('contraception'),
-      v.literal('pregnancy'),
-      v.literal('sti'),
-      v.literal('menstrual-cycle')
-    ),
+    topic,
     questions: v.array(
       v.object({
         id: v.string(),
@@ -75,6 +105,7 @@ export default defineSchema({
         type: v.union(
           v.literal('multiple-choice'),
           v.literal('yes-no'),
+          v.literal('scale'),
           v.literal('text')
         ),
         options: v.optional(v.array(v.string())),
@@ -82,19 +113,21 @@ export default defineSchema({
         required: v.boolean(),
       })
     ),
+    riskAssessment: v.optional(
+      v.object({
+        lowRisk: riskBucket,
+        mediumRisk: riskBucket,
+        highRisk: riskBucket,
+      })
+    ),
   }).index('by_topic', ['topic']),
 
   educationalContent: defineTable({
     title: v.string(),
-    topic: v.union(
-      v.literal('contraception'),
-      v.literal('pregnancy'),
-      v.literal('sti'),
-      v.literal('menstrual-cycle'),
-      v.literal('general')
-    ),
+    topic,
     content: v.string(),
     summary: v.string(),
+    whenToSeekHelp: v.optional(v.string()),
     tags: v.array(v.string()),
     isPublished: v.boolean(),
     readingTimeMinutes: v.number(),
