@@ -128,6 +128,35 @@ export function EducationScreen() {
           </Text>
         </View>
       }
+      ListFooterComponent={
+        filtered.length > 0 ? (
+          <View
+            style={{
+              backgroundColor: colors.background.secondary,
+              borderRadius: radius.md,
+              padding: spacing.md,
+              marginTop: spacing.md,
+              gap: spacing.xs,
+              flexDirection: 'row',
+            }}
+          >
+            <Icon
+              name={{ sf: 'info.circle', ion: 'information-circle' }}
+              size={18}
+              color={colors.text.secondary}
+            />
+            <Text
+              style={{
+                ...typography.xs,
+                color: colors.text.secondary,
+                flex: 1,
+              }}
+            >
+              A informação disponibilizada é educativa e não substitui aconselhamento médico. Em caso de urgência liga 112 ou contacta o SNS 24.
+            </Text>
+          </View>
+        ) : null
+      }
       renderItem={({ item }) => {
         const topic = TOPICS.find((t) => t.id === item.topic);
         return (

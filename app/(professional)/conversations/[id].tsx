@@ -24,6 +24,8 @@ import {
 } from '@/constants/conversation';
 import { useTabBar } from '@/contexts/TabBarContext';
 
+type Tab = 'chat' | 'internal' | 'summary';
+
 export default function ProfessionalConversation() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useQuery(api.users.currentUser);
@@ -39,6 +41,7 @@ export default function ProfessionalConversation() {
   const close = useMutation(api.conversations.close);
   const { setIsTabBarHidden } = useTabBar();
   const [escalateOpen, setEscalateOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>('chat');
 
   useFocusEffect(
     useCallback(() => {
@@ -64,8 +67,9 @@ export default function ProfessionalConversation() {
   const canAssign =
     conversation.status === 'waiting' || !conversation.professionalId;
   const isMine = conversation.professionalId === user._id;
-  const canClose = isMine && conversation.status !== 'closed';
-  const canEscalate = isMine && conversation.status !== 'closed';
+  const isClosed = conversation.status === 'closed';
+  const canClose = isMine && !isClosed;
+  const canEscalate = isMine && !isClosed;
 
   const statusColor =
     STATUS_COLORS[conversation.status] ?? colors.text.secondary;
@@ -131,6 +135,10 @@ export default function ProfessionalConversation() {
               color={colors.danger as any}
             />
           )}
+          <Badge
+            label={isMine ? 'Atribuída a si' : 'Não atribuída a si'}
+            color={isMine ? (colors.success as any) : colors.text.tertiary as any}
+          />
         </View>
 
         {conversation.patient && (
@@ -226,12 +234,47 @@ export default function ProfessionalConversation() {
         </View>
       </ScrollView>
 
-      <View style={{ flex: 1 }}>
-        <MessageThread
-          conversationId={id}
-          currentUserId={user._id}
-          isProfessional
+      <View
+        style={{
+          flexDirection: 'row',
+          backgroundColor: colors.background.secondary,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        }}
+      >
+        <TabButton
+          label="Chat"
+          active={tab === 'chat'}
+          onPress={() => setTab('chat')}
         />
+        <TabButton
+          label="Notas internas"
+          active={tab === 'internal'}
+          onPress={() => setTab('internal')}
+        />
+        <TabButton
+          label="Sumário"
+          active={tab === 'summary'}
+          onPress={() => setTab('summary')}
+        />
+      </View>
+
+      <View style={{ flex: 1 }}>
+        {tab === 'summary' ? (
+          <SummaryPanel
+            triage={triageMessage?.metadata?.triageData}
+            messageCount={messages?.length ?? 0}
+          />
+        ) : (
+          <MessageThread
+            conversationId={id}
+            currentUserId={user._id}
+            isProfessional
+            scope={tab === 'internal' ? 'internal' : 'chat'}
+            canSend={isMine}
+            closed={isClosed}
+          />
+        )}
       </View>
 
       <EscalateSheet
@@ -257,6 +300,101 @@ function Badge({ label, color }: { label: string; color: string }) {
         {label}
       </Text>
     </View>
+  );
+}
+
+type TabButtonProps = {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+};
+
+function TabButton({ label, active, onPress }: TabButtonProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flex: 1,
+        paddingVertical: spacing.sm,
+        alignItems: 'center',
+        borderBottomWidth: 2,
+        borderBottomColor: active ? colors.primary : 'transparent',
+      }}
+    >
+      <Text
+        style={{
+          ...typography.sm,
+          fontWeight: active ? '700' : '500',
+          color: active ? colors.primary : colors.text.secondary,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function SummaryPanel({
+  triage,
+  messageCount,
+}: {
+  triage?: { topic: string; responses: Record<string, unknown>; riskLevel: string };
+  messageCount: number;
+}) {
+  return (
+    <ScrollView
+      contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
+      contentInsetAdjustmentBehavior="automatic"
+    >
+      {triage && (
+        <TriageSummary
+          riskLevel={triage.riskLevel}
+          responses={triage.responses ?? {}}
+        />
+      )}
+      <View
+        style={{
+          backgroundColor: colors.background.secondary,
+          borderRadius: radius.md,
+          padding: spacing.md,
+          gap: spacing.xs,
+        }}
+      >
+        <Text
+          style={{
+            ...typography.sm,
+            fontWeight: '600',
+            color: colors.text.primary,
+          }}
+        >
+          Estatísticas da conversa
+        </Text>
+        <Text style={{ ...typography.sm, color: colors.text.secondary }}>
+          Mensagens: {messageCount}
+        </Text>
+      </View>
+      <View
+        style={{
+          backgroundColor: colors.primaryLight,
+          borderRadius: radius.md,
+          padding: spacing.md,
+          gap: spacing.xs,
+        }}
+      >
+        <Text
+          style={{
+            ...typography.sm,
+            fontWeight: '600',
+            color: colors.primary,
+          }}
+        >
+          Sumário automático
+        </Text>
+        <Text style={{ ...typography.sm, color: colors.text.secondary }}>
+          O sumário automático estará disponível para conversas longas (a chegar).
+        </Text>
+      </View>
+    </ScrollView>
   );
 }
 

@@ -1,12 +1,19 @@
 {
   "expo": {
-    "scheme": "myapp",
+    "scheme": "wysta",
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "A Wysta usa a galeria para anexar imagens (ex.: exames, receitas) às tuas conversas com profissionais de saúde.",
+          "cameraPermission": "A Wysta usa a câmara para anexar fotografias às tuas conversas com profissionais de saúde."
+        }
+      ]
     ],
-    "name": "wysta",
+    "name": "Wysta",
     "slug": "wysta",
     "ios": {
       "bundleIdentifier": "com.filipe.fernandes.mojo.wysta"

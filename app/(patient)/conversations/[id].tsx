@@ -26,6 +26,7 @@ export default function PatientConversation() {
   const topic = conversation
     ? TOPICS.find((t) => t.id === conversation.topic)
     : undefined;
+  const closed = conversation?.status === 'closed';
 
   return (
     <>
@@ -34,6 +35,7 @@ export default function PatientConversation() {
         conversationId={id}
         currentUserId={user._id}
         isProfessional={false}
+        closed={closed}
       />
     </>
   );

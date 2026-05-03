@@ -16,11 +16,12 @@ import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
 import { colors, spacing, typography, radius } from '@/constants/theme';
 
-const AGE_RANGES = ['18-25', '26-35', '36-45', '46+'];
+const AGE_RANGES = ['<18', '18-25', '26-35', '36-45', '46-55', '>55'];
 const PREGNANCY_OPTIONS: { value: string; label: string }[] = [
   { value: 'not-pregnant', label: 'Não estou grávida' },
   { value: 'pregnant', label: 'Estou grávida' },
   { value: 'trying', label: 'Estou a tentar engravidar' },
+  { value: 'postpartum', label: 'Pós-parto' },
   { value: 'prefer-not-to-say', label: 'Prefiro não dizer' },
 ];
 
@@ -281,6 +282,91 @@ export default function Profile() {
           )}
         </View>
       )}
+
+      <View
+        style={{
+          backgroundColor: colors.primaryLight,
+          borderRadius: radius.md,
+          padding: spacing.md,
+          gap: spacing.xs,
+          flexDirection: 'row',
+        }}
+      >
+        <Icon
+          name={{ sf: 'lock.shield.fill', ion: 'lock-closed' }}
+          size={20}
+          color={colors.primary}
+        />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text
+            style={{
+              ...typography.sm,
+              fontWeight: '700',
+              color: colors.primary,
+            }}
+          >
+            Privacidade dos dados
+          </Text>
+          <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+            A tua informação é tratada com confidencialidade. Apenas profissionais envolvidos no acompanhamento têm acesso aos dados clínicos.
+          </Text>
+        </View>
+      </View>
+
+      <View
+        style={{
+          backgroundColor: colors.background.secondary,
+          borderRadius: radius.lg,
+          padding: spacing.md,
+          gap: spacing.md,
+        }}
+      >
+        <Text
+          style={{
+            ...typography.sm,
+            fontWeight: '600',
+            color: colors.text.primary,
+          }}
+        >
+          Gestão de conta
+        </Text>
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              'Exportar dados',
+              'Em breve poderás exportar uma cópia dos teus dados. Por agora contacta o suporte.'
+            )
+          }
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+        >
+          <Icon
+            name={{ sf: 'square.and.arrow.up', ion: 'cloud-download-outline' }}
+            size={18}
+            color={colors.primary}
+          />
+          <Text style={{ ...typography.sm, color: colors.primary, fontWeight: '600' }}>
+            Exportar os meus dados
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              'Apagar conta',
+              'A eliminação de conta requer confirmação manual. Contacta o suporte para procedermos.'
+            )
+          }
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+        >
+          <Icon
+            name={{ sf: 'trash', ion: 'trash-outline' }}
+            size={18}
+            color={colors.danger}
+          />
+          <Text style={{ ...typography.sm, color: colors.danger, fontWeight: '600' }}>
+            Apagar conta
+          </Text>
+        </Pressable>
+      </View>
 
       <Button label="Terminar sessão" variant="secondary" onPress={confirmSignOut} />
     </ScrollView>
