@@ -54,6 +54,22 @@ export default function Profile() {
     setMedications(user.profile.medications ?? []);
   }, [user?.profile]);
 
+  function resetForm() {
+    setDisplayName(user?.profile?.displayName ?? '');
+    setAgeRange(user?.profile?.ageRange ?? '');
+    setPregnancyStatus(user?.profile?.pregnancyStatus ?? '');
+    setLocation(user?.profile?.location ?? '');
+    setConditions(user?.profile?.conditions ?? []);
+    setMedications(user?.profile?.medications ?? []);
+    setConditionInput('');
+    setMedicationInput('');
+  }
+
+  function cancel() {
+    resetForm();
+    setEditing(false);
+  }
+
   if (user === undefined) {
     return (
       <View
@@ -228,7 +244,7 @@ export default function Profile() {
             <Button
               label="Cancelar"
               variant="secondary"
-              onPress={() => setEditing(false)}
+              onPress={cancel}
             />
           </View>
         </View>
