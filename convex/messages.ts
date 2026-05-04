@@ -34,6 +34,9 @@ export const list = query({
       filtered.map(async (m) => ({
         ...m,
         imageUrl: m.imageId ? await ctx.storage.getUrl(m.imageId) : null,
+        attachmentUrl: m.attachmentId
+          ? await ctx.storage.getUrl(m.attachmentId)
+          : null,
       }))
     );
   },
@@ -47,11 +50,16 @@ export const send = mutation({
       v.union(
         v.literal('text'),
         v.literal('image'),
+        v.literal('file'),
         v.literal('system'),
         v.literal('triage-response')
       )
     ),
     imageId: v.optional(v.id('_storage')),
+    attachmentId: v.optional(v.id('_storage')),
+    attachmentName: v.optional(v.string()),
+    attachmentMimeType: v.optional(v.string()),
+    attachmentSize: v.optional(v.number()),
     isInternal: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -63,6 +71,10 @@ export const send = mutation({
       content: args.content,
       messageType: args.messageType ?? 'text',
       imageId: args.imageId,
+      attachmentId: args.attachmentId,
+      attachmentName: args.attachmentName,
+      attachmentMimeType: args.attachmentMimeType,
+      attachmentSize: args.attachmentSize,
       isInternal: args.isInternal,
     });
     await ctx.db.patch(args.conversationId, {
@@ -87,7 +99,9 @@ export const send = mutation({
     const preview =
       args.messageType === 'image'
         ? 'Enviou uma imagem'
-        : args.content.slice(0, 200);
+        : args.messageType === 'file'
+          ? `Enviou um documento${args.attachmentName ? `: ${args.attachmentName}` : ''}`
+          : args.content.slice(0, 200);
 
     await ctx.scheduler.runAfter(0, internal.notifications.sendToUser, {
       userId: conv.patientId,

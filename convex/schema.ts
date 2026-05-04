@@ -103,10 +103,15 @@ export default defineSchema({
     messageType: v.union(
       v.literal('text'),
       v.literal('image'),
+      v.literal('file'),
       v.literal('system'),
       v.literal('triage-response')
     ),
     imageId: v.optional(v.id('_storage')),
+    attachmentId: v.optional(v.id('_storage')),
+    attachmentName: v.optional(v.string()),
+    attachmentMimeType: v.optional(v.string()),
+    attachmentSize: v.optional(v.number()),
     isInternal: v.optional(v.boolean()),
     metadata: v.optional(
       v.object({

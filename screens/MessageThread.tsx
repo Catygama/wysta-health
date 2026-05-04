@@ -7,6 +7,7 @@ import {
   Pressable,
   Image,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import {
   KeyboardAvoidingView,
@@ -21,7 +22,20 @@ import { Icon } from '@/components/ui/Icon';
 import { RISK_LABELS } from '@/constants/conversation';
 import { colors, spacing, typography, radius } from '@/constants/theme';
 import { relativeTime } from '@/lib/format';
-import { pickImage, uploadImage, type PickedImage } from '@/lib/upload';
+import {
+  pickImage,
+  pickDocument,
+  uploadFile,
+  type PickedImage,
+  type PickedFile,
+} from '@/lib/upload';
+
+function formatBytes(bytes?: number): string | null {
+  if (!bytes || bytes <= 0) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 type Props = {
   conversationId: string;
@@ -55,6 +69,9 @@ export function MessageThread({
   const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
   const [text, setText] = useState('');
   const [pendingImage, setPendingImage] = useState<PickedImage | null>(null);
+  const [pendingDocument, setPendingDocument] = useState<PickedFile | null>(
+    null
+  );
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -79,34 +96,71 @@ export function MessageThread({
     setError('');
     try {
       const picked = await pickImage();
-      if (picked) setPendingImage(picked);
+      if (picked) {
+        setPendingImage(picked);
+        setPendingDocument(null);
+      }
     } catch (e: any) {
       setError(e?.message ?? 'Não foi possível abrir a galeria.');
     }
   }
 
+  async function handlePickDocument() {
+    setError('');
+    try {
+      const picked = await pickDocument();
+      if (picked) {
+        setPendingDocument(picked);
+        setPendingImage(null);
+      }
+    } catch (e: any) {
+      setError(e?.message ?? 'Não foi possível abrir o seletor de ficheiros.');
+    }
+  }
+
   async function handleSend() {
     const value = text.trim();
-    if ((!value && !pendingImage) || sending) return;
+    if ((!value && !pendingImage && !pendingDocument) || sending) return;
     setError('');
     setSending(true);
     try {
       let imageId: string | undefined;
+      let attachmentId: string | undefined;
       if (pendingImage) {
         setUploading(true);
         const url = await generateUploadUrl();
-        imageId = await uploadImage(url, pendingImage);
+        imageId = await uploadFile(url, pendingImage);
+        setUploading(false);
+      } else if (pendingDocument) {
+        setUploading(true);
+        const url = await generateUploadUrl();
+        attachmentId = await uploadFile(url, pendingDocument);
         setUploading(false);
       }
+      const messageType = pendingImage
+        ? 'image'
+        : pendingDocument
+          ? 'file'
+          : 'text';
+      const fallbackContent = pendingImage
+        ? 'Imagem partilhada'
+        : pendingDocument
+          ? pendingDocument.fileName ?? 'Documento partilhado'
+          : '';
       await sendMessage({
         conversationId: conversationId as any,
-        content: value || (pendingImage ? 'Imagem partilhada' : ''),
-        messageType: pendingImage ? 'image' : 'text',
+        content: value || fallbackContent,
+        messageType,
         imageId: imageId as any,
+        attachmentId: attachmentId as any,
+        attachmentName: pendingDocument?.fileName,
+        attachmentMimeType: pendingDocument?.mimeType,
+        attachmentSize: pendingDocument?.size,
         isInternal: isInternalScope ? true : undefined,
       });
       setText('');
       setPendingImage(null);
+      setPendingDocument(null);
       listRef.current?.scrollToEnd();
     } catch (e: any) {
       setError(e?.message ?? 'Erro a enviar mensagem.');
@@ -180,6 +234,13 @@ export function MessageThread({
           const isOwn = item.senderId === currentUserId;
           const isInternalMsg = item.isInternal;
           const hasImage = item.messageType === 'image' && item.imageUrl;
+          const hasFile = item.messageType === 'file' && item.attachmentUrl;
+          const fileLabel = item.attachmentName ?? item.content;
+          const fileMeta = formatBytes(item.attachmentSize ?? undefined);
+          const isContentJustFallback =
+            item.content === 'Imagem partilhada' ||
+            (item.messageType === 'file' &&
+              item.content === item.attachmentName);
           return (
             <View
               style={{
@@ -225,7 +286,65 @@ export function MessageThread({
                     resizeMode="cover"
                   />
                 )}
-                {item.content && item.content !== 'Imagem partilhada' && (
+                {hasFile && (
+                  <Pressable
+                    onPress={() =>
+                      Linking.openURL(item.attachmentUrl as string)
+                    }
+                    style={({ pressed }) => ({
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: spacing.sm,
+                      paddingVertical: spacing.xs,
+                      opacity: pressed ? 0.7 : 1,
+                    })}
+                    accessibilityLabel={`Abrir ${fileLabel}`}
+                  >
+                    <View
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: radius.sm,
+                        backgroundColor: isOwn
+                          ? 'rgba(255,255,255,0.2)'
+                          : colors.background.primary,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Icon
+                        name={{ sf: 'doc', ion: 'document-outline' }}
+                        size={18}
+                        color={isOwn ? '#fff' : colors.text.secondary}
+                      />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 140 }}>
+                      <Text
+                        style={{
+                          ...typography.sm,
+                          fontWeight: '600',
+                          color: isOwn ? '#fff' : colors.text.primary,
+                        }}
+                        numberOfLines={2}
+                      >
+                        {fileLabel}
+                      </Text>
+                      {fileMeta && (
+                        <Text
+                          style={{
+                            ...typography.xs,
+                            color: isOwn
+                              ? 'rgba(255,255,255,0.85)'
+                              : colors.text.secondary,
+                          }}
+                        >
+                          {fileMeta}
+                        </Text>
+                      )}
+                    </View>
+                  </Pressable>
+                )}
+                {item.content && !isContentJustFallback && (
                   <Text
                     style={{
                       ...typography.base,
@@ -384,6 +503,67 @@ export function MessageThread({
             </View>
           )}
 
+          {pendingDocument && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.sm,
+                padding: spacing.sm,
+                borderRadius: radius.md,
+                backgroundColor: colors.primaryLight,
+              }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: radius.sm,
+                  backgroundColor: colors.background.primary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon
+                  name={{ sf: 'doc', ion: 'document-outline' }}
+                  size={20}
+                  color={colors.text.secondary}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    ...typography.sm,
+                    fontWeight: '600',
+                    color: colors.text.primary,
+                  }}
+                  numberOfLines={1}
+                >
+                  {pendingDocument.fileName ?? 'Documento selecionado'}
+                </Text>
+                <Text
+                  style={{ ...typography.xs, color: colors.text.secondary }}
+                >
+                  {uploading
+                    ? 'A enviar...'
+                    : (formatBytes(pendingDocument.size) ??
+                      'Pronto a enviar')}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setPendingDocument(null)}
+                hitSlop={8}
+                disabled={uploading}
+              >
+                <Icon
+                  name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }}
+                  size={22}
+                  color={colors.text.tertiary}
+                />
+              </Pressable>
+            </View>
+          )}
+
           {error ? (
             <Text style={{ ...typography.xs, color: colors.danger }}>
               {error}
@@ -398,30 +578,56 @@ export function MessageThread({
             }}
           >
             {scope !== 'internal' && (
-              <Pressable
-                onPress={handlePickImage}
-                disabled={uploading || sending}
-                style={({ pressed }) => ({
-                  width: 44,
-                  height: 44,
-                  borderRadius: radius.full,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: pressed
-                    ? colors.background.tertiary
-                    : colors.background.primary,
-                  opacity: uploading || sending ? 0.5 : 1,
-                })}
-                accessibilityLabel="Anexar imagem"
-              >
-                <Icon
-                  name={{ sf: 'paperclip', ion: 'attach' }}
-                  size={20}
-                  color={colors.text.secondary}
-                />
-              </Pressable>
+              <>
+                <Pressable
+                  onPress={handlePickImage}
+                  disabled={uploading || sending}
+                  style={({ pressed }) => ({
+                    width: 44,
+                    height: 44,
+                    borderRadius: radius.full,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: pressed
+                      ? colors.background.tertiary
+                      : colors.background.primary,
+                    opacity: uploading || sending ? 0.5 : 1,
+                  })}
+                  accessibilityLabel="Anexar imagem"
+                >
+                  <Icon
+                    name={{ sf: 'photo', ion: 'image-outline' }}
+                    size={20}
+                    color={colors.text.secondary}
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={handlePickDocument}
+                  disabled={uploading || sending}
+                  style={({ pressed }) => ({
+                    width: 44,
+                    height: 44,
+                    borderRadius: radius.full,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: pressed
+                      ? colors.background.tertiary
+                      : colors.background.primary,
+                    opacity: uploading || sending ? 0.5 : 1,
+                  })}
+                  accessibilityLabel="Anexar documento"
+                >
+                  <Icon
+                    name={{ sf: 'paperclip', ion: 'attach' }}
+                    size={20}
+                    color={colors.text.secondary}
+                  />
+                </Pressable>
+              </>
             )}
 
             <TextInput
@@ -451,10 +657,12 @@ export function MessageThread({
             />
             <Pressable
               onPress={handleSend}
-              disabled={(!text.trim() && !pendingImage) || sending}
+              disabled={
+                (!text.trim() && !pendingImage && !pendingDocument) || sending
+              }
               style={{
                 backgroundColor:
-                  (text.trim() || pendingImage) && !sending
+                  (text.trim() || pendingImage || pendingDocument) && !sending
                     ? accentColor
                     : colors.border,
                 borderRadius: radius.full,
