@@ -7,7 +7,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "build:web": "expo export -p web",
+    "build:web": "expo export -p web && cp dist/index.html dist/404.html",
     "build:cf": "convex deploy --cmd 'bun run build:web'",
     "reset-project": "node ./scripts/reset-project.js",
     "lint": "expo lint",
