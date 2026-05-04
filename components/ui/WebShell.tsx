@@ -1,5 +1,10 @@
 import { type ReactNode } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  useWindowDimensions,
+} from 'react-native';
 import { Slot, useRouter, usePathname } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Icon, type IconName } from '@/components/ui/Icon';
@@ -19,7 +24,12 @@ type Props = {
   maxWidth?: number;
 };
 
+const MOBILE_BREAKPOINT = 640;
+
 export function WebShell({ items, brandHref = '/', maxWidth = 1040 }: Props) {
+  const { width } = useWindowDimensions();
+  const isMobile = width < MOBILE_BREAKPOINT;
+
   return (
     <View
       style={
@@ -30,10 +40,18 @@ export function WebShell({ items, brandHref = '/', maxWidth = 1040 }: Props) {
         } as any
       }
     >
-      <Header items={items} brandHref={brandHref} maxWidth={maxWidth} />
-      <ContentContainer maxWidth={maxWidth}>
+      {isMobile ? (
+        <MobileBrandBar brandHref={brandHref} />
+      ) : (
+        <Header items={items} brandHref={brandHref} maxWidth={maxWidth} />
+      )}
+      <ContentContainer
+        maxWidth={isMobile ? Number.POSITIVE_INFINITY : maxWidth}
+        bottomInset={isMobile ? 64 : 0}
+      >
         <Slot />
       </ContentContainer>
+      {isMobile && <BottomNav items={items} />}
     </View>
   );
 }
@@ -80,30 +98,7 @@ function Header({
           }}
           accessibilityLabel="Wysta"
         >
-          <View
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              backgroundColor: colors.primary,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
-              W
-            </Text>
-          </View>
-          <Text
-            style={{
-              ...typography.lg,
-              fontWeight: '700',
-              color: colors.text.primary,
-              letterSpacing: -0.3,
-            }}
-          >
-            Wysta
-          </Text>
+          <Brand />
         </Pressable>
 
         <View
@@ -120,7 +115,7 @@ function Header({
               ? item.match(pathname)
               : isActive(pathname, item.href);
             return (
-              <NavLink
+              <NavPill
                 key={item.href}
                 label={item.label}
                 icon={item.icon}
@@ -167,7 +162,87 @@ function Header({
   );
 }
 
-function NavLink({
+function MobileBrandBar({ brandHref }: { brandHref: string }) {
+  const router = useRouter();
+  return (
+    <View
+      style={{
+        backgroundColor: colors.background.primary,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+      }}
+    >
+      <Pressable
+        onPress={() => router.push(brandHref as any)}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+        }}
+        accessibilityLabel="Wysta"
+      >
+        <Brand />
+      </Pressable>
+    </View>
+  );
+}
+
+function BottomNav({ items }: { items: NavItem[] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        backgroundColor: colors.background.primary,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        paddingBottom: 4,
+      }}
+    >
+      {items.map((item) => {
+        const active = item.match
+          ? item.match(pathname)
+          : isActive(pathname, item.href);
+        return (
+          <Pressable
+            key={item.href}
+            onPress={() => router.push(item.href as any)}
+            style={{
+              flex: 1,
+              paddingVertical: spacing.sm,
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+            }}
+            accessibilityLabel={item.label}
+          >
+            {item.icon && (
+              <Icon
+                name={item.icon}
+                size={22}
+                color={active ? colors.primary : colors.text.secondary}
+              />
+            )}
+            <Text
+              style={{
+                ...typography.xs,
+                fontWeight: active ? '600' : '500',
+                color: active ? colors.primary : colors.text.secondary,
+              }}
+            >
+              {item.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+function NavPill({
   label,
   icon,
   active,
@@ -215,12 +290,43 @@ function NavLink({
   );
 }
 
+function Brand() {
+  return (
+    <>
+      <View
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 6,
+          backgroundColor: colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>W</Text>
+      </View>
+      <Text
+        style={{
+          ...typography.lg,
+          fontWeight: '700',
+          color: colors.text.primary,
+          letterSpacing: -0.3,
+        }}
+      >
+        Wysta
+      </Text>
+    </>
+  );
+}
+
 function ContentContainer({
   children,
   maxWidth,
+  bottomInset,
 }: {
   children: ReactNode;
   maxWidth: number;
+  bottomInset: number;
 }) {
   return (
     <View
@@ -234,8 +340,9 @@ function ContentContainer({
         style={{
           flex: 1,
           width: '100%',
-          maxWidth,
+          maxWidth: Number.isFinite(maxWidth) ? maxWidth : undefined,
           backgroundColor: colors.background.primary,
+          paddingBottom: bottomInset,
         }}
       >
         {children}

@@ -1,23 +1,30 @@
 import { Slot } from 'expo-router';
-import { View, Text } from 'react-native';
+import { View, Text, useWindowDimensions } from 'react-native';
 import { colors, spacing, typography } from '@/constants/theme';
 
+const MOBILE_BREAKPOINT = 640;
+
 export default function AuthLayoutWeb() {
+  const { width } = useWindowDimensions();
+  const isMobile = width < MOBILE_BREAKPOINT;
+
   return (
     <View
       style={
         {
           flex: 1,
-          backgroundColor: colors.background.secondary,
+          backgroundColor: isMobile
+            ? colors.background.primary
+            : colors.background.secondary,
           minHeight: '100vh',
         } as any
       }
     >
       <View
         style={{
-          paddingTop: spacing.xl,
+          paddingTop: isMobile ? spacing.lg : spacing.xl,
           paddingHorizontal: spacing.lg,
-          alignItems: 'center',
+          alignItems: isMobile ? 'flex-start' : 'center',
         }}
       >
         <View
@@ -57,7 +64,7 @@ export default function AuthLayoutWeb() {
         style={{
           flex: 1,
           alignItems: 'center',
-          paddingVertical: spacing.lg,
+          paddingVertical: isMobile ? 0 : spacing.lg,
         }}
       >
         <View
@@ -65,11 +72,12 @@ export default function AuthLayoutWeb() {
             {
               flex: 1,
               width: '100%',
-              maxWidth: 480,
+              maxWidth: isMobile ? undefined : 480,
               backgroundColor: colors.background.primary,
-              borderRadius: 16,
-              boxShadow:
-                '0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(124,58,237,0.06)',
+              borderRadius: isMobile ? 0 : 16,
+              boxShadow: isMobile
+                ? undefined
+                : '0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(124,58,237,0.06)',
             } as any
           }
         >
