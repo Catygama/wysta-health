@@ -14,6 +14,7 @@ import type * as education from "../education.js";
 import type * as http from "../http.js";
 import type * as lib_risk from "../lib/risk.js";
 import type * as messages from "../messages.js";
+import type * as notifications from "../notifications.js";
 import type * as seed from "../seed.js";
 import type * as triage from "../triage.js";
 import type * as users from "../users.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/risk": typeof lib_risk;
   messages: typeof messages;
+  notifications: typeof notifications;
   seed: typeof seed;
   triage: typeof triage;
   users: typeof users;

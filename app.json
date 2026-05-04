@@ -11,12 +11,19 @@
           "photosPermission": "A Wysta usa a galeria para anexar imagens (ex.: exames, receitas) às tuas conversas com profissionais de saúde.",
           "cameraPermission": "A Wysta usa a câmara para anexar fotografias às tuas conversas com profissionais de saúde."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "name": "Wysta",
     "slug": "wysta",
     "ios": {
-      "bundleIdentifier": "com.filipe.fernandes.mojo.wysta"
+      "bundleIdentifier": "com.filipe.fernandes.mojo.wysta",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
+    },
+    "notification": {
+      "iosDisplayInForeground": true
     }
   }
 }

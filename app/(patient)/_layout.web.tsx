@@ -32,6 +32,9 @@ const ITEMS: NavItem[] = [
 export default function PatientLayoutWeb() {
   const { user, isLoading, role } = useCurrentUser();
   if (isLoading) return null;
-  if (!user || role !== 'patient') return <Redirect href="/" />;
+  if (!user) return <Redirect href="/(auth)/login" />;
+  if (!role) return <Redirect href="/(auth)/onboarding" />;
+  if (role === 'professional') return <Redirect href="/(professional)/queue" />;
+  if (role === 'admin') return <Redirect href="/(admin)/" />;
   return <WebShell items={ITEMS} />;
 }

@@ -1,12 +1,17 @@
 import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { usePushRegistration } from '@/hooks/usePushRegistration';
 import { TabBarProvider, useTabBar } from '@/contexts/TabBarContext';
 
 export default function PatientLayout() {
   const { user, isLoading, role } = useCurrentUser();
+  usePushRegistration(role === 'patient');
   if (isLoading) return null;
-  if (!user || role !== 'patient') return <Redirect href="/" />;
+  if (!user) return <Redirect href="/(auth)/login" />;
+  if (!role) return <Redirect href="/(auth)/onboarding" />;
+  if (role === 'professional') return <Redirect href="/(professional)/queue" />;
+  if (role === 'admin') return <Redirect href="/(admin)/" />;
 
   return (
     <TabBarProvider>

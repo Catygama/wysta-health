@@ -21,6 +21,9 @@ const ITEMS: NavItem[] = [
 export default function ProfessionalLayoutWeb() {
   const { user, isLoading, role } = useCurrentUser();
   if (isLoading) return null;
-  if (!user || role !== 'professional') return <Redirect href="/" />;
+  if (!user) return <Redirect href="/(auth)/login" />;
+  if (!role) return <Redirect href="/(auth)/onboarding" />;
+  if (role === 'patient') return <Redirect href="/(patient)/" />;
+  if (role === 'admin') return <Redirect href="/(admin)/" />;
   return <WebShell items={ITEMS} />;
 }

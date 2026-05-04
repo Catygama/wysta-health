@@ -1,6 +1,7 @@
 import { mutation, query } from './_generated/server';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
+import { internal } from './_generated/api';
 
 export const list = query({
   args: { conversationId: v.id('conversations') },
@@ -66,6 +67,33 @@ export const send = mutation({
     });
     await ctx.db.patch(args.conversationId, {
       lastMessageAt: Date.now(),
+    });
+
+    if (args.isInternal) return;
+
+    const conv = await ctx.db.get(args.conversationId);
+    if (!conv) return;
+    if (conv.patientId === userId) return;
+
+    const senderProfile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+    const isProfessional =
+      senderProfile?.role === 'professional' ||
+      senderProfile?.role === 'admin';
+    if (!isProfessional) return;
+
+    const preview =
+      args.messageType === 'image'
+        ? 'Enviou uma imagem'
+        : args.content.slice(0, 200);
+
+    await ctx.scheduler.runAfter(0, internal.notifications.sendToUser, {
+      userId: conv.patientId,
+      title: senderProfile?.displayName ?? 'Profissional Wysta',
+      body: preview,
+      data: { conversationId: args.conversationId },
     });
   },
 });

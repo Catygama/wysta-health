@@ -67,6 +67,16 @@ export default defineSchema({
     professionalVerificationNotes: v.optional(v.string()),
     // Guest sessions (Anonymous provider) — for testing only
     isGuest: v.optional(v.boolean()),
+    // Expo push tokens for this user (max 15, oldest evicted on overflow).
+    pushTokens: v.optional(
+      v.array(
+        v.object({
+          token: v.string(),
+          platform: v.union(v.literal('ios'), v.literal('android')),
+          addedAt: v.number(),
+        })
+      )
+    ),
   }).index('by_user', ['userId']),
 
   conversations: defineTable({
