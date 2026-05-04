@@ -368,8 +368,69 @@ export default function Profile() {
         </Pressable>
       </View>
 
+      <BootstrapAdminCard />
+
       <Button label="Terminar sessão" variant="secondary" onPress={confirmSignOut} />
     </ScrollView>
+  );
+}
+
+function BootstrapAdminCard() {
+  const hasAdmin = useQuery(api.users.hasAnyAdmin);
+  const bootstrap = useMutation(api.users.bootstrapAdmin);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Hidden once an admin exists. Surfaces a one-shot promotion path on
+  // fresh deployments so seed/admin features can be unlocked from the
+  // app instead of going through the Convex dashboard.
+  if (hasAdmin !== false) return null;
+
+  async function promote() {
+    setError('');
+    setLoading(true);
+    try {
+      await bootstrap();
+    } catch (e: any) {
+      setError(e?.message ?? 'Falhou.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <View
+      style={{
+        backgroundColor: colors.background.secondary,
+        borderRadius: radius.lg,
+        padding: spacing.md,
+        gap: spacing.sm,
+        borderWidth: 1,
+        borderColor: colors.warning,
+      }}
+    >
+      <Text
+        style={{
+          ...typography.sm,
+          fontWeight: '700',
+          color: colors.warning,
+        }}
+      >
+        Bootstrap (sem admin)
+      </Text>
+      <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+        Ainda não existe administrador nesta plataforma. Podes promover esta conta para teres acesso ao painel de administração e ao seed de conteúdos.
+      </Text>
+      {error ? (
+        <Text style={{ ...typography.xs, color: colors.danger }}>{error}</Text>
+      ) : null}
+      <Button
+        label="Tornar-me administrador"
+        variant="secondary"
+        onPress={promote}
+        loading={loading}
+      />
+    </View>
   );
 }
 

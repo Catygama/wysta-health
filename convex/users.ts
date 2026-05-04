@@ -132,6 +132,17 @@ export const updateProfile = mutation({
   },
 });
 
+export const hasAnyAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    const admin = await ctx.db
+      .query('userProfiles')
+      .filter((q) => q.eq(q.field('role'), 'admin'))
+      .first();
+    return admin !== null;
+  },
+});
+
 export const bootstrapAdmin = mutation({
   args: {},
   handler: async (ctx) => {
