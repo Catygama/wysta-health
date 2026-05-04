@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -13,7 +11,6 @@ import { guestAuthEnabled } from '@/lib/env';
 
 export default function ProfessionalLogin() {
   const { signIn } = useAuthActions();
-  const ensureProfile = useMutation(api.users.ensureProfile);
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,8 +35,8 @@ export default function ProfessionalLogin() {
     setError('');
     setGuestLoading(true);
     try {
-      await signIn('anonymous');
-      await ensureProfile({ role: 'professional', isGuest: true });
+      // Profile is created server-side by afterUserCreatedOrUpdated.
+      await signIn('anonymous-professional');
       router.replace('/');
     } catch (e: any) {
       const message = e?.message ?? String(e);

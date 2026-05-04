@@ -18,6 +18,7 @@ import { colors, spacing, typography, radius } from '@/constants/theme';
 import { strings } from '@/constants/strings';
 import { pickImage, uploadImage, type PickedImage } from '@/lib/upload';
 import { guestAuthEnabled } from '@/lib/env';
+import { withAuthRetry } from '@/lib/authRetry';
 
 const SPECIALTIES = [
   'Medicina Geral e Familiar',
@@ -33,7 +34,6 @@ export default function ProfessionalSignup() {
   const { signIn } = useAuthActions();
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
   const submit = useMutation(api.users.submitProfessionalVerification);
-  const ensureProfile = useMutation(api.users.ensureProfile);
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -109,13 +109,15 @@ export default function ProfessionalSignup() {
           .map((d) => d.storageId)
           .filter((id): id is string => Boolean(id)),
       ];
-      await submit({
-        displayName: displayName.trim() || undefined,
-        professionalLicenseNumber: licenseNumber.trim(),
-        professionalSpecialty: specialty.trim(),
-        professionalVerificationDocuments: docIds as any,
-        professionalVerificationNotes: notes.trim() || undefined,
-      });
+      await withAuthRetry(() =>
+        submit({
+          displayName: displayName.trim() || undefined,
+          professionalLicenseNumber: licenseNumber.trim(),
+          professionalSpecialty: specialty.trim(),
+          professionalVerificationDocuments: docIds as any,
+          professionalVerificationNotes: notes.trim() || undefined,
+        })
+      );
       router.replace('/');
     } catch (e: any) {
       setError(e?.message ?? strings.errors.generic);
@@ -128,8 +130,8 @@ export default function ProfessionalSignup() {
     setError('');
     setGuestLoading(true);
     try {
-      await signIn('anonymous');
-      await ensureProfile({ role: 'professional', isGuest: true });
+      // Profile is created server-side by afterUserCreatedOrUpdated.
+      await signIn('anonymous-professional');
       router.replace('/');
     } catch (e: any) {
       const message = e?.message ?? String(e);
