@@ -1,50 +1,37 @@
-import { Redirect, Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Redirect } from 'expo-router';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { colors } from '@/constants/theme';
+import { WebShell, type NavItem } from '@/components/ui/WebShell';
+
+const ITEMS: NavItem[] = [
+  {
+    label: 'Início',
+    href: '/',
+    icon: { sf: 'house', ion: 'home-outline' },
+    match: (p) => p === '/',
+  },
+  {
+    label: 'Conversas',
+    href: '/conversations',
+    icon: {
+      sf: 'bubble.left.and.bubble.right',
+      ion: 'chatbubbles-outline',
+    },
+  },
+  {
+    label: 'Saúde',
+    href: '/education',
+    icon: { sf: 'book', ion: 'book-outline' },
+  },
+  {
+    label: 'Perfil',
+    href: '/profile',
+    icon: { sf: 'person', ion: 'person-outline' },
+  },
+];
 
 export default function PatientLayoutWeb() {
   const { user, isLoading, role } = useCurrentUser();
   if (isLoading) return null;
   if (!user || role !== 'patient') return <Redirect href="/" />;
-
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.text.secondary as string,
-        headerShown: false,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Início',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="conversations"
-        options={{
-          title: 'Conversas',
-          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="education"
-        options={{
-          title: 'Saúde',
-          tabBarIcon: ({ color, size }) => <Ionicons name="book-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen name="triage" options={{ href: null }} />
-    </Tabs>
-  );
+  return <WebShell items={ITEMS} />;
 }
