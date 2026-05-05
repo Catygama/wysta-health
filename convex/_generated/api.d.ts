@@ -8,11 +8,19 @@
  * @module
  */
 
+import type * as ai_configs from "../ai/configs.js";
+import type * as ai_invocations from "../ai/invocations.js";
+import type * as ai_llm from "../ai/llm.js";
+import type * as ai_pricing from "../ai/pricing.js";
+import type * as ai_prompts from "../ai/prompts.js";
+import type * as ai_template from "../ai/template.js";
 import type * as ai_types from "../ai/types.js";
 import type * as auth from "../auth.js";
 import type * as conversations from "../conversations.js";
 import type * as education from "../education.js";
 import type * as http from "../http.js";
+import type * as lib_auth from "../lib/auth.js";
+import type * as lib_authProbe from "../lib/authProbe.js";
 import type * as lib_risk from "../lib/risk.js";
 import type * as lib_seedData from "../lib/seedData.js";
 import type * as messages from "../messages.js";
@@ -29,11 +37,19 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "ai/configs": typeof ai_configs;
+  "ai/invocations": typeof ai_invocations;
+  "ai/llm": typeof ai_llm;
+  "ai/pricing": typeof ai_pricing;
+  "ai/prompts": typeof ai_prompts;
+  "ai/template": typeof ai_template;
   "ai/types": typeof ai_types;
   auth: typeof auth;
   conversations: typeof conversations;
   education: typeof education;
   http: typeof http;
+  "lib/auth": typeof lib_auth;
+  "lib/authProbe": typeof lib_authProbe;
   "lib/risk": typeof lib_risk;
   "lib/seedData": typeof lib_seedData;
   messages: typeof messages;
