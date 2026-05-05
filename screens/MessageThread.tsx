@@ -16,7 +16,7 @@ import {
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
 import { RISK_LABELS } from '@/constants/conversation';
@@ -234,6 +234,9 @@ export function MessageThread({
           if (item.messageType === 'system') {
             return <SystemMessage content={item.content} />;
           }
+          if (item.messageType === 'ai-response') {
+            return <AiResponseMessage content={item.content} />;
+          }
           const isOwn = item.senderId === currentUserId;
           const isInternalMsg = item.isInternal;
           const hasImage = item.messageType === 'image' && item.imageUrl;
@@ -372,6 +375,15 @@ export function MessageThread({
               >
                 {relativeTime(item._creationTime)}
               </Text>
+              {!isProfessional &&
+                !closed &&
+                isOwn &&
+                item.messageType === 'text' && (
+                  <AskAiInline
+                    conversationId={conversationId}
+                    query={item.content}
+                  />
+                )}
             </View>
           );
         }}
@@ -770,6 +782,96 @@ function SystemMessage({ content }: { content: string }) {
       >
         {content}
       </Text>
+    </View>
+  );
+}
+
+function AiResponseMessage({ content }: { content: string }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={{
+        alignSelf: 'stretch',
+        backgroundColor: colors.primaryLight,
+        borderRadius: radius.lg,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.primary,
+        padding: spacing.md,
+        gap: spacing.xs,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+        <Text style={{ fontSize: 14 }}>✨</Text>
+        <Text
+          style={{
+            ...typography.xs,
+            fontWeight: '700',
+            color: colors.primary,
+            letterSpacing: 0.5,
+          }}
+        >
+          ASSISTENTE AI
+        </Text>
+      </View>
+      <Text
+        style={{
+          ...typography.sm,
+          color: colors.text.primary,
+          lineHeight: 22,
+        }}
+        selectable
+      >
+        {content}
+      </Text>
+    </View>
+  );
+}
+
+function AskAiInline({ conversationId, query }: { conversationId: string; query: string }) {
+  const { colors } = useTheme();
+  const respond = useAction(api.ai.assistant.respond);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function ask() {
+    setError(null);
+    setBusy(true);
+    try {
+      await respond({ conversationId: conversationId as any, query });
+    } catch (e: any) {
+      setError(e?.message ?? 'Falha');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <View style={{ alignItems: 'flex-end', marginTop: 4, gap: 2 }}>
+      <Pressable
+        testID="ask-ai-inline"
+        disabled={busy}
+        onPress={ask}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+          paddingVertical: 4,
+          paddingHorizontal: spacing.sm,
+          borderRadius: radius.full,
+          backgroundColor: busy ? colors.border : colors.primaryLight,
+          borderWidth: 1,
+          borderColor: colors.primary,
+        }}
+      >
+        {busy && <ActivityIndicator size="small" color={colors.primary} />}
+        <Text style={{ fontSize: 12 }}>✨</Text>
+        <Text style={{ ...typography.xs, color: colors.primary, fontWeight: '600' }}>
+          {busy ? 'A pensar...' : 'Resposta AI'}
+        </Text>
+      </Pressable>
+      {error && (
+        <Text style={{ ...typography.xs, color: colors.danger }}>{error}</Text>
+      )}
     </View>
   );
 }
