@@ -108,6 +108,8 @@ export default defineSchema({
     riskLevel: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
     escalationLevel: v.optional(escalationLevel),
     escalationNotes: v.optional(v.string()),
+    aiSummary: v.optional(v.string()),
+    aiSummaryAt: v.optional(v.number()),
   })
     .index('by_patient', ['patientId'])
     .index('by_professional', ['professionalId'])

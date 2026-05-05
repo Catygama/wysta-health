@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { MessageThread } from '@/screens/MessageThread';
 import { TriageSummary } from '@/screens/TriageSummary';
@@ -270,8 +270,12 @@ export default function ProfessionalConversation() {
       <View style={{ flex: 1 }}>
         {tab === 'summary' ? (
           <SummaryPanel
+            conversationId={id}
             triage={triageMessage?.metadata?.triageData}
             messageCount={messages?.length ?? 0}
+            aiSummary={conversation.aiSummary}
+            aiSummaryAt={conversation.aiSummaryAt}
+            canGenerate={isMine && !!messages && messages.length > 0}
           />
         ) : (
           <MessageThread
@@ -349,13 +353,37 @@ function TabButton({ label, active, onPress, testID }: TabButtonProps) {
 }
 
 function SummaryPanel({
+  conversationId,
   triage,
   messageCount,
+  aiSummary,
+  aiSummaryAt,
+  canGenerate,
 }: {
+  conversationId: string;
   triage?: { topic: string; responses: Record<string, unknown>; riskLevel: string };
   messageCount: number;
+  aiSummary?: string;
+  aiSummaryAt?: number;
+  canGenerate: boolean;
 }) {
   const { colors } = useTheme();
+  const generate = useAction(api.ai.chatSummary.generate);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onGenerate() {
+    setError(null);
+    setBusy(true);
+    try {
+      await generate({ conversationId: conversationId as any });
+    } catch (e: any) {
+      setError(e?.message ?? 'Falha ao gerar sumário');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <ScrollView
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
@@ -375,39 +403,73 @@ function SummaryPanel({
           gap: spacing.xs,
         }}
       >
-        <Text
-          style={{
-            ...typography.sm,
-            fontWeight: '600',
-            color: colors.text.primary,
-          }}
-        >
+        <Text style={{ ...typography.sm, fontWeight: '600', color: colors.text.primary }}>
           Estatísticas da conversa
         </Text>
         <Text style={{ ...typography.sm, color: colors.text.secondary }}>
           Mensagens: {messageCount}
         </Text>
       </View>
+
       <View
         style={{
           backgroundColor: colors.primaryLight,
           borderRadius: radius.md,
           padding: spacing.md,
-          gap: spacing.xs,
+          gap: spacing.sm,
         }}
       >
-        <Text
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={{ ...typography.sm, fontWeight: '600', color: colors.primary }}>
+            Sumário AI
+          </Text>
+          {aiSummaryAt && (
+            <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+              {new Date(aiSummaryAt).toLocaleString('pt-PT')}
+            </Text>
+          )}
+        </View>
+
+        {aiSummary ? (
+          <Text style={{ ...typography.sm, color: colors.text.primary, lineHeight: 22 }}>
+            {aiSummary}
+          </Text>
+        ) : (
+          <Text style={{ ...typography.sm, color: colors.text.secondary }}>
+            Ainda sem sumário. Gera um resumo clínico desta conversa com AI.
+          </Text>
+        )}
+
+        {error && (
+          <Text style={{ ...typography.sm, color: colors.danger }}>{error}</Text>
+        )}
+
+        <Pressable
+          testID="generate-ai-summary-button"
+          disabled={!canGenerate || busy}
+          onPress={onGenerate}
           style={{
-            ...typography.sm,
-            fontWeight: '600',
-            color: colors.primary,
+            backgroundColor: canGenerate && !busy ? colors.primary : colors.border,
+            borderRadius: radius.md,
+            paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.md,
+            alignItems: 'center',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: spacing.xs,
           }}
         >
-          Sumário automático
-        </Text>
-        <Text style={{ ...typography.sm, color: colors.text.secondary }}>
-          O sumário automático estará disponível para conversas longas (a chegar).
-        </Text>
+          {busy && <ActivityIndicator color="#fff" size="small" />}
+          <Text style={{ ...typography.sm, fontWeight: '600', color: '#fff' }}>
+            {busy ? 'A gerar...' : aiSummary ? 'Re-gerar sumário' : 'Gerar sumário AI'}
+          </Text>
+        </Pressable>
+
+        {!canGenerate && !busy && (
+          <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+            Atribui-te a conversa e aguarda mensagens antes de gerar.
+          </Text>
+        )}
       </View>
     </ScrollView>
   );

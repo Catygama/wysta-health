@@ -16,10 +16,13 @@ export default function AdminLayout() {
       screenOptions={{
         headerShown: true,
         headerTintColor: colors.primary as any,
-        headerTitleStyle: { fontWeight: '700' },
+        headerTitleStyle: { fontWeight: '700', color: colors.text.primary as any },
+        headerStyle: { backgroundColor: colors.background.primary as any },
+        contentStyle: { backgroundColor: colors.background.primary as any },
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Administração' }} />
+      <Stack.Screen name="ai" options={{ title: 'AI Infra' }} />
     </Stack>
   );
 }

@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as ai_chatSummary from "../ai/chatSummary.js";
 import type * as ai_configs from "../ai/configs.js";
 import type * as ai_invocations from "../ai/invocations.js";
 import type * as ai_llm from "../ai/llm.js";
@@ -39,6 +40,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "ai/chatSummary": typeof ai_chatSummary;
   "ai/configs": typeof ai_configs;
   "ai/invocations": typeof ai_invocations;
   "ai/llm": typeof ai_llm;

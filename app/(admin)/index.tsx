@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TextInput,
 } from 'react-native';
+import { Link } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '@/convex/_generated/api';
@@ -171,6 +172,41 @@ export default function AdminPanel() {
               </Text>
             )}
           </View>
+
+          <Link href="/(admin)/ai" asChild>
+            <Pressable
+              testID="admin-ai-link"
+              style={{
+                backgroundColor: colors.background.secondary,
+                borderRadius: radius.lg,
+                padding: spacing.md,
+                gap: spacing.xs,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text
+                  style={{
+                    ...typography.sm,
+                    fontWeight: '600',
+                    color: colors.text.primary,
+                  }}
+                >
+                  AI Infra
+                </Text>
+                <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+                  Configs, prompts, audit das invocações + teste rápido.
+                </Text>
+              </View>
+              <Icon
+                name={{ sf: 'chevron.right', ion: 'chevron-forward' }}
+                size={16}
+                color={colors.text.tertiary}
+              />
+            </Pressable>
+          </Link>
 
           <Text
             style={{

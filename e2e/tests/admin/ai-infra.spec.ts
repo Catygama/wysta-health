@@ -44,7 +44,32 @@ test.describe.serial('AI infra', () => {
   });
 
   test.afterAll(async () => {
+    // Restore canonical seed so manual UI testing keeps working after e2e.
     await resetBackend();
+    await seedDomainContent();
+    await seedUser({
+      email: TEST_USERS.patientA.email,
+      password: TEST_USERS.patientA.password,
+      role: 'patient',
+      profile: { displayName: 'Maria Patient' },
+    });
+    await seedUser({
+      email: TEST_USERS.professionalA.email,
+      password: TEST_USERS.professionalA.password,
+      role: 'professional',
+      profile: {
+        displayName: 'Dra. Ana',
+        professionalLicenseNumber: '12345',
+        professionalSpecialty: 'Ginecologia / Obstetrícia',
+        professionalVerificationStatus: 'verified',
+      },
+    });
+    await seedUser({
+      email: TEST_USERS.admin.email,
+      password: TEST_USERS.admin.password,
+      role: 'admin',
+      profile: { displayName: 'Admin Wysta' },
+    });
   });
 
   test('public surface rejects unauthenticated insertConfig', async () => {

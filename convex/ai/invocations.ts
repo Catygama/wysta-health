@@ -63,6 +63,15 @@ export const listForConversation = query({
   },
 });
 
+// Admin-only audit query: list the most recent invocations across all purposes.
+export const listLatest = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    return ctx.db.query('aiInvocations').order('desc').take(50);
+  },
+});
+
 // Admin-only audit query: list invocations in a chain (root + descendants by parentId).
 export const listChain = query({
   args: { rootId: v.id('aiInvocations') },
