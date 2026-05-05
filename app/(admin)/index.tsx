@@ -13,7 +13,8 @@ import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 const ROLE_LABELS: Record<string, string> = {
   patient: 'Utente',
@@ -35,6 +36,7 @@ export default function AdminPanel() {
   const [seedResult, setSeedResult] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [search, setSearch] = useState('');
+  const { colors } = useTheme();
 
   if (users === undefined) {
     return (
@@ -119,12 +121,13 @@ export default function AdminPanel() {
           </Text>
 
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <CountCard label="Utentes" value={counts.patient ?? 0} />
+            <CountCard testID="admin-count-patient" label="Utentes" value={counts.patient ?? 0} />
             <CountCard
+              testID="admin-count-professional"
               label="Profissionais"
               value={counts.professional ?? 0}
             />
-            <CountCard label="Admins" value={counts.admin ?? 0} />
+            <CountCard testID="admin-count-admin" label="Admins" value={counts.admin ?? 0} />
           </View>
 
           <View
@@ -150,6 +153,7 @@ export default function AdminPanel() {
               Insere ou atualiza triagens e artigos educativos pré-definidos. Pode ser executado várias vezes sem duplicar registos.
             </Text>
             <Button
+              testID="admin-seed-button"
               label="Atualizar triagens e artigos"
               variant="secondary"
               onPress={runSeed}
@@ -157,6 +161,7 @@ export default function AdminPanel() {
             />
             {seedResult && (
               <Text
+                testID="admin-seed-result"
                 style={{
                   ...typography.xs,
                   color: colors.text.secondary,
@@ -196,6 +201,7 @@ export default function AdminPanel() {
               color={colors.text.tertiary}
             />
             <TextInput
+              testID="admin-search-input"
               value={search}
               onChangeText={setSearch}
               placeholder="Pesquisar por email ou role..."
@@ -231,6 +237,7 @@ export default function AdminPanel() {
       }
       renderItem={({ item }) => (
         <View
+          testID={`admin-user-row-${item.user?.email ?? item.userId}`}
           style={{
             backgroundColor: colors.background.primary,
             borderRadius: radius.md,
@@ -300,6 +307,7 @@ export default function AdminPanel() {
               .map((r) => (
                 <Pressable
                   key={r}
+                  testID={`admin-role-${item.user?.email ?? item.userId}-${r}`}
                   onPress={() =>
                     confirmRoleChange(item.userId, item.role, r)
                   }
@@ -341,9 +349,11 @@ export default function AdminPanel() {
   );
 }
 
-function CountCard({ label, value }: { label: string; value: number }) {
+function CountCard({ label, value, testID }: { label: string; value: number; testID?: string }) {
+  const { colors } = useTheme();
   return (
     <View
+      testID={testID}
       style={{
         flex: 1,
         backgroundColor: colors.background.primary,

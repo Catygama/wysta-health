@@ -1,12 +1,14 @@
 import { Slot } from 'expo-router';
 import { View, Text, useWindowDimensions } from 'react-native';
-import { colors, spacing, typography } from '@/constants/theme';
+import { spacing, typography } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 const MOBILE_BREAKPOINT = 640;
 
 export default function AuthLayoutWeb() {
   const { width } = useWindowDimensions();
   const isMobile = width < MOBILE_BREAKPOINT;
+  const { colors } = useTheme();
 
   return (
     <View

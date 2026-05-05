@@ -1,10 +1,11 @@
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { colors } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 export default function Index() {
   const { user, isLoading, role } = useCurrentUser();
+  const { colors } = useTheme();
 
   if (isLoading) {
     return (

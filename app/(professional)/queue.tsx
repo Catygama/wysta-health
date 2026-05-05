@@ -4,7 +4,8 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
 import { Icon } from '@/components/ui/Icon';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 type Status = 'waiting' | 'active' | 'escalated' | 'closed';
 type Scope = 'mine' | 'unassigned' | 'all';
@@ -42,6 +43,7 @@ export default function Queue() {
       scope: scopeFilter,
       priority: priorityFilter,
     }) ?? [];
+  const { colors } = useTheme();
 
   return (
     <View style={{ flex: 1 }}>
@@ -51,18 +53,21 @@ export default function Queue() {
       >
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           <StatCard
+            testID="queue-stat-mine"
             label="Minhas"
             value={stats?.mine ?? 0}
             icon={{ sf: 'person.fill', ion: 'person' }}
             color={colors.primary}
           />
           <StatCard
+            testID="queue-stat-unassigned"
             label="Não atribuídas"
             value={stats?.unassigned ?? 0}
             icon={{ sf: 'tray', ion: 'mail-unread-outline' }}
             color="#D97706"
           />
           <StatCard
+            testID="queue-stat-urgent"
             label="Urgentes"
             value={stats?.urgent ?? 0}
             icon={{ sf: 'exclamationmark.triangle.fill', ion: 'warning' }}
@@ -78,6 +83,7 @@ export default function Queue() {
           {SCOPE_FILTERS.map((f) => (
             <Chip
               key={f.value}
+              testID={`queue-scope-${f.value}`}
               label={f.label}
               active={scopeFilter === f.value}
               onPress={() => setScopeFilter(f.value)}
@@ -93,6 +99,7 @@ export default function Queue() {
           {STATUS_FILTERS.map((f) => (
             <Chip
               key={String(f.value)}
+              testID={`queue-status-${f.value ?? 'all'}`}
               label={f.label}
               active={statusFilter === f.value}
               onPress={() => setStatusFilter(f.value)}
@@ -108,6 +115,7 @@ export default function Queue() {
           {PRIORITY_FILTERS.map((f) => (
             <Chip
               key={f.value}
+              testID={`queue-priority-${f.value}`}
               label={f.label}
               accentColor={f.color}
               active={priorityFilter === f.value}
@@ -133,11 +141,14 @@ type StatCardProps = {
   value: number;
   icon: { sf: any; ion: any };
   color: string;
+  testID?: string;
 };
 
-function StatCard({ label, value, icon, color }: StatCardProps) {
+function StatCard({ label, value, icon, color, testID }: StatCardProps) {
+  const { colors } = useTheme();
   return (
     <View
+      testID={testID}
       style={{
         flex: 1,
         backgroundColor: colors.background.primary,
@@ -185,12 +196,15 @@ type ChipProps = {
   active: boolean;
   onPress: () => void;
   accentColor?: string;
+  testID?: string;
 };
 
-function Chip({ label, active, onPress, accentColor }: ChipProps) {
+function Chip({ label, active, onPress, accentColor, testID }: ChipProps) {
+  const { colors } = useTheme();
   const activeBg = accentColor ?? colors.primary;
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       style={({ pressed }) => ({
         paddingVertical: spacing.xs,

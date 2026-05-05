@@ -20,7 +20,8 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
 import { RISK_LABELS } from '@/constants/conversation';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 import { relativeTime } from '@/lib/format';
 import {
   pickImage,
@@ -79,6 +80,7 @@ export function MessageThread({
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { progress } = useReanimatedKeyboardAnimation();
+  const { colors } = useTheme();
 
   const isInternalScope = forceInternal || scope === 'internal';
 
@@ -183,6 +185,7 @@ export function MessageThread({
       keyboardVerticalOffset={headerHeight}
     >
       <FlatList
+        testID={`messages-list-${scope}`}
         ref={listRef}
         data={filteredMessages}
         keyExtractor={(item) => item._id}
@@ -243,6 +246,7 @@ export function MessageThread({
               item.content === item.attachmentName);
           return (
             <View
+              testID={`message-${isInternalMsg ? 'internal-' : ''}${item._id}`}
               style={{
                 alignSelf: isOwn ? 'flex-end' : 'flex-start',
                 maxWidth: '80%',
@@ -580,6 +584,7 @@ export function MessageThread({
             {scope !== 'internal' && (
               <>
                 <Pressable
+                  testID="message-attach-image"
                   onPress={handlePickImage}
                   disabled={uploading || sending}
                   style={({ pressed }) => ({
@@ -604,6 +609,7 @@ export function MessageThread({
                   />
                 </Pressable>
                 <Pressable
+                  testID="message-attach-document"
                   onPress={handlePickDocument}
                   disabled={uploading || sending}
                   style={({ pressed }) => ({
@@ -631,6 +637,7 @@ export function MessageThread({
             )}
 
             <TextInput
+              testID={isInternalScope ? 'message-input-internal' : 'message-input'}
               value={text}
               onChangeText={setText}
               placeholder={
@@ -656,6 +663,7 @@ export function MessageThread({
               }}
             />
             <Pressable
+              testID={isInternalScope ? 'message-send-internal' : 'message-send'}
               onPress={handleSend}
               disabled={
                 (!text.trim() && !pendingImage && !pendingDocument) || sending
@@ -695,6 +703,7 @@ function TriageMessage({
 }: {
   data: { topic: string; responses: Record<string, unknown>; riskLevel: string };
 }) {
+  const { colors } = useTheme();
   const color = RISK_COLORS[data.riskLevel] ?? colors.text.secondary;
   return (
     <View
@@ -749,6 +758,7 @@ function TriageMessage({
 }
 
 function SystemMessage({ content }: { content: string }) {
+  const { colors } = useTheme();
   return (
     <View style={{ alignItems: 'center', paddingVertical: spacing.xs }}>
       <Text

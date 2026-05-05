@@ -5,15 +5,18 @@ import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { colors, spacing, typography } from '@/constants/theme';
+import { spacing, typography } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 export default function PatientConversations() {
   const conversations = useQuery(api.conversations.listForPatient) ?? [];
   const router = useRouter();
+  const { colors } = useTheme();
 
   if (conversations.length === 0) {
     return (
       <View
+        testID="conversations-empty"
         style={{
           flex: 1,
           justifyContent: 'center',

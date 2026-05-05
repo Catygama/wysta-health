@@ -1,5 +1,6 @@
 import { Pressable, Text, ActivityIndicator } from 'react-native';
-import { colors, spacing, radius, typography } from '@/constants/theme';
+import { spacing, radius, typography } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 type Props = {
   label: string;
@@ -7,6 +8,7 @@ type Props = {
   loading?: boolean;
   disabled?: boolean;
   variant?: 'primary' | 'secondary' | 'danger';
+  testID?: string;
 };
 
 export function Button({
@@ -15,7 +17,9 @@ export function Button({
   loading,
   disabled,
   variant = 'primary',
+  testID,
 }: Props) {
+  const { colors } = useTheme();
   const bg =
     variant === 'primary'
       ? colors.primary
@@ -27,6 +31,7 @@ export function Button({
 
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => ({

@@ -14,7 +14,8 @@ import { TriageSummary } from '@/screens/TriageSummary';
 import { EscalateSheet } from '@/screens/EscalateSheet';
 import { Icon } from '@/components/ui/Icon';
 import { TOPICS } from '@/constants/topics';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 import {
   STATUS_LABELS,
   STATUS_COLORS,
@@ -42,6 +43,7 @@ export default function ProfessionalConversation() {
   const { setIsTabBarHidden } = useTabBar();
   const [escalateOpen, setEscalateOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('chat');
+  const { colors } = useTheme();
 
   useFocusEffect(
     useCallback(() => {
@@ -212,6 +214,7 @@ export default function ProfessionalConversation() {
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           {canAssign && (
             <ActionButton
+              testID="conversation-assign-button"
               label="Atribuir a mim"
               variant="primary"
               onPress={() => assign({ id: id as any })}
@@ -219,6 +222,7 @@ export default function ProfessionalConversation() {
           )}
           {canEscalate && (
             <ActionButton
+              testID="conversation-escalate-button"
               label="Escalar"
               variant="danger"
               onPress={() => setEscalateOpen(true)}
@@ -226,6 +230,7 @@ export default function ProfessionalConversation() {
           )}
           {canClose && (
             <ActionButton
+              testID="conversation-close-button"
               label="Encerrar"
               variant="secondary"
               onPress={() => close({ id: id as any })}
@@ -243,16 +248,19 @@ export default function ProfessionalConversation() {
         }}
       >
         <TabButton
+          testID="thread-tab-chat"
           label="Chat"
           active={tab === 'chat'}
           onPress={() => setTab('chat')}
         />
         <TabButton
+          testID="thread-tab-internal"
           label="Notas internas"
           active={tab === 'internal'}
           onPress={() => setTab('internal')}
         />
         <TabButton
+          testID="thread-tab-summary"
           label="Sumário"
           active={tab === 'summary'}
           onPress={() => setTab('summary')}
@@ -290,6 +298,9 @@ function Badge({ label, color }: { label: string; color: string }) {
   return (
     <View
       style={{
+        // Tail "20" is the alpha-channel hex for ~12% opacity. The badge color
+        // is passed in (status/priority/escalation) and reads fine in either
+        // theme — no useTheme() needed.
         backgroundColor: color + '20',
         paddingVertical: 2,
         paddingHorizontal: spacing.sm,
@@ -307,11 +318,14 @@ type TabButtonProps = {
   label: string;
   active: boolean;
   onPress: () => void;
+  testID?: string;
 };
 
-function TabButton({ label, active, onPress }: TabButtonProps) {
+function TabButton({ label, active, onPress, testID }: TabButtonProps) {
+  const { colors } = useTheme();
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       style={{
         flex: 1,
@@ -341,6 +355,7 @@ function SummaryPanel({
   triage?: { topic: string; responses: Record<string, unknown>; riskLevel: string };
   messageCount: number;
 }) {
+  const { colors } = useTheme();
   return (
     <ScrollView
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
@@ -402,9 +417,11 @@ type ActionButtonProps = {
   label: string;
   variant: 'primary' | 'secondary' | 'danger';
   onPress: () => void;
+  testID?: string;
 };
 
-function ActionButton({ label, variant, onPress }: ActionButtonProps) {
+function ActionButton({ label, variant, onPress, testID }: ActionButtonProps) {
+  const { colors } = useTheme();
   const bg =
     variant === 'primary'
       ? colors.primary
@@ -414,6 +431,7 @@ function ActionButton({ label, variant, onPress }: ActionButtonProps) {
   const fg = variant === 'secondary' ? colors.text.primary : '#fff';
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       style={({ pressed }) => ({
         flex: 1,

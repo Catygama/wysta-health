@@ -12,7 +12,8 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { ESCALATION_LEVEL_LABELS } from '@/constants/conversation';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 type Level = 'routine' | 'urgent' | 'same-day' | 'emergency';
 
@@ -30,6 +31,7 @@ export function EscalateSheet({ visible, conversationId, onClose }: Props) {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { colors } = useTheme();
 
   async function submit() {
     if (!level || !notes.trim()) return;
@@ -112,6 +114,7 @@ export function EscalateSheet({ visible, conversationId, onClose }: Props) {
                 return (
                   <Pressable
                     key={l}
+                    testID={`escalate-level-${l}`}
                     onPress={() => setLevel(l)}
                     style={{
                       padding: spacing.md,
@@ -148,6 +151,7 @@ export function EscalateSheet({ visible, conversationId, onClose }: Props) {
                 Notas e recomendações
               </Text>
               <TextInput
+                testID="escalate-notes"
                 value={notes}
                 onChangeText={setNotes}
                 placeholder="Descreve o motivo do escalamento..."
@@ -175,13 +179,14 @@ export function EscalateSheet({ visible, conversationId, onClose }: Props) {
             ) : null}
 
             <Button
+              testID="escalate-submit"
               label="Escalar conversa"
               variant="danger"
               onPress={submit}
               loading={loading}
               disabled={!level || !notes.trim()}
             />
-            <Button label="Cancelar" variant="secondary" onPress={onClose} />
+            <Button testID="escalate-cancel" label="Cancelar" variant="secondary" onPress={onClose} />
           </ScrollView>
         </Pressable>
       </Pressable>

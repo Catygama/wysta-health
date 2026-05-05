@@ -8,7 +8,8 @@ import {
 import { Slot, useRouter, usePathname } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Icon, type IconName } from '@/components/ui/Icon';
-import { colors, spacing, typography } from '@/constants/theme';
+import { spacing, typography } from '@/constants/theme';
+import { useTheme, type ThemeMode } from '@/lib/theme';
 
 export type NavItem = {
   label: string;
@@ -26,9 +27,28 @@ type Props = {
 
 const MOBILE_BREAKPOINT = 640;
 
+const NEXT_MODE: Record<ThemeMode, ThemeMode> = {
+  system: 'light',
+  light: 'dark',
+  dark: 'system',
+};
+
+const MODE_ICON: Record<ThemeMode, IconName> = {
+  system: { sf: 'circle.lefthalf.filled', ion: 'contrast-outline' },
+  light: { sf: 'sun.max', ion: 'sunny-outline' },
+  dark: { sf: 'moon', ion: 'moon-outline' },
+};
+
+const MODE_LABEL: Record<ThemeMode, string> = {
+  system: 'Tema: sistema',
+  light: 'Tema: claro',
+  dark: 'Tema: escuro',
+};
+
 export function WebShell({ items, brandHref = '/', maxWidth = 1040 }: Props) {
   const { width } = useWindowDimensions();
   const isMobile = width < MOBILE_BREAKPOINT;
+  const { colors } = useTheme();
 
   return (
     <View
@@ -68,6 +88,7 @@ function Header({
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useAuthActions();
+  const { colors, mode, setMode } = useTheme();
 
   return (
     <View
@@ -125,6 +146,24 @@ function Header({
             );
           })}
           <Pressable
+            testID="theme-toggle"
+            onPress={() => setMode(NEXT_MODE[mode])}
+            hitSlop={8}
+            style={({ pressed }) => ({
+              width: 32,
+              height: 32,
+              borderRadius: 999,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: pressed
+                ? colors.background.tertiary
+                : 'transparent',
+            })}
+            accessibilityLabel={MODE_LABEL[mode]}
+          >
+            <Icon name={MODE_ICON[mode]} size={18} color={colors.text.secondary} />
+          </Pressable>
+          <Pressable
             onPress={() => signOut()}
             hitSlop={8}
             style={({ pressed }) => ({
@@ -164,6 +203,7 @@ function Header({
 
 function MobileBrandBar({ brandHref }: { brandHref: string }) {
   const router = useRouter();
+  const { colors } = useTheme();
   return (
     <View
       style={{
@@ -192,6 +232,7 @@ function MobileBrandBar({ brandHref }: { brandHref: string }) {
 function BottomNav({ items }: { items: NavItem[] }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { colors } = useTheme();
   return (
     <View
       style={{
@@ -253,6 +294,7 @@ function NavPill({
   active: boolean;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -291,6 +333,7 @@ function NavPill({
 }
 
 function Brand() {
+  const { colors } = useTheme();
   return (
     <>
       <View
@@ -328,6 +371,7 @@ function ContentContainer({
   maxWidth: number;
   bottomInset: number;
 }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{

@@ -46,8 +46,6 @@ function PatientTabs() {
         <NativeTabs.Trigger.Icon sf={{ default: 'person', selected: 'person.fill' }} md="person" />
         <NativeTabs.Trigger.Label>Perfil</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="triage" hidden />
     </NativeTabs>
   );
 }

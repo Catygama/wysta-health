@@ -8,14 +8,17 @@
  * @module
  */
 
+import type * as ai_types from "../ai/types.js";
 import type * as auth from "../auth.js";
 import type * as conversations from "../conversations.js";
 import type * as education from "../education.js";
 import type * as http from "../http.js";
 import type * as lib_risk from "../lib/risk.js";
+import type * as lib_seedData from "../lib/seedData.js";
 import type * as messages from "../messages.js";
 import type * as notifications from "../notifications.js";
 import type * as seed from "../seed.js";
+import type * as testing from "../testing.js";
 import type * as triage from "../triage.js";
 import type * as users from "../users.js";
 
@@ -26,14 +29,17 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "ai/types": typeof ai_types;
   auth: typeof auth;
   conversations: typeof conversations;
   education: typeof education;
   http: typeof http;
   "lib/risk": typeof lib_risk;
+  "lib/seedData": typeof lib_seedData;
   messages: typeof messages;
   notifications: typeof notifications;
   seed: typeof seed;
+  testing: typeof testing;
   triage: typeof triage;
   users: typeof users;
 }>;
