@@ -14,8 +14,9 @@ describe('pricing', () => {
   });
 
   it('computes cost from token counts', () => {
+    // 1000 input tokens at $0.003/1k + 500 output tokens at $0.015/1k = $0.0105
     const cost = computeCostUsd('anthropic', 'claude-sonnet-4-6', 1000, 500);
-    expect(cost).toBeGreaterThan(0);
+    expect(cost).toBeCloseTo(0.0105, 8);
   });
 
   it('returns undefined cost for unknown model', () => {
