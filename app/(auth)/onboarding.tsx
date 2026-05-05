@@ -6,7 +6,8 @@ import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 const AGE_RANGES = ['18-25', '26-35', '36-45', '46+'];
 const PREGNANCY_OPTIONS = [
@@ -20,6 +21,7 @@ export default function Onboarding() {
   const router = useRouter();
   const ensureProfile = useMutation(api.users.ensureProfile);
   const updateProfile = useMutation(api.users.updateProfile);
+  const { colors } = useTheme();
   const [displayName, setDisplayName] = useState('');
   const [ageRange, setAgeRange] = useState('');
   const [pregnancyStatus, setPregnancyStatus] = useState('');
@@ -86,6 +88,7 @@ export default function Onboarding() {
 
       <View style={{ gap: spacing.md }}>
         <Input
+          testID="onboarding-name-input"
           label="Como queres ser tratada? (opcional)"
           value={displayName}
           onChangeText={setDisplayName}
@@ -108,6 +111,7 @@ export default function Onboarding() {
           {AGE_RANGES.map((age) => (
             <Pressable
               key={age}
+              testID={`onboarding-age-${age}`}
               onPress={() => setAgeRange(age)}
               style={{
                 paddingVertical: spacing.sm,
@@ -146,6 +150,7 @@ export default function Onboarding() {
         {PREGNANCY_OPTIONS.map((opt) => (
           <Pressable
             key={opt.value}
+            testID={`onboarding-pregnancy-${opt.value}`}
             onPress={() => setPregnancyStatus(opt.value)}
             style={{
               padding: spacing.md,
@@ -176,12 +181,14 @@ export default function Onboarding() {
 
       <View style={{ gap: spacing.sm }}>
         <Button
+          testID="onboarding-continue-button"
           label="Continuar"
           onPress={handleContinue}
           loading={loading}
           disabled={!ageRange || !pregnancyStatus}
         />
         <Button
+          testID="onboarding-skip-button"
           label="Saltar por agora"
           variant="secondary"
           onPress={handleSkip}

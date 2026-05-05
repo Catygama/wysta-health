@@ -5,7 +5,8 @@ import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 import { TOPICS } from '@/constants/topics';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 export function ArticleScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -16,6 +17,7 @@ export function ArticleScreen() {
   const router = useRouter();
   const segments = useSegments();
   const isPatient = segments[0] === '(patient)';
+  const { colors } = useTheme();
 
   if (article === undefined) {
     return (
@@ -217,10 +219,11 @@ export function ArticleScreen() {
             Fala com um profissional de saúde sobre {topic?.label.toLowerCase() ?? 'este tema'}.
           </Text>
           <Button
+            testID="article-start-conversation"
             label="Iniciar conversa"
             onPress={() =>
               router.push({
-                pathname: '/(patient)/triage',
+                pathname: '/triage',
                 params: { topic: article.topic },
               })
             }

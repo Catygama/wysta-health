@@ -5,13 +5,15 @@ import { useAuthActions } from '@convex-dev/auth/react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { colors, spacing, typography } from '@/constants/theme';
+import { spacing, typography } from '@/constants/theme';
 import { strings } from '@/constants/strings';
 import { guestAuthEnabled } from '@/lib/env';
+import { useTheme } from '@/lib/theme';
 
 export default function Login() {
   const { signIn } = useAuthActions();
   const router = useRouter();
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -76,6 +78,7 @@ export default function Login() {
 
       <View style={{ gap: spacing.md }}>
         <Input
+          testID="auth-email-input"
           label={strings.auth.email}
           value={email}
           onChangeText={setEmail}
@@ -84,17 +87,19 @@ export default function Login() {
           placeholder="email@exemplo.pt"
         />
         <Input
+          testID="auth-password-input"
           label={strings.auth.password}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
         {error ? (
-          <Text style={{ ...typography.sm, color: colors.danger }}>
+          <Text testID="auth-error" style={{ ...typography.sm, color: colors.danger }}>
             {error}
           </Text>
         ) : null}
         <Button
+          testID="auth-login-button"
           label={strings.auth.login}
           onPress={handleLogin}
           loading={loading}
@@ -105,6 +110,7 @@ export default function Login() {
         <View style={{ gap: spacing.sm }}>
           <Divider label="ou" />
           <Button
+            testID="auth-guest-button"
             label="Entrar como convidada"
             variant="secondary"
             onPress={handleGuest}
@@ -113,7 +119,7 @@ export default function Login() {
         </View>
       )}
 
-      <Pressable onPress={() => router.push('/(auth)/register')} hitSlop={8}>
+      <Pressable testID="auth-register-link" onPress={() => router.push('/(auth)/register')} hitSlop={8}>
         <Text
           style={{
             ...typography.sm,
@@ -126,6 +132,7 @@ export default function Login() {
       </Pressable>
 
       <Pressable
+        testID="auth-professional-link"
         onPress={() => router.push('/(auth)/professional-login')}
         style={({ pressed }) => ({
           flexDirection: 'row',
@@ -157,6 +164,7 @@ export default function Login() {
 }
 
 function Divider({ label }: { label: string }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{

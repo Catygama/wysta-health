@@ -7,14 +7,16 @@ import {
   ActivityIndicator,
   TextInput,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { UrgencyAlert } from '@/screens/UrgencyAlert';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
 import { TOPICS, type TopicId } from '@/constants/topics';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useTheme } from '@/lib/theme';
 
 type Question = {
   id: string;
@@ -28,6 +30,8 @@ type Question = {
 export default function Triage() {
   const { topic } = useLocalSearchParams<{ topic: TopicId }>();
   const router = useRouter();
+  const { user, isLoading: authLoading, role } = useCurrentUser();
+  const { colors } = useTheme();
   const triage = useQuery(api.triage.getByTopic, topic ? { topic } : 'skip');
   const createConversation = useMutation(api.conversations.create);
 
@@ -88,6 +92,9 @@ export default function Triage() {
   }
 
   if (!topic) return null;
+  if (authLoading) return null;
+  if (!user) return <Redirect href="/(auth)/login" />;
+  if (role !== 'patient') return <Redirect href="/" />;
 
   if (triage === undefined) {
     return (
@@ -174,11 +181,26 @@ export default function Triage() {
 
   return (
     <ScrollView
+      testID="triage-screen"
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
       <View style={{ gap: spacing.sm }}>
+        <Text
+          testID="triage-current-meta"
+          style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+        >
+          {JSON.stringify({
+            id: current.id,
+            type: current.type,
+            isRedFlag: current.isRedFlag ?? false,
+            options: current.options ?? null,
+            step,
+            total,
+            isLast,
+          })}
+        </Text>
         <View
           style={{
             flexDirection: 'row',
@@ -255,6 +277,7 @@ export default function Triage() {
             {(['yes', 'no'] as const).map((opt) => (
               <Pressable
                 key={opt}
+                testID={`triage-option-${opt}`}
                 onPress={() => handleAnswer(opt)}
                 style={({ pressed }) => ({
                   flex: 1,
@@ -293,9 +316,10 @@ export default function Triage() {
 
         {current.type === 'multiple-choice' && current.options && (
           <View style={{ gap: spacing.sm }}>
-            {current.options.map((opt) => (
+            {current.options.map((opt, idx) => (
               <Pressable
                 key={opt}
+                testID={`triage-option-${idx}`}
                 onPress={() => handleAnswer(opt)}
                 style={({ pressed }) => ({
                   padding: spacing.md,
@@ -344,6 +368,7 @@ export default function Triage() {
                 return (
                   <Pressable
                     key={opt}
+                    testID={`triage-scale-${opt}`}
                     onPress={() => handleAnswer(value)}
                     style={({ pressed }) => ({
                       width: 44,
@@ -396,6 +421,7 @@ export default function Triage() {
         {current.type === 'text' && (
           <View style={{ gap: spacing.sm }}>
             <TextInput
+              testID="triage-text-input"
               value={String(answers[current.id] ?? '')}
               onChangeText={(v) =>
                 setAnswers({ ...answers, [current.id]: v })
@@ -416,6 +442,7 @@ export default function Triage() {
               }}
             />
             <Button
+              testID="triage-text-submit"
               label={isLast ? 'Concluir' : 'Continuar'}
               onPress={() => handleAnswer(String(answers[current.id] ?? ''))}
               disabled={

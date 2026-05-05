@@ -14,7 +14,8 @@ import { api } from '@/convex/_generated/api';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 import { strings } from '@/constants/strings';
 import { pickImage, uploadImage, type PickedImage } from '@/lib/upload';
 import { guestAuthEnabled } from '@/lib/env';
@@ -35,6 +36,7 @@ export default function ProfessionalSignup() {
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
   const submit = useMutation(api.users.submitProfessionalVerification);
   const router = useRouter();
+  const { colors } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -181,6 +183,7 @@ export default function ProfessionalSignup() {
 
       <Section title="1. Conta">
         <Input
+          testID="prof-signup-email-input"
           label={strings.auth.email}
           value={email}
           onChangeText={setEmail}
@@ -189,12 +192,14 @@ export default function ProfessionalSignup() {
           placeholder="email@instituicao.pt"
         />
         <Input
+          testID="prof-signup-password-input"
           label={strings.auth.password}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
         <Input
+          testID="prof-signup-password-confirm-input"
           label={strings.auth.confirmPassword}
           value={confirm}
           onChangeText={setConfirm}
@@ -204,6 +209,7 @@ export default function ProfessionalSignup() {
 
       <Section title="2. Identificação">
         <Input
+          testID="prof-signup-name-input"
           label="Nome a apresentar"
           value={displayName}
           onChangeText={setDisplayName}
@@ -215,6 +221,7 @@ export default function ProfessionalSignup() {
 
       <Section title="3. Cédula profissional">
         <Input
+          testID="prof-signup-license-input"
           label="Número da cédula"
           value={licenseNumber}
           onChangeText={setLicenseNumber}
@@ -279,6 +286,7 @@ export default function ProfessionalSignup() {
 
       <Section title="5. Notas (opcional)">
         <Input
+          testID="prof-signup-notes-input"
           label="Mensagem para a equipa de verificação"
           value={notes}
           onChangeText={setNotes}
@@ -288,11 +296,12 @@ export default function ProfessionalSignup() {
       </Section>
 
       {error ? (
-        <Text style={{ ...typography.sm, color: colors.danger }}>{error}</Text>
+        <Text testID="prof-signup-error" style={{ ...typography.sm, color: colors.danger }}>{error}</Text>
       ) : null}
 
       <View style={{ gap: spacing.sm }}>
         <Button
+          testID="prof-signup-submit-button"
           label="Submeter pedido"
           onPress={handleSubmit}
           loading={loading}
@@ -312,6 +321,7 @@ export default function ProfessionalSignup() {
         <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
           <Divider label="testes internos" />
           <Button
+            testID="prof-signup-guest-button"
             label="Entrar como profissional convidado"
             variant="secondary"
             onPress={handleGuest}
@@ -355,6 +365,7 @@ function Section({
   title: string;
   children: React.ReactNode;
 }) {
+  const { colors } = useTheme();
   return (
     <View style={{ gap: spacing.sm }}>
       <Text
@@ -380,6 +391,7 @@ function SpecialtyPicker({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const { colors } = useTheme();
   return (
     <View style={{ gap: spacing.sm }}>
       <Text
@@ -397,6 +409,7 @@ function SpecialtyPicker({
           return (
             <Pressable
               key={opt}
+              testID={`prof-signup-specialty-${opt.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`}
               onPress={() => onChange(opt)}
               style={{
                 paddingVertical: spacing.xs,
@@ -435,6 +448,7 @@ type DocSlotProps = {
 };
 
 function DocSlot({ label, doc, required, onPress, onRemove }: DocSlotProps) {
+  const { colors } = useTheme();
   if (!doc) {
     return (
       <Pressable
@@ -532,6 +546,7 @@ function DocSlot({ label, doc, required, onPress, onRemove }: DocSlotProps) {
 }
 
 function Divider({ label }: { label: string }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{

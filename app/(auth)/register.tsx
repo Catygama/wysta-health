@@ -5,12 +5,14 @@ import { useAuthActions } from '@convex-dev/auth/react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { colors, spacing, typography } from '@/constants/theme';
+import { spacing, typography } from '@/constants/theme';
 import { strings } from '@/constants/strings';
+import { useTheme } from '@/lib/theme';
 
 export default function Register() {
   const { signIn } = useAuthActions();
   const router = useRouter();
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -51,6 +53,7 @@ export default function Register() {
 
       <View style={{ gap: spacing.md }}>
         <Input
+          testID="auth-email-input"
           label={strings.auth.email}
           value={email}
           onChangeText={setEmail}
@@ -59,24 +62,26 @@ export default function Register() {
           placeholder="email@exemplo.pt"
         />
         <Input
+          testID="auth-password-input"
           label={strings.auth.password}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
         <Input
+          testID="auth-password-confirm-input"
           label={strings.auth.confirmPassword}
           value={confirm}
           onChangeText={setConfirm}
           secureTextEntry
         />
         {error ? (
-          <Text style={{ ...typography.sm, color: colors.danger }}>{error}</Text>
+          <Text testID="auth-error" style={{ ...typography.sm, color: colors.danger }}>{error}</Text>
         ) : null}
-        <Button label={strings.auth.register} onPress={handleRegister} loading={loading} />
+        <Button testID="auth-register-button" label={strings.auth.register} onPress={handleRegister} loading={loading} />
       </View>
 
-      <Pressable onPress={() => router.back()} hitSlop={8}>
+      <Pressable testID="auth-back-link" onPress={() => router.back()} hitSlop={8}>
         <Text style={{ ...typography.sm, color: colors.primary, textAlign: 'center' }}>
           {strings.auth.hasAccount} {strings.auth.login}
         </Text>

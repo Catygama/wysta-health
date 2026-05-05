@@ -1,7 +1,8 @@
 import { View, Text } from 'react-native';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
 import { Icon } from '@/components/ui/Icon';
 import { RISK_LABELS } from '@/constants/conversation';
+import { useTheme } from '@/lib/theme';
 
 const RISK_COLORS: Record<string, string> = {
   high: '#DC2626',
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function TriageSummary({ riskLevel, responses, questionLabels }: Props) {
+  const { colors } = useTheme();
   const color = RISK_COLORS[riskLevel ?? 'low'] ?? colors.text.secondary;
   const entries = Object.entries(responses);
   if (entries.length === 0) return null;

@@ -14,7 +14,8 @@ import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme, type ThemeMode } from '@/lib/theme';
 
 const AGE_RANGES = ['<18', '18-25', '26-35', '36-45', '46-55', '>55'];
 const PREGNANCY_OPTIONS: { value: string; label: string }[] = [
@@ -33,6 +34,7 @@ export default function Profile() {
   const { signOut } = useAuthActions();
   const user = useQuery(api.users.currentUser);
   const updateProfile = useMutation(api.users.updateProfile);
+  const { colors } = useTheme();
 
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState('');
@@ -139,7 +141,7 @@ export default function Profile() {
           O meu perfil
         </Text>
         {!editing && (
-          <Pressable onPress={() => setEditing(true)} hitSlop={8}>
+          <Pressable testID="profile-edit-button" onPress={() => setEditing(true)} hitSlop={8}>
             <Text
               style={{
                 ...typography.sm,
@@ -161,6 +163,7 @@ export default function Profile() {
         <View style={{ gap: spacing.lg }}>
           <Card>
             <Input
+              testID="profile-name-input"
               label="Nome a apresentar (opcional)"
               value={displayName}
               onChangeText={setDisplayName}
@@ -168,6 +171,7 @@ export default function Profile() {
               autoCapitalize="sentences"
             />
             <Input
+              testID="profile-location-input"
               label="Localidade (opcional)"
               value={location}
               onChangeText={setLocation}
@@ -187,6 +191,7 @@ export default function Profile() {
               {AGE_RANGES.map((age) => (
                 <SelectPill
                   key={age}
+                  testID={`profile-age-${age}`}
                   label={age}
                   active={ageRange === age}
                   onPress={() => setAgeRange(ageRange === age ? '' : age)}
@@ -200,6 +205,7 @@ export default function Profile() {
               {PREGNANCY_OPTIONS.map((opt) => (
                 <SelectRow
                   key={opt.value}
+                  testID={`profile-pregnancy-${opt.value}`}
                   label={opt.label}
                   active={pregnancyStatus === opt.value}
                   onPress={() =>
@@ -241,8 +247,9 @@ export default function Profile() {
           </Card>
 
           <View style={{ gap: spacing.sm }}>
-            <Button label="Guardar" onPress={save} loading={saving} />
+            <Button testID="profile-save-button" label="Guardar" onPress={save} loading={saving} />
             <Button
+              testID="profile-cancel-button"
               label="Cancelar"
               variant="secondary"
               onPress={cancel}
@@ -282,6 +289,8 @@ export default function Profile() {
           )}
         </View>
       )}
+
+      <ThemeCard />
 
       <View
         style={{
@@ -370,8 +379,79 @@ export default function Profile() {
 
       <BootstrapAdminCard />
 
-      <Button label="Terminar sessão" variant="secondary" onPress={confirmSignOut} />
+      <Button testID="profile-logout-button" label="Terminar sessão" variant="secondary" onPress={confirmSignOut} />
     </ScrollView>
+  );
+}
+
+const THEME_OPTIONS: { value: ThemeMode; label: string; description: string }[] = [
+  {
+    value: 'system',
+    label: 'Sistema',
+    description: 'Segue o tema do dispositivo',
+  },
+  { value: 'light', label: 'Claro', description: 'Forçar tema claro' },
+  { value: 'dark', label: 'Escuro', description: 'Forçar tema escuro' },
+];
+
+function ThemeCard() {
+  const { colors, mode, setMode } = useTheme();
+  return (
+    <View
+      style={{
+        backgroundColor: colors.background.secondary,
+        borderRadius: radius.lg,
+        padding: spacing.md,
+        gap: spacing.sm,
+      }}
+    >
+      <Text
+        style={{
+          ...typography.sm,
+          fontWeight: '600',
+          color: colors.text.primary,
+        }}
+      >
+        Tema
+      </Text>
+      <View style={{ gap: spacing.xs }}>
+        {THEME_OPTIONS.map((opt) => {
+          const active = mode === opt.value;
+          return (
+            <Pressable
+              key={opt.value}
+              testID={`theme-mode-${opt.value}`}
+              onPress={() => setMode(opt.value)}
+              style={{
+                padding: spacing.md,
+                borderRadius: radius.md,
+                borderWidth: 1.5,
+                borderColor: active ? colors.primary : colors.border,
+                backgroundColor: active
+                  ? colors.primaryLight
+                  : colors.background.primary,
+                gap: 2,
+              }}
+            >
+              <Text
+                style={{
+                  ...typography.base,
+                  fontWeight: '600',
+                  color: active ? colors.primary : colors.text.primary,
+                }}
+              >
+                {opt.label}
+              </Text>
+              <Text
+                style={{ ...typography.xs, color: colors.text.secondary }}
+              >
+                {opt.description}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -380,6 +460,7 @@ function BootstrapAdminCard() {
   const bootstrap = useMutation(api.users.bootstrapAdmin);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { colors } = useTheme();
 
   // Hidden once an admin exists. Surfaces a one-shot promotion path on
   // fresh deployments so seed/admin features can be unlocked from the
@@ -425,6 +506,7 @@ function BootstrapAdminCard() {
         <Text style={{ ...typography.xs, color: colors.danger }}>{error}</Text>
       ) : null}
       <Button
+        testID="profile-bootstrap-admin-button"
         label="Tornar-me administrador"
         variant="secondary"
         onPress={promote}
@@ -435,6 +517,7 @@ function BootstrapAdminCard() {
 }
 
 function Card({ title, children }: { title?: string; children: React.ReactNode }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{
@@ -461,6 +544,7 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
 }
 
 function Row({ label, value, selectable }: { label: string; value: string; selectable?: boolean }) {
+  const { colors } = useTheme();
   return (
     <View style={{ gap: 2 }}>
       <Text style={{ ...typography.xs, color: colors.text.secondary }}>
@@ -476,10 +560,12 @@ function Row({ label, value, selectable }: { label: string; value: string; selec
   );
 }
 
-type SelectPillProps = { label: string; active: boolean; onPress: () => void };
-function SelectPill({ label, active, onPress }: SelectPillProps) {
+type SelectPillProps = { label: string; active: boolean; onPress: () => void; testID?: string };
+function SelectPill({ label, active, onPress, testID }: SelectPillProps) {
+  const { colors } = useTheme();
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       style={{
         paddingVertical: spacing.sm,
@@ -505,10 +591,12 @@ function SelectPill({ label, active, onPress }: SelectPillProps) {
   );
 }
 
-type SelectRowProps = { label: string; active: boolean; onPress: () => void };
-function SelectRow({ label, active, onPress }: SelectRowProps) {
+type SelectRowProps = { label: string; active: boolean; onPress: () => void; testID?: string };
+function SelectRow({ label, active, onPress, testID }: SelectRowProps) {
+  const { colors } = useTheme();
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       style={{
         padding: spacing.md,
@@ -549,6 +637,7 @@ function TagEditor({
   onRemove,
   placeholder,
 }: TagEditorProps) {
+  const { colors } = useTheme();
   return (
     <View style={{ gap: spacing.sm }}>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
@@ -629,6 +718,7 @@ function TagEditor({
 }
 
 function TagList({ tags }: { tags: string[] }) {
+  const { colors } = useTheme();
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
       {tags.map((tag) => (

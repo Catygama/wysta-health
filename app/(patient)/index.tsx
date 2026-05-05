@@ -4,7 +4,8 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { TOPICS } from '@/constants/topics';
 import { Icon } from '@/components/ui/Icon';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 import {
   STATUS_LABELS,
   STATUS_COLORS,
@@ -17,6 +18,7 @@ export default function PatientHome() {
   const router = useRouter();
   const user = useQuery(api.users.currentUser);
   const conversations = useQuery(api.conversations.listForPatient) ?? [];
+  const { colors } = useTheme();
   const greeting = user?.profile?.displayName || user?.email?.split('@')[0] || 'utente';
 
   const latest = conversations[0];
@@ -86,9 +88,10 @@ export default function PatientHome() {
           {TOPICS.map((topic) => (
             <Pressable
               key={topic.id}
+              testID={`patient-topic-${topic.id}`}
               onPress={() =>
                 router.push({
-                  pathname: '/(patient)/triage',
+                  pathname: '/triage',
                   params: { topic: topic.id },
                 })
               }
@@ -143,11 +146,13 @@ type ContinueCardProps = {
 };
 
 function ContinueCard({ conversation, activeCount, onPress }: ContinueCardProps) {
+  const { colors } = useTheme();
   const topic = TOPICS.find((t) => t.id === conversation.topic);
   const statusColor = STATUS_COLORS[conversation.status] ?? colors.text.secondary;
   const priorityColor = PRIORITY_COLORS[conversation.priority] ?? colors.text.secondary;
   return (
     <Pressable
+      testID="patient-continue-card"
       onPress={onPress}
       style={({ pressed }) => ({
         backgroundColor: pressed
@@ -254,6 +259,7 @@ function ContinueCard({ conversation, activeCount, onPress }: ContinueCardProps)
 }
 
 function EmergencyNotice() {
+  const { colors } = useTheme();
   return (
     <View
       style={{

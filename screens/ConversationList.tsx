@@ -1,6 +1,7 @@
 import { View, Text, Pressable, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 import { TOPICS } from '@/constants/topics';
 import {
   STATUS_LABELS,
@@ -33,9 +34,11 @@ export function ConversationList({
   showPriority = false,
 }: Props) {
   const router = useRouter();
+  const { colors } = useTheme();
 
   return (
     <FlatList
+      testID="conversations-list"
       data={conversations}
       keyExtractor={(item) => item._id}
       contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
@@ -46,6 +49,7 @@ export function ConversationList({
         const priorityColor = PRIORITY_COLORS[item.priority] ?? '#6B7280';
         return (
           <Pressable
+            testID={`conversation-row-${item._id}`}
             onPress={() =>
               router.push({
                 pathname: `${basePath}/[id]` as any,

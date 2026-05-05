@@ -1,14 +1,17 @@
 import { View, Text, Pressable } from 'react-native';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
 import { strings } from '@/constants/strings';
+import { useTheme } from '@/lib/theme';
 
 type Props = {
   onDismiss: () => void;
 };
 
 export function UrgencyAlert({ onDismiss }: Props) {
+  const { colors } = useTheme();
   return (
     <View
+      testID="urgency-alert"
       style={{
         backgroundColor: colors.dangerLight,
         borderRadius: radius.lg,
@@ -42,7 +45,7 @@ export function UrgencyAlert({ onDismiss }: Props) {
           Emergência: 112
         </Text>
       </View>
-      <Pressable onPress={onDismiss}>
+      <Pressable testID="urgency-dismiss" onPress={onDismiss}>
         <Text
           style={{
             ...typography.sm,

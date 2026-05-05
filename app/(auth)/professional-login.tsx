@@ -5,13 +5,15 @@ import { useAuthActions } from '@convex-dev/auth/react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { colors, spacing, typography } from '@/constants/theme';
+import { spacing, typography } from '@/constants/theme';
 import { strings } from '@/constants/strings';
 import { guestAuthEnabled } from '@/lib/env';
+import { useTheme } from '@/lib/theme';
 
 export default function ProfessionalLogin() {
   const { signIn } = useAuthActions();
   const router = useRouter();
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -88,6 +90,7 @@ export default function ProfessionalLogin() {
 
       <View style={{ gap: spacing.md }}>
         <Input
+          testID="auth-email-input"
           label={strings.auth.email}
           value={email}
           onChangeText={setEmail}
@@ -96,17 +99,19 @@ export default function ProfessionalLogin() {
           placeholder="email@instituicao.pt"
         />
         <Input
+          testID="auth-password-input"
           label={strings.auth.password}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
         {error ? (
-          <Text style={{ ...typography.sm, color: colors.danger }}>
+          <Text testID="auth-error" style={{ ...typography.sm, color: colors.danger }}>
             {error}
           </Text>
         ) : null}
         <Button
+          testID="auth-professional-login-button"
           label={strings.auth.login}
           onPress={handleLogin}
           loading={loading}
@@ -117,6 +122,7 @@ export default function ProfessionalLogin() {
         <View style={{ gap: spacing.sm }}>
           <Divider label="ou" />
           <Button
+            testID="auth-professional-guest-button"
             label="Entrar como profissional convidado"
             variant="secondary"
             onPress={handleGuest}
@@ -135,6 +141,7 @@ export default function ProfessionalLogin() {
       )}
 
       <Pressable
+        testID="auth-professional-signup-link"
         onPress={() => router.push('/(auth)/professional-signup')}
         hitSlop={8}
       >
@@ -150,6 +157,7 @@ export default function ProfessionalLogin() {
       </Pressable>
 
       <Pressable
+        testID="auth-back-to-patient-link"
         onPress={() => router.replace('/(auth)/login')}
         style={{ paddingVertical: spacing.sm }}
         hitSlop={8}
@@ -169,6 +177,7 @@ export default function ProfessionalLogin() {
 }
 
 function Divider({ label }: { label: string }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{

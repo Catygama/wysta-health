@@ -1,9 +1,10 @@
 import { Redirect, Stack } from 'expo-router';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { colors } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 export default function AdminLayout() {
   const { user, isLoading, role } = useCurrentUser();
+  const { colors } = useTheme();
   if (isLoading) return null;
   if (!user) return <Redirect href="/(auth)/login" />;
   if (!role) return <Redirect href="/(auth)/onboarding" />;

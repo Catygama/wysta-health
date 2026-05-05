@@ -10,7 +10,8 @@ import {
 import { useQuery } from 'convex/react';
 import { useRouter, useSegments } from 'expo-router';
 import { api } from '@/convex/_generated/api';
-import { colors, spacing, typography, radius } from '@/constants/theme';
+import { spacing, typography, radius } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 import { TOPICS, type TopicId } from '@/constants/topics';
 import { Icon } from '@/components/ui/Icon';
 
@@ -20,6 +21,7 @@ export function EducationScreen() {
   const articles = useQuery(api.education.listByTopic, {}) ?? [];
   const router = useRouter();
   const segments = useSegments();
+  const { colors } = useTheme();
   const isPatient = segments[0] === '(patient)';
   const basePath = isPatient
     ? '/(patient)/education'
@@ -64,6 +66,7 @@ export function EducationScreen() {
               color={colors.text.tertiary}
             />
             <TextInput
+              testID="edu-search"
               value={search}
               onChangeText={setSearch}
               placeholder="Pesquisar conteúdos..."
@@ -86,6 +89,7 @@ export function EducationScreen() {
             contentContainerStyle={{ gap: spacing.sm }}
           >
             <FilterChip
+              testID="edu-chip-all"
               label="Todos"
               active={topicFilter === null}
               onPress={() => setTopicFilter(null)}
@@ -93,6 +97,7 @@ export function EducationScreen() {
             {TOPICS.map((topic) => (
               <FilterChip
                 key={topic.id}
+                testID={`edu-chip-${topic.id}`}
                 label={topic.label}
                 icon={topic.icon}
                 active={topicFilter === topic.id}
@@ -161,6 +166,7 @@ export function EducationScreen() {
         const topic = TOPICS.find((t) => t.id === item.topic);
         return (
           <Pressable
+            testID={`edu-article-${item._id}`}
             onPress={() => router.push(`${basePath}/${item._id}`)}
             style={({ pressed }) => ({
               backgroundColor: pressed
@@ -237,11 +243,14 @@ type ChipProps = {
   icon?: { sf: any; ion: any };
   active: boolean;
   onPress: () => void;
+  testID?: string;
 };
 
-function FilterChip({ label, icon, active, onPress }: ChipProps) {
+function FilterChip({ label, icon, active, onPress, testID }: ChipProps) {
+  const { colors } = useTheme();
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       style={({ pressed }) => ({
         flexDirection: 'row',

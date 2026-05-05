@@ -1,5 +1,6 @@
 import { TextInput, View, Text } from 'react-native';
-import { colors, spacing, radius, typography } from '@/constants/theme';
+import { spacing, radius, typography } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 type Props = {
   label: string;
@@ -10,6 +11,7 @@ type Props = {
   error?: string;
   keyboardType?: 'default' | 'email-address';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  testID?: string;
 };
 
 export function Input({
@@ -21,13 +23,16 @@ export function Input({
   error,
   keyboardType = 'default',
   autoCapitalize = 'sentences',
+  testID,
 }: Props) {
+  const { colors } = useTheme();
   return (
     <View style={{ gap: spacing.xs }}>
       <Text style={{ ...typography.sm, fontWeight: '500', color: colors.text.secondary }}>
         {label}
       </Text>
       <TextInput
+        testID={testID}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -45,7 +50,7 @@ export function Input({
         }}
       />
       {error ? (
-        <Text style={{ ...typography.xs, color: colors.danger }}>{error}</Text>
+        <Text testID={testID ? `${testID}-error` : undefined} style={{ ...typography.xs, color: colors.danger }}>{error}</Text>
       ) : null}
     </View>
   );
