@@ -263,34 +263,21 @@ function EmergencyNotice() {
   return (
     <View
       style={{
-        backgroundColor: colors.dangerLight,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        backgroundColor: colors.background.secondary,
         borderRadius: radius.md,
-        padding: spacing.md,
-        flexDirection: 'row',
-        gap: spacing.sm,
-        borderWidth: 1,
-        borderColor: colors.danger,
       }}
     >
-      <Icon
-        name={{ sf: 'exclamationmark.triangle.fill', ion: 'warning' }}
-        size={20}
-        color={colors.danger}
-      />
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text
-          style={{
-            ...typography.sm,
-            fontWeight: '700',
-            color: colors.danger,
-          }}
-        >
-          Em caso de emergência
-        </Text>
-        <Text style={{ ...typography.sm, color: colors.text.primary }}>
-          Liga 112 ou contacta o SNS 24 (808 24 24 24). Este serviço não substitui uma urgência médica.
-        </Text>
-      </View>
+      <Text
+        style={{
+          ...typography.xs,
+          color: colors.text.tertiary,
+          textAlign: 'center',
+        }}
+      >
+        Em caso de emergência liga 112 ou SNS 24 (808 24 24 24). Este serviço não substitui uma urgência médica.
+      </Text>
     </View>
   );
 }
