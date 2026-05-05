@@ -36,6 +36,24 @@ const riskBucket = v.object({
   guidance: v.string(),
 });
 
+const aiPurpose = v.union(
+  v.literal('chat-summary'),
+  v.literal('user-summary'),
+  v.literal('chat'),
+  v.literal('chat-validator-safety'),
+  v.literal('chat-validator-clinical'),
+  v.literal('chat-judge')
+);
+
+const aiProvider = v.union(
+  v.literal('openai'),
+  v.literal('anthropic'),
+  v.literal('mistral'),
+  v.literal('google'),
+  v.literal('azure-openai'),
+  v.literal('custom')
+);
+
 export default defineSchema({
   ...authTables,
 
@@ -178,4 +196,48 @@ export default defineSchema({
     ),
     details: v.string(),
   }).index('by_conversation', ['conversationId']),
+
+  aiConfigs: defineTable({
+    purpose: aiPurpose,
+    provider: aiProvider,
+    modelId: v.string(),
+    endpoint: v.optional(v.string()),
+    apiKey: v.string(),
+    createdBy: v.id('users'),
+    notes: v.optional(v.string()),
+  }).index('by_purpose', ['purpose']),
+
+  aiPrompts: defineTable({
+    purpose: aiPurpose,
+    systemPrompt: v.string(),
+    userTemplate: v.optional(v.string()),
+    temperature: v.optional(v.number()),
+    maxTokens: v.optional(v.number()),
+    createdBy: v.id('users'),
+    notes: v.optional(v.string()),
+  }).index('by_purpose', ['purpose']),
+
+  aiInvocations: defineTable({
+    purpose: aiPurpose,
+    configId: v.id('aiConfigs'),
+    promptId: v.id('aiPrompts'),
+    userId: v.optional(v.id('users')),
+    conversationId: v.optional(v.id('conversations')),
+    parentInvocationId: v.optional(v.id('aiInvocations')),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('success'),
+      v.literal('error'),
+      v.literal('blocked')
+    ),
+    errorMessage: v.optional(v.string()),
+    inputTokens: v.optional(v.number()),
+    outputTokens: v.optional(v.number()),
+    costUsd: v.optional(v.number()),
+    latencyMs: v.optional(v.number()),
+  })
+    .index('by_user', ['userId'])
+    .index('by_conversation', ['conversationId'])
+    .index('by_parent', ['parentInvocationId'])
+    .index('by_purpose', ['purpose']),
 });
