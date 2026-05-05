@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.74",
+    "@ai-sdk/openai": "^3.0.60",
     "@convex-dev/auth": "^0.0.91",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.4.0",

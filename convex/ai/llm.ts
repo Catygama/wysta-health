@@ -1,5 +1,6 @@
 import { generateText, generateObject } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createOpenAI } from '@ai-sdk/openai';
 import type { ZodTypeAny, z } from 'zod';
 import type { AiProvider } from './types';
 
@@ -24,6 +25,13 @@ function buildModel(args: LlmCallArgs) {
   switch (args.provider) {
     case 'anthropic': {
       const client = createAnthropic({
+        apiKey: args.apiKey,
+        ...(args.endpoint ? { baseURL: args.endpoint } : {}),
+      });
+      return client(args.modelId);
+    }
+    case 'openai': {
+      const client = createOpenAI({
         apiKey: args.apiKey,
         ...(args.endpoint ? { baseURL: args.endpoint } : {}),
       });
