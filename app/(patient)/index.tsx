@@ -1,6 +1,15 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery } from 'convex/react';
+import { useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { TOPICS } from '@/constants/topics';
 import { Icon } from '@/components/ui/Icon';
@@ -71,6 +80,8 @@ export default function PatientHome() {
           }
         />
       )}
+
+      <AnonymousAiButton />
 
       <EmergencyNotice />
 
@@ -279,5 +290,197 @@ function EmergencyNotice() {
         Em caso de emergência liga 112 ou SNS 24 (808 24 24 24). Este serviço não substitui uma urgência médica.
       </Text>
     </View>
+  );
+}
+
+function AnonymousAiButton() {
+  const { colors } = useTheme();
+  const respond = useAction(api.ai.assistant.respondAnonymous);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function close() {
+    // Discard everything when modal closes — that's the point of anonymous.
+    setOpen(false);
+    setQuery('');
+    setAnswer(null);
+    setError(null);
+  }
+
+  async function submit() {
+    setError(null);
+    if (query.trim().length < 5) {
+      setError('Escreve uma pergunta mais completa.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await respond({ query: query.trim() });
+      setAnswer(r.answer);
+    } catch (e: any) {
+      setError(e?.message ?? 'Falha');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <Pressable
+        testID="anonymous-ai-open"
+        onPress={() => setOpen(true)}
+        style={{
+          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.md,
+          borderRadius: radius.md,
+          backgroundColor: colors.primaryLight,
+          borderWidth: 1,
+          borderColor: colors.primary,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+        }}
+      >
+        <Text style={{ fontSize: 18 }}>✨</Text>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{ ...typography.sm, fontWeight: '600', color: colors.primary }}
+          >
+            Pergunta anónima à AI
+          </Text>
+          <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+            Não fica guardado no teu histórico
+          </Text>
+        </View>
+      </Pressable>
+
+      <Modal visible={open} animationType="slide" transparent onRequestClose={close}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#0008',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.background.primary,
+              borderTopLeftRadius: radius.lg,
+              borderTopRightRadius: radius.lg,
+              padding: spacing.lg,
+              gap: spacing.md,
+              maxHeight: '85%',
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  ...typography.lg,
+                  fontWeight: '700',
+                  color: colors.text.primary,
+                }}
+              >
+                ✨ Pergunta anónima
+              </Text>
+              <Pressable testID="anonymous-ai-close" onPress={close}>
+                <Text style={{ ...typography.lg, color: colors.text.secondary }}>×</Text>
+              </Pressable>
+            </View>
+            <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+              Esta pergunta não é guardada na app, nem o teu histórico, nem é
+              partilhada com um profissional. A resposta passa pelos mesmos
+              validadores de segurança e é apenas informativa. Para casos
+              urgentes liga 112 ou SNS 24 (808 24 24 24).
+            </Text>
+
+            {answer ? (
+              <ScrollView
+                style={{ maxHeight: 320 }}
+                contentContainerStyle={{
+                  backgroundColor: colors.primaryLight,
+                  padding: spacing.md,
+                  borderRadius: radius.md,
+                }}
+              >
+                <Text
+                  style={{ ...typography.sm, color: colors.text.primary, lineHeight: 22 }}
+                  selectable
+                >
+                  {answer}
+                </Text>
+              </ScrollView>
+            ) : (
+              <TextInput
+                testID="anonymous-ai-input"
+                multiline
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Escreve a tua pergunta..."
+                placeholderTextColor={colors.text.secondary}
+                style={{
+                  ...typography.sm,
+                  color: colors.text.primary,
+                  backgroundColor: colors.background.secondary,
+                  borderRadius: radius.md,
+                  padding: spacing.sm,
+                  minHeight: 120,
+                  textAlignVertical: 'top',
+                }}
+              />
+            )}
+
+            {error && (
+              <Text style={{ ...typography.sm, color: colors.danger }}>{error}</Text>
+            )}
+
+            {answer ? (
+              <Pressable
+                testID="anonymous-ai-done"
+                onPress={close}
+                style={{
+                  backgroundColor: colors.primary,
+                  paddingVertical: spacing.sm,
+                  borderRadius: radius.md,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ ...typography.sm, fontWeight: '600', color: '#fff' }}>
+                  Fechar (apaga tudo)
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                testID="anonymous-ai-submit"
+                disabled={busy}
+                onPress={submit}
+                style={{
+                  backgroundColor: busy ? colors.border : colors.primary,
+                  paddingVertical: spacing.sm,
+                  borderRadius: radius.md,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: spacing.xs,
+                }}
+              >
+                {busy && <ActivityIndicator color="#fff" size="small" />}
+                <Text style={{ ...typography.sm, fontWeight: '600', color: '#fff' }}>
+                  {busy ? 'A processar...' : 'Enviar'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }

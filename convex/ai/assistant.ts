@@ -26,6 +26,97 @@ const judgeSchema = z.object({
   finalAnswer: z.string(),
 });
 
+// Anonymous variant: no conversationId, no message rows are persisted.
+// The chain still runs (so safety/clinical validators apply) and the audit
+// row still lands in aiInvocations *with* userId so the cost cap and abuse
+// controls remain effective. The audit row never carries inputText/outputText
+// (per the existing data-minimisation contract), so even the audit reveals
+// nothing about *what* was asked.
+export const respondAnonymous = action({
+  args: { query: v.string() },
+  handler: async (ctx, { query }): Promise<{
+    sent: boolean;
+    answer: string;
+  }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+
+    const profile = await ctx.runQuery(internal.ai.assistant.gatherProfileOnly, {
+      userId,
+    });
+
+    const baseVars = {
+      query,
+      conversationHistory: 'Pergunta anónima — sem conversa associada.',
+      patientProfile: profile.patientProfile,
+      recentSummary: profile.recentSummary,
+      topicAndRisk: 'Anónimo (sem conversa)',
+    };
+
+    const draft = await runAgent(ctx, {
+      purpose: 'chat',
+      vars: baseVars,
+      userId,
+    });
+    const [safety, clinical] = await Promise.all([
+      runAgent(ctx, {
+        purpose: 'chat-validator-safety',
+        vars: { ...baseVars, draft: draft.output },
+        userId,
+        parentInvocationId: draft.invocationId,
+        outputSchema: validatorSchema,
+      }),
+      runAgent(ctx, {
+        purpose: 'chat-validator-clinical',
+        vars: { ...baseVars, draft: draft.output },
+        userId,
+        parentInvocationId: draft.invocationId,
+        outputSchema: validatorSchema,
+      }),
+    ]);
+    const judged = await runAgent(ctx, {
+      purpose: 'chat-judge',
+      vars: {
+        ...baseVars,
+        draft: draft.output,
+        safety: JSON.stringify(safety.output),
+        clinical: JSON.stringify(clinical.output),
+      },
+      userId,
+      parentInvocationId: draft.invocationId,
+      outputSchema: judgeSchema,
+    });
+
+    const sent = judged.output.action === 'send';
+    const answer = sent
+      ? judged.output.finalAnswer +
+        '\n\n— Assistente AI. Pergunta anónima — não guardada no teu histórico.'
+      : 'Esta pergunta não foi enviada por ser de natureza clínica que requer profissional. Para acompanhamento, abre uma conversa normal — esta resposta não foi guardada.';
+
+    return { sent, answer };
+  },
+});
+
+export const gatherProfileOnly = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    const profile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+    const lines: string[] = [];
+    if (profile?.ageRange) lines.push(`Faixa etária: ${profile.ageRange}`);
+    if (profile?.pregnancyStatus) lines.push(`Gravidez: ${profile.pregnancyStatus}`);
+    if (profile?.conditions?.length) lines.push(`Condições: ${profile.conditions.join(', ')}`);
+    if (profile?.medications?.length) lines.push(`Medicação: ${profile.medications.join(', ')}`);
+    return {
+      patientProfile:
+        lines.length > 0 ? lines.join('\n') : 'Sem dados clínicos estruturados registados.',
+      recentSummary: profile?.aiSummary ?? 'Sem histórico clínico.',
+    };
+  },
+});
+
 export const respond = action({
   args: {
     conversationId: v.id('conversations'),
