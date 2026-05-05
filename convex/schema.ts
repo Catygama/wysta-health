@@ -108,15 +108,27 @@ export default defineSchema({
     title: v.string(),
     lastMessageAt: v.number(),
     riskLevel: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
+    // Legacy escalation fields kept for old records. New flow uses
+    // needsReview + priority bump + closureReason instead.
     escalationLevel: v.optional(escalationLevel),
     escalationNotes: v.optional(v.string()),
+    needsReview: v.optional(v.boolean()),
+    reviewQuestion: v.optional(v.string()),
+    reviewRequestedBy: v.optional(v.id('users')),
+    closureReason: v.optional(
+      v.union(
+        v.literal('resolved'),
+        v.literal('redirected-to-in-person'),
+      )
+    ),
     aiSummary: v.optional(v.string()),
     aiSummaryAt: v.optional(v.number()),
   })
     .index('by_patient', ['patientId'])
     .index('by_professional', ['professionalId'])
     .index('by_status', ['status'])
-    .index('by_priority', ['priority']),
+    .index('by_priority', ['priority'])
+    .index('by_review', ['needsReview']),
 
   messages: defineTable({
     conversationId: v.id('conversations'),
@@ -198,7 +210,10 @@ export default defineSchema({
       v.literal('priority-change'),
       v.literal('note-added'),
       v.literal('assigned'),
-      v.literal('unassigned')
+      v.literal('unassigned'),
+      v.literal('review-requested'),
+      v.literal('review-cleared'),
+      v.literal('redirect-recommended')
     ),
     details: v.string(),
   }).index('by_conversation', ['conversationId']),

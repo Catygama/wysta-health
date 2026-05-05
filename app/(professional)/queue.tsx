@@ -7,20 +7,20 @@ import { Icon } from '@/components/ui/Icon';
 import { spacing, typography, radius } from '@/constants/theme';
 import { useTheme } from '@/lib/theme';
 
-type Status = 'waiting' | 'active' | 'escalated' | 'closed';
-type Scope = 'mine' | 'unassigned' | 'all';
+type Status = 'waiting' | 'active' | 'closed';
+type Scope = 'mine' | 'unassigned' | 'review' | 'all';
 type Priority = 'urgent' | 'high' | 'medium' | 'low';
 
 const STATUS_FILTERS: { label: string; value: Status | undefined }[] = [
   { label: 'Todas', value: undefined },
   { label: 'A aguardar', value: 'waiting' },
   { label: 'Em curso', value: 'active' },
-  { label: 'Escaladas', value: 'escalated' },
 ];
 
 const SCOPE_FILTERS: { label: string; value: Scope }[] = [
   { label: 'Minhas', value: 'mine' },
   { label: 'Não atribuídas', value: 'unassigned' },
+  { label: 'Para revisão', value: 'review' },
   { label: 'Todas', value: 'all' },
 ];
 

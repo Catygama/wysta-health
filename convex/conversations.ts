@@ -23,13 +23,6 @@ const status = v.union(
   v.literal('closed')
 );
 
-const escalationLevel = v.union(
-  v.literal('routine'),
-  v.literal('urgent'),
-  v.literal('same-day'),
-  v.literal('emergency')
-);
-
 const PRIORITY_RANK: Record<string, number> = {
   urgent: 4,
   high: 3,
@@ -65,7 +58,12 @@ export const listForProfessional = query({
   args: {
     status: v.optional(status),
     scope: v.optional(
-      v.union(v.literal('all'), v.literal('mine'), v.literal('unassigned'))
+      v.union(
+        v.literal('all'),
+        v.literal('mine'),
+        v.literal('unassigned'),
+        v.literal('review')
+      )
     ),
     priority: v.optional(
       v.union(
@@ -96,6 +94,8 @@ export const listForProfessional = query({
       conversations = conversations.filter((c) => c.professionalId === userId);
     } else if (args.scope === 'unassigned') {
       conversations = conversations.filter((c) => !c.professionalId);
+    } else if (args.scope === 'review') {
+      conversations = conversations.filter((c) => c.needsReview === true);
     }
 
     if (args.priority) {
@@ -120,7 +120,7 @@ export const queueStats = query({
     return {
       mine: all.filter((c) => c.professionalId === userId && c.status !== 'closed').length,
       unassigned: all.filter((c) => !c.professionalId && c.status === 'waiting').length,
-      escalated: all.filter((c) => c.status === 'escalated').length,
+      review: all.filter((c) => c.needsReview === true && c.status !== 'closed').length,
       urgent: all.filter((c) => c.priority === 'urgent' && c.status !== 'closed').length,
     };
   },
@@ -317,37 +317,146 @@ export const close = mutation({
   },
 });
 
-export const escalate = mutation({
+// Bumps priority to 'urgent' and writes an audit row. Idempotent.
+// Replaces the old "escalate" flow's priority side-effect.
+export const markUrgent = mutation({
+  args: { id: v.id('conversations') },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+    await requireProfessional(ctx, userId);
+    const conv = await ctx.db.get(args.id);
+    if (!conv) throw new Error('Conversation not found');
+    if (conv.status === 'closed') {
+      throw new Error('Conversa fechada — reabrir para alterar prioridade');
+    }
+    if (conv.priority === 'urgent') return;
+    await ctx.db.patch(args.id, { priority: 'urgent' });
+    await ctx.db.insert('auditLog', {
+      conversationId: args.id,
+      professionalId: userId,
+      action: 'priority-change',
+      details: `${conv.priority} → urgent`,
+    });
+  },
+});
+
+// Flags a conversation for second-opinion review by another professional.
+// Question is stored on the conversation + posted as an internal note so
+// the back-and-forth lives with the rest of the conversation context.
+export const requestReview = mutation({
+  args: { id: v.id('conversations'), question: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+    await requireProfessional(ctx, userId);
+    const trimmed = args.question.trim();
+    if (trimmed.length < 5) throw new Error('Pergunta demasiado curta');
+    const conv = await ctx.db.get(args.id);
+    if (!conv) throw new Error('Conversation not found');
+    if (conv.status === 'closed') throw new Error('Conversa fechada');
+    await ctx.db.patch(args.id, {
+      needsReview: true,
+      reviewQuestion: trimmed,
+      reviewRequestedBy: userId,
+    });
+    await ctx.db.insert('messages', {
+      conversationId: args.id,
+      senderId: userId,
+      content: `Pedido de 2ª opinião: ${trimmed}`,
+      messageType: 'text',
+      isInternal: true,
+    });
+    await ctx.db.insert('auditLog', {
+      conversationId: args.id,
+      professionalId: userId,
+      action: 'review-requested',
+      details: trimmed,
+    });
+  },
+});
+
+// Clears the review flag (after another professional has responded
+// internally, or the original requester decides it's resolved).
+export const clearReview = mutation({
+  args: { id: v.id('conversations') },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+    await requireProfessional(ctx, userId);
+    const conv = await ctx.db.get(args.id);
+    if (!conv) throw new Error('Conversation not found');
+    if (!conv.needsReview) return;
+    await ctx.db.patch(args.id, {
+      needsReview: false,
+      reviewQuestion: undefined,
+      reviewRequestedBy: undefined,
+    });
+    await ctx.db.insert('auditLog', {
+      conversationId: args.id,
+      professionalId: userId,
+      action: 'review-cleared',
+      details: 'Pedido de revisão resolvido',
+    });
+  },
+});
+
+// Sends a templated message to the patient recommending in-person care.
+// Optionally closes the conversation with closureReason='redirected-to-in-person'.
+export const recommendInPerson = mutation({
   args: {
     id: v.id('conversations'),
-    level: escalationLevel,
-    notes: v.string(),
+    alsoClose: v.optional(v.boolean()),
+    extraNote: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
     await requireProfessional(ctx, userId);
-    if (!args.notes.trim()) throw new Error('Notas obrigatórias');
+    const conv = await ctx.db.get(args.id);
+    if (!conv) throw new Error('Conversation not found');
+    if (conv.status === 'closed') throw new Error('Conversa já fechada');
+
+    const baseMsg =
+      'Pelo que descreves, recomendamos que procures consulta presencial nos teus cuidados primários ou liga ao SNS 24 (808 24 24 24). Se for uma situação urgente, liga 112.';
+    const content = args.extraNote?.trim()
+      ? `${baseMsg}\n\nNota da profissional: ${args.extraNote.trim()}`
+      : baseMsg;
     const now = Date.now();
-    await ctx.db.patch(args.id, {
-      status: 'escalated',
-      priority: 'urgent',
-      escalationLevel: args.level,
-      escalationNotes: args.notes,
-      lastMessageAt: now,
-    });
+
     await ctx.db.insert('messages', {
       conversationId: args.id,
       senderId: userId,
-      content:
-        'A tua conversa foi escalada e tem agora prioridade urgente. Em breve receberás resposta.',
+      content,
       messageType: 'system',
     });
+    await ctx.db.patch(args.id, { lastMessageAt: now });
+
+    if (args.alsoClose) {
+      await ctx.db.patch(args.id, {
+        status: 'closed',
+        closureReason: 'redirected-to-in-person',
+        lastMessageAt: now,
+      });
+      await ctx.db.insert('auditLog', {
+        conversationId: args.id,
+        professionalId: userId,
+        action: 'closure',
+        details: 'Encerrada com encaminhamento para presencial',
+      });
+      // Trigger AI summary as the close mutation would have.
+      await ctx.scheduler.runAfter(
+        0,
+        internal.ai.chatSummary.generateOnClose,
+        { conversationId: args.id, triggeredBy: userId }
+      );
+    }
+
     await ctx.db.insert('auditLog', {
       conversationId: args.id,
       professionalId: userId,
-      action: 'escalation',
-      details: `[${args.level}] ${args.notes}`,
+      action: 'redirect-recommended',
+      details: args.extraNote?.trim() ?? '',
     });
   },
 });

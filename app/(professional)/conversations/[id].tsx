@@ -5,13 +5,15 @@ import {
   Pressable,
   ActivityIndicator,
   ScrollView,
+  Modal,
+  TextInput,
+  Switch,
 } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { MessageThread } from '@/screens/MessageThread';
 import { TriageSummary } from '@/screens/TriageSummary';
-import { EscalateSheet } from '@/screens/EscalateSheet';
 import { Icon } from '@/components/ui/Icon';
 import { TOPICS } from '@/constants/topics';
 import { spacing, typography, radius } from '@/constants/theme';
@@ -21,7 +23,6 @@ import {
   STATUS_COLORS,
   PRIORITY_LABELS,
   PRIORITY_COLORS,
-  ESCALATION_LEVEL_LABELS,
 } from '@/constants/conversation';
 import { useTabBar } from '@/contexts/TabBarContext';
 
@@ -40,8 +41,13 @@ export default function ProfessionalConversation() {
   );
   const assign = useMutation(api.conversations.assign);
   const close = useMutation(api.conversations.close);
+  const markUrgent = useMutation(api.conversations.markUrgent);
+  const requestReview = useMutation(api.conversations.requestReview);
+  const clearReview = useMutation(api.conversations.clearReview);
+  const recommendInPerson = useMutation(api.conversations.recommendInPerson);
   const { setIsTabBarHidden } = useTabBar();
-  const [escalateOpen, setEscalateOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [redirectOpen, setRedirectOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('chat');
   const { colors } = useTheme();
 
@@ -128,13 +134,10 @@ export default function ProfessionalConversation() {
             label={`Prioridade ${PRIORITY_LABELS[conversation.priority] ?? conversation.priority}`}
             color={priorityColor}
           />
-          {conversation.escalationLevel && (
+          {conversation.needsReview && (
             <Badge
-              label={
-                ESCALATION_LEVEL_LABELS[conversation.escalationLevel] ??
-                conversation.escalationLevel
-              }
-              color={colors.danger as any}
+              label="Para revisão"
+              color={colors.warning as any}
             />
           )}
           <Badge
@@ -188,35 +191,7 @@ export default function ProfessionalConversation() {
           />
         )}
 
-        {conversation.escalationNotes && (
-          <View
-            style={{
-              backgroundColor: colors.dangerLight,
-              borderWidth: 1,
-              borderColor: colors.danger,
-              borderRadius: radius.md,
-              padding: spacing.sm,
-              gap: spacing.xs,
-            }}
-          >
-            <Text
-              style={{
-                ...typography.xs,
-                fontWeight: '700',
-                color: colors.danger,
-              }}
-            >
-              Notas de escalamento
-            </Text>
-            <Text
-              style={{ ...typography.sm, color: colors.text.primary }}
-            >
-              {conversation.escalationNotes}
-            </Text>
-          </View>
-        )}
-
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           {canAssign && (
             <ActionButton
               testID="conversation-assign-button"
@@ -225,12 +200,36 @@ export default function ProfessionalConversation() {
               onPress={() => assign({ id: id as any })}
             />
           )}
+          {canEscalate && conversation.priority !== 'urgent' && (
+            <ActionButton
+              testID="conversation-mark-urgent"
+              label="Aumentar prioridade"
+              variant="danger"
+              onPress={() => markUrgent({ id: id as any })}
+            />
+          )}
+          {canEscalate && !conversation.needsReview && (
+            <ActionButton
+              testID="conversation-request-review"
+              label="Pedir 2ª opinião"
+              variant="secondary"
+              onPress={() => setReviewOpen(true)}
+            />
+          )}
+          {canEscalate && conversation.needsReview && (
+            <ActionButton
+              testID="conversation-clear-review"
+              label="Marcar revisão concluída"
+              variant="secondary"
+              onPress={() => clearReview({ id: id as any })}
+            />
+          )}
           {canEscalate && (
             <ActionButton
-              testID="conversation-escalate-button"
-              label="Escalar"
-              variant="danger"
-              onPress={() => setEscalateOpen(true)}
+              testID="conversation-recommend-in-person"
+              label="Recomendar presencial"
+              variant="secondary"
+              onPress={() => setRedirectOpen(true)}
             />
           )}
           {canClose && (
@@ -242,6 +241,25 @@ export default function ProfessionalConversation() {
             />
           )}
         </View>
+        {conversation.needsReview && conversation.reviewQuestion && (
+          <View
+            style={{
+              backgroundColor: colors.warningLight,
+              borderWidth: 1,
+              borderColor: colors.warning,
+              borderRadius: radius.md,
+              padding: spacing.sm,
+              gap: 2,
+            }}
+          >
+            <Text style={{ ...typography.xs, fontWeight: '700', color: colors.warning }}>
+              Pedido de 2ª opinião
+            </Text>
+            <Text style={{ ...typography.sm, color: colors.text.primary }}>
+              {conversation.reviewQuestion}
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
       <View
@@ -294,10 +312,19 @@ export default function ProfessionalConversation() {
         )}
       </View>
 
-      <EscalateSheet
-        visible={escalateOpen}
-        conversationId={id}
-        onClose={() => setEscalateOpen(false)}
+      <RequestReviewSheet
+        visible={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        onSubmit={async (question) => {
+          await requestReview({ id: id as any, question });
+        }}
+      />
+      <RecommendInPersonSheet
+        visible={redirectOpen}
+        onClose={() => setRedirectOpen(false)}
+        onSubmit={async (extraNote, alsoClose) => {
+          await recommendInPerson({ id: id as any, extraNote, alsoClose });
+        }}
       />
     </View>
   );
@@ -606,5 +633,222 @@ function UserSummaryBanner({
         </Text>
       </Pressable>
     </View>
+  );
+}
+
+function RequestReviewSheet({
+  visible,
+  onClose,
+  onSubmit,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (question: string) => Promise<void>;
+}) {
+  const { colors } = useTheme();
+  const [question, setQuestion] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    setError(null);
+    if (question.trim().length < 5) {
+      setError('Descreve a dúvida em pelo menos 5 caracteres.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await onSubmit(question.trim());
+      setQuestion('');
+      onClose();
+    } catch (e: any) {
+      setError(e?.message ?? 'Falha');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: '#0008', justifyContent: 'flex-end' }}>
+        <View
+          style={{
+            backgroundColor: colors.background.primary,
+            borderTopLeftRadius: radius.lg,
+            borderTopRightRadius: radius.lg,
+            padding: spacing.lg,
+            gap: spacing.md,
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ ...typography.lg, fontWeight: '700', color: colors.text.primary }}>
+              Pedir 2ª opinião
+            </Text>
+            <Pressable testID="review-close" onPress={onClose}>
+              <Text style={{ ...typography.lg, color: colors.text.secondary }}>×</Text>
+            </Pressable>
+          </View>
+          <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+            Descreve a dúvida clínica. A pergunta vai para notas internas e a
+            conversa aparece no filtro "Para revisão" para os colegas.
+          </Text>
+          <TextInput
+            testID="review-question-input"
+            multiline
+            value={question}
+            onChangeText={setQuestion}
+            placeholder="Qual é a dúvida? Que tipo de input procuras?"
+            placeholderTextColor={colors.text.secondary}
+            style={{
+              ...typography.sm,
+              color: colors.text.primary,
+              backgroundColor: colors.background.secondary,
+              borderRadius: radius.md,
+              padding: spacing.sm,
+              minHeight: 100,
+              textAlignVertical: 'top',
+            }}
+          />
+          {error && <Text style={{ ...typography.sm, color: colors.danger }}>{error}</Text>}
+          <Pressable
+            testID="review-submit"
+            disabled={busy}
+            onPress={submit}
+            style={{
+              backgroundColor: busy ? colors.border : colors.primary,
+              paddingVertical: spacing.sm,
+              borderRadius: radius.md,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: spacing.xs,
+            }}
+          >
+            {busy && <ActivityIndicator color="#fff" size="small" />}
+            <Text style={{ ...typography.sm, fontWeight: '600', color: '#fff' }}>
+              {busy ? 'A pedir...' : 'Pedir revisão'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function RecommendInPersonSheet({
+  visible,
+  onClose,
+  onSubmit,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (extraNote: string | undefined, alsoClose: boolean) => Promise<void>;
+}) {
+  const { colors } = useTheme();
+  const [extraNote, setExtraNote] = useState('');
+  const [alsoClose, setAlsoClose] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    setError(null);
+    setBusy(true);
+    try {
+      await onSubmit(extraNote.trim() || undefined, alsoClose);
+      setExtraNote('');
+      onClose();
+    } catch (e: any) {
+      setError(e?.message ?? 'Falha');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: '#0008', justifyContent: 'flex-end' }}>
+        <View
+          style={{
+            backgroundColor: colors.background.primary,
+            borderTopLeftRadius: radius.lg,
+            borderTopRightRadius: radius.lg,
+            padding: spacing.lg,
+            gap: spacing.md,
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ ...typography.lg, fontWeight: '700', color: colors.text.primary }}>
+              Recomendar consulta presencial
+            </Text>
+            <Pressable testID="redirect-close" onPress={onClose}>
+              <Text style={{ ...typography.lg, color: colors.text.secondary }}>×</Text>
+            </Pressable>
+          </View>
+          <View
+            style={{
+              backgroundColor: colors.background.secondary,
+              borderRadius: radius.md,
+              padding: spacing.sm,
+              gap: 4,
+            }}
+          >
+            <Text style={{ ...typography.xs, fontWeight: '600', color: colors.text.secondary }}>
+              Mensagem que a utente vai receber
+            </Text>
+            <Text style={{ ...typography.sm, color: colors.text.primary, lineHeight: 20 }}>
+              Pelo que descreves, recomendamos que procures consulta presencial nos teus cuidados primários ou liga ao SNS 24 (808 24 24 24). Se for uma situação urgente, liga 112.
+            </Text>
+          </View>
+          <TextInput
+            testID="redirect-extra-note"
+            multiline
+            value={extraNote}
+            onChangeText={setExtraNote}
+            placeholder="Nota adicional para a utente (opcional)"
+            placeholderTextColor={colors.text.secondary}
+            style={{
+              ...typography.sm,
+              color: colors.text.primary,
+              backgroundColor: colors.background.secondary,
+              borderRadius: radius.md,
+              padding: spacing.sm,
+              minHeight: 60,
+              textAlignVertical: 'top',
+            }}
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Switch
+              testID="redirect-also-close"
+              value={alsoClose}
+              onValueChange={setAlsoClose}
+              thumbColor={alsoClose ? colors.primary : colors.text.tertiary}
+            />
+            <Text style={{ ...typography.sm, color: colors.text.primary }}>
+              Encerrar a conversa após enviar
+            </Text>
+          </View>
+          {error && <Text style={{ ...typography.sm, color: colors.danger }}>{error}</Text>}
+          <Pressable
+            testID="redirect-submit"
+            disabled={busy}
+            onPress={submit}
+            style={{
+              backgroundColor: busy ? colors.border : colors.primary,
+              paddingVertical: spacing.sm,
+              borderRadius: radius.md,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: spacing.xs,
+            }}
+          >
+            {busy && <ActivityIndicator color="#fff" size="small" />}
+            <Text style={{ ...typography.sm, fontWeight: '600', color: '#fff' }}>
+              {busy ? 'A enviar...' : 'Enviar mensagem'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
