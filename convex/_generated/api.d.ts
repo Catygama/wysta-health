@@ -10,6 +10,7 @@
 
 import type * as ai_chatSummary from "../ai/chatSummary.js";
 import type * as ai_configs from "../ai/configs.js";
+import type * as ai_defaults from "../ai/defaults.js";
 import type * as ai_invocations from "../ai/invocations.js";
 import type * as ai_llm from "../ai/llm.js";
 import type * as ai_pricing from "../ai/pricing.js";
@@ -42,6 +43,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   "ai/chatSummary": typeof ai_chatSummary;
   "ai/configs": typeof ai_configs;
+  "ai/defaults": typeof ai_defaults;
   "ai/invocations": typeof ai_invocations;
   "ai/llm": typeof ai_llm;
   "ai/pricing": typeof ai_pricing;

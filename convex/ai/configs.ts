@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query, internalQuery } from '../_generated/server';
 import { requireAdmin } from '../lib/auth';
+import { DEFAULT_PROMPTS, DEFAULT_CONFIGS } from './defaults';
 
 const aiPurpose = v.union(
   v.literal('chat-summary'),
@@ -62,6 +63,41 @@ export const listConfigsMasked = query({
     await requireAdmin(ctx);
     const rows = await ctx.db.query('aiConfigs').order('desc').take(200);
     return rows.map((r) => ({ ...r, apiKey: maskApiKey(r.apiKey) }));
+  },
+});
+
+// Admin convenience: insert canonical default config + prompt for a purpose
+// in one call. Caller supplies only the apiKey (which we never bake into the
+// repo). Source of truth for the prompt + model lives in convex/ai/defaults.ts.
+export const applyDefaults = mutation({
+  args: { purpose: aiPurpose, apiKey: v.string() },
+  handler: async (ctx, { purpose, apiKey }) => {
+    const { userId } = await requireAdmin(ctx);
+
+    const cfg = DEFAULT_CONFIGS[purpose];
+    const prompt = DEFAULT_PROMPTS[purpose];
+    if (!cfg || !prompt) {
+      throw new Error(`No default registered for purpose: ${purpose}`);
+    }
+
+    const configId = await ctx.db.insert('aiConfigs', {
+      purpose,
+      provider: cfg.provider,
+      modelId: cfg.modelId,
+      apiKey,
+      createdBy: userId,
+      notes: `default applied via admin UI`,
+    });
+    const promptId = await ctx.db.insert('aiPrompts', {
+      purpose,
+      systemPrompt: prompt.systemPrompt,
+      userTemplate: prompt.userTemplate,
+      temperature: prompt.temperature,
+      maxTokens: prompt.maxTokens,
+      createdBy: userId,
+      notes: `default applied via admin UI`,
+    });
+    return { configId, promptId };
   },
 });
 

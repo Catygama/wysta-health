@@ -7,7 +7,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from 'react-native';
-import { useQuery, useAction } from 'convex/react';
+import { useQuery, useAction, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { spacing, typography, radius } from '@/constants/theme';
 import { useTheme } from '@/lib/theme';
@@ -24,12 +24,34 @@ export default function AdminAi() {
   const configs = useQuery(api.ai.configs.listConfigsMasked);
   const invocations = useQuery(api.ai.invocations.listLatest);
   const adminTest = useAction(api.ai.chatSummary.adminTest);
+  const applyDefaults = useMutation(api.ai.configs.applyDefaults);
   const [input, setInput] = useState(
     'Utente: Tenho dores menstruais fortes há 3 meses.\nProfissional: Recomendo ibuprofeno 400mg de 8/8h e consulta presencial.'
   );
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [keyInput, setKeyInput] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [applyMsg, setApplyMsg] = useState<string | null>(null);
+
+  async function applySetup() {
+    setApplyMsg(null);
+    if (keyInput.trim().length < 10) {
+      setApplyMsg('Cola uma API key válida.');
+      return;
+    }
+    setApplying(true);
+    try {
+      await applyDefaults({ purpose: 'chat-summary', apiKey: keyInput.trim() });
+      setKeyInput('');
+      setApplyMsg('Setup aplicado. Config + prompt default em vigor.');
+    } catch (e: any) {
+      setApplyMsg(e?.message ?? 'Falha ao aplicar setup');
+    } finally {
+      setApplying(false);
+    }
+  }
 
   async function runTest() {
     setError(null);
@@ -51,6 +73,63 @@ export default function AdminAi() {
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}
       contentInsetAdjustmentBehavior="automatic"
     >
+      {/* Setup default — applies canonical config + prompt with the supplied key */}
+      <Card title="Setup default — chat-summary" colors={colors}>
+        <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+          Cola uma API key OpenAI. Insere config (gpt-4o-mini) + prompt clínico
+          default. Append-only — corre várias vezes para rotação de key.
+        </Text>
+        <TextInput
+          testID="admin-ai-key-input"
+          value={keyInput}
+          onChangeText={setKeyInput}
+          placeholder="sk-proj-..."
+          placeholderTextColor={colors.text.secondary}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={{
+            ...typography.sm,
+            color: colors.text.primary,
+            backgroundColor: colors.background.primary,
+            borderRadius: radius.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: spacing.sm,
+          }}
+        />
+        <Pressable
+          testID="admin-ai-apply-defaults"
+          disabled={applying || keyInput.trim().length === 0}
+          onPress={applySetup}
+          style={{
+            backgroundColor:
+              applying || keyInput.trim().length === 0 ? colors.border : colors.primary,
+            paddingVertical: spacing.sm,
+            borderRadius: radius.md,
+            alignItems: 'center',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: spacing.xs,
+          }}
+        >
+          {applying && <ActivityIndicator color="#fff" size="small" />}
+          <Text style={{ ...typography.sm, fontWeight: '600', color: '#fff' }}>
+            {applying ? 'A aplicar...' : 'Aplicar setup default'}
+          </Text>
+        </Pressable>
+        {applyMsg && (
+          <Text
+            style={{
+              ...typography.sm,
+              color: applyMsg.startsWith('Setup') ? colors.primary : colors.danger,
+            }}
+          >
+            {applyMsg}
+          </Text>
+        )}
+      </Card>
+
       {/* Test form */}
       <Card title="Teste rápido — chat-summary" colors={colors}>
         <TextInput
