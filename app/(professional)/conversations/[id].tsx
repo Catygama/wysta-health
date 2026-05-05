@@ -66,10 +66,10 @@ export default function ProfessionalConversation() {
 
   const topic = TOPICS.find((t) => t.id === conversation.topic);
   const triageMessage = messages?.find((m) => m.metadata?.triageData);
-  const canAssign =
-    conversation.status === 'waiting' || !conversation.professionalId;
   const isMine = conversation.professionalId === user._id;
   const isClosed = conversation.status === 'closed';
+  const canAssign = !isMine && !isClosed;
+  const isAssignedToOther = !!conversation.professionalId && !isMine;
   const canClose = isMine && !isClosed;
   const canEscalate = isMine && !isClosed;
 
@@ -220,7 +220,7 @@ export default function ProfessionalConversation() {
           {canAssign && (
             <ActionButton
               testID="conversation-assign-button"
-              label="Atribuir a mim"
+              label={isAssignedToOther ? 'Assumir conversa' : 'Atribuir a mim'}
               variant="primary"
               onPress={() => assign({ id: id as any })}
             />

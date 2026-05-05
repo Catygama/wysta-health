@@ -244,18 +244,22 @@ export const assign = mutation({
     await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
     if (!conv) throw new Error('Conversation not found');
-    if (conv.professionalId && conv.professionalId !== userId) {
-      throw new Error('Conversa já atribuída a outro profissional');
+    if (conv.status === 'closed') {
+      throw new Error('Conversa fechada não pode ser reatribuída');
     }
+    if (conv.professionalId === userId) return; // already mine, no-op
+    const wasAssignedToOther = !!conv.professionalId;
     await ctx.db.patch(args.id, {
       professionalId: userId,
-      status: conv.status === 'closed' ? conv.status : 'active',
+      status: 'active',
     });
     await ctx.db.insert('auditLog', {
       conversationId: args.id,
       professionalId: userId,
       action: 'assigned',
-      details: 'Conversa atribuída ao profissional',
+      details: wasAssignedToOther
+        ? 'Conversa reatribuída ao profissional (take-over)'
+        : 'Conversa atribuída ao profissional',
     });
   },
 });
