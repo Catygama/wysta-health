@@ -13,6 +13,7 @@ import { createAccount } from '@convex-dev/auth/server';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { TRIAGE_SEEDS, ARTICLE_SEEDS } from './lib/seedData';
+import { runAgent } from './ai/runAgent';
 
 function assertE2E() {
   if (process.env.CONVEX_E2E_ENABLED !== 'true') {
@@ -29,6 +30,9 @@ const DOMAIN_TABLES = [
   'userProfiles',
   'triageQuestions',
   'educationalContent',
+  'aiConfigs',
+  'aiPrompts',
+  'aiInvocations',
 ] as const;
 
 const AUTH_TABLES = [
@@ -304,6 +308,88 @@ export const listMessages = query({
       .collect();
   },
 });
+
+// --- AI infra helpers (E2E-gated) ---------------------------------------
+
+const aiPurpose = v.union(
+  v.literal('chat-summary'),
+  v.literal('user-summary'),
+  v.literal('chat'),
+  v.literal('chat-validator-safety'),
+  v.literal('chat-validator-clinical'),
+  v.literal('chat-judge'),
+);
+
+const aiProvider = v.union(
+  v.literal('openai'),
+  v.literal('anthropic'),
+  v.literal('mistral'),
+  v.literal('google'),
+  v.literal('azure-openai'),
+  v.literal('custom'),
+);
+
+export const seedAiConfig = mutation({
+  args: {
+    purpose: aiPurpose,
+    provider: aiProvider,
+    modelId: v.string(),
+    endpoint: v.optional(v.string()),
+    apiKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    assertE2E();
+    const someUser = await ctx.db.query('users').first();
+    if (!someUser) throw new Error('No users to attribute createdBy');
+    return ctx.db.insert('aiConfigs', { ...args, createdBy: someUser._id });
+  },
+});
+
+export const seedAiPrompt = mutation({
+  args: {
+    purpose: aiPurpose,
+    systemPrompt: v.string(),
+    userTemplate: v.optional(v.string()),
+    temperature: v.optional(v.number()),
+    maxTokens: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    assertE2E();
+    const someUser = await ctx.db.query('users').first();
+    if (!someUser) throw new Error('No users to attribute createdBy');
+    return ctx.db.insert('aiPrompts', { ...args, createdBy: someUser._id });
+  },
+});
+
+export const runChatSummaryTest = action({
+  args: { conversationText: v.string() },
+  handler: async (ctx, { conversationText }) => {
+    assertE2E();
+    const result = await runAgent(ctx, {
+      purpose: 'chat-summary',
+      vars: { conversationText },
+    });
+    return { output: result.output, invocationId: result.invocationId };
+  },
+});
+
+export const getLatestAiInvocation = query({
+  args: {},
+  handler: async (ctx) => {
+    assertE2E();
+    return ctx.db.query('aiInvocations').order('desc').first();
+  },
+});
+
+export const listAiConfigsRaw = query({
+  args: {},
+  handler: async (ctx) => {
+    assertE2E();
+    return ctx.db.query('aiConfigs').order('desc').take(10);
+  },
+});
+
+// --- end AI infra helpers ------------------------------------------------
 
 export const seedDomainContent = mutation({
   args: {},
