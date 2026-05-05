@@ -223,6 +223,12 @@ export default defineSchema({
     notes: v.optional(v.string()),
   }).index('by_purpose', ['purpose']),
 
+  aiSettings: defineTable({
+    dailyCostCapUsd: v.number(),
+    createdBy: v.id('users'),
+    notes: v.optional(v.string()),
+  }),
+
   aiInvocations: defineTable({
     purpose: aiPurpose,
     configId: v.id('aiConfigs'),

@@ -25,6 +25,30 @@ export default function AdminAi() {
   const invocations = useQuery(api.ai.invocations.listLatest);
   const adminTest = useAction(api.ai.chatSummary.adminTest);
   const applyDefaults = useMutation(api.ai.configs.applyDefaults);
+  const settings = useQuery(api.ai.settings.currentSettings);
+  const updateCap = useMutation(api.ai.settings.updateDailyCostCap);
+  const [capInput, setCapInput] = useState('');
+  const [savingCap, setSavingCap] = useState(false);
+  const [capMsg, setCapMsg] = useState<string | null>(null);
+
+  async function saveCap() {
+    setCapMsg(null);
+    const usd = Number(capInput);
+    if (!isFinite(usd) || usd <= 0 || usd > 100) {
+      setCapMsg('Insere um valor entre 0 e 100 USD.');
+      return;
+    }
+    setSavingCap(true);
+    try {
+      await updateCap({ dailyCostCapUsd: usd });
+      setCapInput('');
+      setCapMsg(`Limite atualizado para $${usd.toFixed(2)}/dia/utente.`);
+    } catch (e: any) {
+      setCapMsg(e?.message ?? 'Falha');
+    } finally {
+      setSavingCap(false);
+    }
+  }
   const [input, setInput] = useState(
     'Utente: Tenho dores menstruais fortes há 3 meses.\nProfissional: Recomendo ibuprofeno 400mg de 8/8h e consulta presencial.'
   );
@@ -73,6 +97,82 @@ export default function AdminAi() {
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}
       contentInsetAdjustmentBehavior="automatic"
     >
+      {/* Cost cap */}
+      <Card title="Limite diário por utente" colors={colors}>
+        <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+          Cada chamada AI conta para o gasto total do utente nas últimas 24h.
+          Acima do limite, o `runAgent` rejeita até passarem 24h.
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Text style={{ ...typography.lg, fontWeight: '700', color: colors.primary }}>
+            {settings === undefined
+              ? '...'
+              : `$${settings.dailyCostCapUsd.toFixed(2)}`}
+          </Text>
+          {settings && !settings.hasOverride && (
+            <Text style={{ ...typography.xs, color: colors.text.tertiary }}>
+              (default — nunca alterado)
+            </Text>
+          )}
+          {settings?.lastChangedAt && (
+            <Text style={{ ...typography.xs, color: colors.text.tertiary }}>
+              alterado {new Date(settings.lastChangedAt).toLocaleDateString('pt-PT')}
+            </Text>
+          )}
+        </View>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <TextInput
+            testID="admin-ai-cap-input"
+            value={capInput}
+            onChangeText={setCapInput}
+            placeholder="Novo valor em USD"
+            placeholderTextColor={colors.text.secondary}
+            keyboardType="decimal-pad"
+            style={{
+              ...typography.sm,
+              flex: 1,
+              color: colors.text.primary,
+              backgroundColor: colors.background.primary,
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing.sm,
+            }}
+          />
+          <Pressable
+            testID="admin-ai-cap-save"
+            disabled={savingCap || capInput.trim().length === 0}
+            onPress={saveCap}
+            style={{
+              backgroundColor:
+                savingCap || capInput.trim().length === 0 ? colors.border : colors.primary,
+              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.md,
+              borderRadius: radius.md,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'row',
+              gap: spacing.xs,
+            }}
+          >
+            {savingCap && <ActivityIndicator color="#fff" size="small" />}
+            <Text style={{ ...typography.sm, fontWeight: '600', color: '#fff' }}>
+              Guardar
+            </Text>
+          </Pressable>
+        </View>
+        {capMsg && (
+          <Text
+            style={{
+              ...typography.sm,
+              color: capMsg.startsWith('Limite') ? colors.primary : colors.danger,
+            }}
+          >
+            {capMsg}
+          </Text>
+        )}
+      </Card>
+
       {/* Setup default — applies canonical config + prompt with the supplied key */}
       <Card title="Setup default — chat-summary" colors={colors}>
         <Text style={{ ...typography.xs, color: colors.text.secondary }}>

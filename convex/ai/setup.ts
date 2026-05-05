@@ -91,11 +91,23 @@ export const getLatestInvocation = internalQuery({
 });
 
 // CLI convenience: seed canonical defaults for every purpose that has one.
-// Pass the apiKey once; gets reused for each purpose's config row.
+// Pass the apiKey once; gets reused for each purpose's config row. Also
+// seeds the org-wide $1.00/day cost cap if no aiSettings row exists yet.
 export const applyAllDefaults = internalMutation({
   args: { apiKey: v.string() },
   handler: async (ctx, { apiKey }) => {
     const createdBy = await firstUserId(ctx);
+
+    // Seed default cost cap once (idempotent — only if no row exists).
+    const existingCap = await ctx.db.query('aiSettings').first();
+    if (!existingCap) {
+      await ctx.db.insert('aiSettings', {
+        dailyCostCapUsd: 1.0,
+        createdBy,
+        notes: 'initial seed via applyAllDefaults',
+      });
+    }
+
     const purposes = Object.keys(DEFAULT_PROMPTS) as AiPurpose[];
     const inserted: Array<{ purpose: AiPurpose; configId: string; promptId: string }> = [];
     for (const purpose of purposes) {

@@ -33,6 +33,7 @@ const DOMAIN_TABLES = [
   'aiConfigs',
   'aiPrompts',
   'aiInvocations',
+  'aiSettings',
 ] as const;
 
 const AUTH_TABLES = [
