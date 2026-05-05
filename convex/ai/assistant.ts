@@ -9,7 +9,12 @@
 // the judge's invocation. If the judge blocks, a system message is posted
 // indicating the question was forwarded to a professional.
 
-import { action, internalMutation, internalQuery } from '../_generated/server';
+import {
+  action,
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from '../_generated/server';
 import { v } from 'convex/values';
 import { z } from 'zod';
 import { internal } from '../_generated/api';
@@ -94,6 +99,103 @@ export const respondAnonymous = action({
       : 'Esta pergunta não foi enviada por ser de natureza clínica que requer profissional. Para acompanhamento, abre uma conversa normal — esta resposta não foi guardada.';
 
     return { sent, answer };
+  },
+});
+
+// Background trigger from messages.send when the patient writes in an
+// ai-only conversation. Re-runs the same chain as `respond` and persists
+// the answer as a new ai-response message. Tolerates failures so a bad
+// LLM call doesn't break the patient's own message which already landed.
+export const respondAuto = internalAction({
+  args: {
+    conversationId: v.id('conversations'),
+    query: v.string(),
+  },
+  handler: async (ctx, { conversationId, query }) => {
+    try {
+      const owner = await ctx.runQuery(internal.ai.assistant.getConversationPatient, {
+        conversationId,
+      });
+      if (!owner) return;
+
+      const ctxData = await ctx.runQuery(internal.ai.assistant.gatherContext, {
+        conversationId,
+        userId: owner,
+      });
+      if (!ctxData.allowed) return;
+
+      const baseVars = {
+        query,
+        conversationHistory: ctxData.conversationHistory,
+        patientProfile: ctxData.patientProfile,
+        recentSummary: ctxData.recentSummary,
+        topicAndRisk: ctxData.topicAndRisk,
+      };
+
+      const draft = await runAgent(ctx, {
+        purpose: 'chat',
+        vars: baseVars,
+        userId: owner,
+        conversationId,
+      });
+      const [safety, clinical] = await Promise.all([
+        runAgent(ctx, {
+          purpose: 'chat-validator-safety',
+          vars: { ...baseVars, draft: draft.output },
+          userId: owner,
+          conversationId,
+          parentInvocationId: draft.invocationId,
+          outputSchema: validatorSchema,
+        }),
+        runAgent(ctx, {
+          purpose: 'chat-validator-clinical',
+          vars: { ...baseVars, draft: draft.output },
+          userId: owner,
+          conversationId,
+          parentInvocationId: draft.invocationId,
+          outputSchema: validatorSchema,
+        }),
+      ]);
+      const judged = await runAgent(ctx, {
+        purpose: 'chat-judge',
+        vars: {
+          ...baseVars,
+          draft: draft.output,
+          safety: JSON.stringify(safety.output),
+          clinical: JSON.stringify(clinical.output),
+        },
+        userId: owner,
+        conversationId,
+        parentInvocationId: draft.invocationId,
+        outputSchema: judgeSchema,
+      });
+
+      const sent = judged.output.action === 'send';
+      const answer = sent
+        ? judged.output.finalAnswer
+        : 'Esta pergunta merece resposta de uma profissional. Toca em "Falar com profissional" para entrar na fila.';
+      await ctx.runMutation(internal.ai.assistant.recordAssistantMessage, {
+        conversationId,
+        patientId: owner,
+        content: answer,
+        sent,
+        invocationId: judged.invocationId,
+      });
+    } catch (e) {
+      console.warn(
+        `[assistant.respondAuto] failed for ${conversationId}: ${
+          e instanceof Error ? e.message : String(e)
+        }`
+      );
+    }
+  },
+});
+
+export const getConversationPatient = internalQuery({
+  args: { conversationId: v.id('conversations') },
+  handler: async (ctx, { conversationId }) => {
+    const conv = await ctx.db.get(conversationId);
+    return conv?.patientId ?? null;
   },
 });
 

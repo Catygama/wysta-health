@@ -123,6 +123,12 @@ export default defineSchema({
     ),
     aiSummary: v.optional(v.string()),
     aiSummaryAt: v.optional(v.number()),
+    // 'ai-only' conversations never enter the professional queue. The patient
+    // can request a human handoff which flips this to 'human-async'.
+    kind: v.optional(
+      v.union(v.literal('human-async'), v.literal('ai-only'))
+    ),
+    aiHandoffRequestedAt: v.optional(v.number()),
   })
     .index('by_patient', ['patientId'])
     .index('by_professional', ['professionalId'])

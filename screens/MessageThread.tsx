@@ -46,6 +46,7 @@ type Props = {
   canSend?: boolean;
   forceInternal?: boolean;
   closed?: boolean;
+  hideInlineAi?: boolean;
 };
 
 const RISK_COLORS: Record<string, string> = {
@@ -62,6 +63,7 @@ export function MessageThread({
   canSend = true,
   forceInternal = false,
   closed = false,
+  hideInlineAi = false,
 }: Props) {
   const messages =
     useQuery(api.messages.list, { conversationId: conversationId as any }) ??
@@ -377,6 +379,7 @@ export function MessageThread({
               </Text>
               {!isProfessional &&
                 !closed &&
+                !hideInlineAi &&
                 isOwn &&
                 item.messageType === 'text' && (
                   <AskAiInline

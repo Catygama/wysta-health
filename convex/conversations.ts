@@ -90,6 +90,12 @@ export const listForProfessional = query({
           .collect()
       : await ctx.db.query('conversations').collect();
 
+    // Hide ai-only conversations from the professional queue unless the
+    // patient has explicitly requested human handoff.
+    conversations = conversations.filter(
+      (c) => c.kind !== 'ai-only' || c.aiHandoffRequestedAt
+    );
+
     if (args.scope === 'mine') {
       conversations = conversations.filter((c) => c.professionalId === userId);
     } else if (args.scope === 'unassigned') {
@@ -116,7 +122,9 @@ export const queueStats = query({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
     if (profile?.role !== 'professional' && profile?.role !== 'admin') return null;
-    const all = await ctx.db.query('conversations').collect();
+    const all = (await ctx.db.query('conversations').collect()).filter(
+      (c) => c.kind !== 'ai-only' || c.aiHandoffRequestedAt
+    );
     return {
       mine: all.filter((c) => c.professionalId === userId && c.status !== 'closed').length,
       unassigned: all.filter((c) => !c.professionalId && c.status === 'waiting').length,
@@ -177,6 +185,9 @@ export const create = mutation({
         responses: v.record(v.string(), v.any()),
       })
     ),
+    kind: v.optional(
+      v.union(v.literal('human-async'), v.literal('ai-only'))
+    ),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -195,14 +206,17 @@ export const create = mutation({
     }
 
     const priority = priorityFromRisk(riskLevel);
+    const kind = args.kind ?? 'human-async';
     const conversationId = await ctx.db.insert('conversations', {
       patientId: userId,
       topic: args.topic,
       title: args.title,
       priority,
-      status: 'waiting',
+      // ai-only conversations skip the queue and go straight to active.
+      status: kind === 'ai-only' ? 'active' : 'waiting',
       lastMessageAt: Date.now(),
       riskLevel,
+      kind,
     });
 
     if (args.triageData) {
@@ -457,6 +471,33 @@ export const recommendInPerson = mutation({
       professionalId: userId,
       action: 'redirect-recommended',
       details: args.extraNote?.trim() ?? '',
+    });
+  },
+});
+
+// Patient requests human handoff on an ai-only conversation. Flips it to
+// 'human-async' and the conversation enters the queue like any other.
+export const requestAiHandoff = mutation({
+  args: { id: v.id('conversations') },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error('Not authenticated');
+    const conv = await ctx.db.get(args.id);
+    if (!conv) throw new Error('Conversation not found');
+    if (conv.patientId !== userId) throw new Error('Unauthorized');
+    if (conv.kind !== 'ai-only') return; // already a normal conversation
+    await ctx.db.patch(args.id, {
+      kind: 'human-async',
+      status: 'waiting',
+      aiHandoffRequestedAt: Date.now(),
+      lastMessageAt: Date.now(),
+    });
+    await ctx.db.insert('messages', {
+      conversationId: args.id,
+      senderId: userId,
+      content:
+        'A utente pediu acompanhamento por uma profissional. Esta conversa transitou da modalidade AI-only para fila de profissionais.',
+      messageType: 'system',
     });
   },
 });

@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery, useAction } from 'convex/react';
+import { useQuery, useAction, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { TOPICS } from '@/constants/topics';
 import { Icon } from '@/components/ui/Icon';
@@ -82,6 +82,7 @@ export default function PatientHome() {
       )}
 
       <AnonymousAiButton />
+      <StartAiOnlyButton />
 
       <EmergencyNotice />
 
@@ -482,5 +483,62 @@ function AnonymousAiButton() {
         </View>
       </Modal>
     </>
+  );
+}
+
+function StartAiOnlyButton() {
+  const { colors } = useTheme();
+  const router = useRouter();
+  const create = useMutation(api.conversations.create);
+  const [busy, setBusy] = useState(false);
+
+  async function start() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const id = await create({
+        topic: 'general',
+        title: 'Conversa com AI',
+        kind: 'ai-only',
+      });
+      router.push({
+        pathname: '/(patient)/conversations/[id]',
+        params: { id: id as any },
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Pressable
+      testID="start-ai-only"
+      onPress={start}
+      disabled={busy}
+      style={{
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderRadius: radius.md,
+        backgroundColor: colors.background.secondary,
+        borderWidth: 1,
+        borderColor: colors.primary,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+      }}
+    >
+      <Text style={{ fontSize: 18 }}>💬</Text>
+      <View style={{ flex: 1 }}>
+        <Text
+          style={{ ...typography.sm, fontWeight: '600', color: colors.primary }}
+        >
+          Conversar só com AI
+        </Text>
+        <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+          Resposta imediata · podes pedir profissional a qualquer momento
+        </Text>
+      </View>
+      {busy && <ActivityIndicator color={colors.primary} size="small" />}
+    </Pressable>
   );
 }

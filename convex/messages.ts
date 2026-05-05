@@ -85,6 +85,22 @@ export const send = mutation({
 
     const conv = await ctx.db.get(args.conversationId);
     if (!conv) return;
+
+    // ai-only conversations auto-trigger an AI reply when the patient sends
+    // a text message. The action is scheduled so the mutation returns
+    // promptly and the patient sees their own message land first.
+    if (
+      conv.kind === 'ai-only' &&
+      conv.patientId === userId &&
+      (args.messageType ?? 'text') === 'text'
+    ) {
+      await ctx.scheduler.runAfter(0, internal.ai.assistant.respondAuto, {
+        conversationId: args.conversationId,
+        query: args.content,
+      });
+      return;
+    }
+
     if (conv.patientId === userId) return;
 
     const senderProfile = await ctx.db
