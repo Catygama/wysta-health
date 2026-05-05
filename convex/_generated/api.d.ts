@@ -13,6 +13,7 @@ import type * as ai_invocations from "../ai/invocations.js";
 import type * as ai_llm from "../ai/llm.js";
 import type * as ai_pricing from "../ai/pricing.js";
 import type * as ai_prompts from "../ai/prompts.js";
+import type * as ai_runAgent from "../ai/runAgent.js";
 import type * as ai_template from "../ai/template.js";
 import type * as ai_types from "../ai/types.js";
 import type * as auth from "../auth.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   "ai/llm": typeof ai_llm;
   "ai/pricing": typeof ai_pricing;
   "ai/prompts": typeof ai_prompts;
+  "ai/runAgent": typeof ai_runAgent;
   "ai/template": typeof ai_template;
   "ai/types": typeof ai_types;
   auth: typeof auth;

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { convexTest } from 'convex-test';
 import schema from '../schema';
 import { internal } from '../_generated/api';
+import type { Id } from '../_generated/dataModel';
 
 vi.mock('./llm', () => ({
   callLlmText: vi.fn(),
