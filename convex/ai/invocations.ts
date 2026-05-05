@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { internalMutation, query } from '../_generated/server';
+import { internalMutation, internalQuery, query } from '../_generated/server';
 import { requireAdmin } from '../lib/auth';
 
 const aiPurpose = v.union(
@@ -60,6 +60,21 @@ export const listForConversation = query({
       .withIndex('by_conversation', (q) => q.eq('conversationId', conversationId))
       .order('desc')
       .take(100);
+  },
+});
+
+// Internal: total USD spent on AI by a given user in the last 24h.
+// Used by runAgent's per-user daily cost cap.
+export const dailySpentForUser = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    const since = Date.now() - 24 * 60 * 60 * 1000;
+    const rows = await ctx.db
+      .query('aiInvocations')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .filter((q) => q.gte(q.field('_creationTime'), since))
+      .take(500);
+    return rows.reduce((sum, r) => sum + (r.costUsd ?? 0), 0);
   },
 });
 

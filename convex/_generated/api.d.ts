@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as ai_assistant from "../ai/assistant.js";
 import type * as ai_chatSummary from "../ai/chatSummary.js";
 import type * as ai_configs from "../ai/configs.js";
 import type * as ai_defaults from "../ai/defaults.js";
@@ -19,6 +20,7 @@ import type * as ai_runAgent from "../ai/runAgent.js";
 import type * as ai_setup from "../ai/setup.js";
 import type * as ai_template from "../ai/template.js";
 import type * as ai_types from "../ai/types.js";
+import type * as ai_userSummary from "../ai/userSummary.js";
 import type * as auth from "../auth.js";
 import type * as conversations from "../conversations.js";
 import type * as education from "../education.js";
@@ -41,6 +43,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "ai/assistant": typeof ai_assistant;
   "ai/chatSummary": typeof ai_chatSummary;
   "ai/configs": typeof ai_configs;
   "ai/defaults": typeof ai_defaults;
@@ -52,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   "ai/setup": typeof ai_setup;
   "ai/template": typeof ai_template;
   "ai/types": typeof ai_types;
+  "ai/userSummary": typeof ai_userSummary;
   auth: typeof auth;
   conversations: typeof conversations;
   education: typeof education;

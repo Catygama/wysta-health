@@ -173,6 +173,11 @@ export default function ProfessionalConversation() {
                 {conversation.patient.medications?.join(', ')}
               </Text>
             )}
+            <UserSummaryBanner
+              patientId={conversation.patientId}
+              aiSummary={conversation.patient.aiSummary}
+              aiSummaryAt={conversation.patient.aiSummaryAt}
+            />
           </View>
         )}
 
@@ -516,5 +521,90 @@ function ActionButton({ label, variant, onPress, testID }: ActionButtonProps) {
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+
+function UserSummaryBanner({
+  patientId,
+  aiSummary,
+  aiSummaryAt,
+}: {
+  patientId: any;
+  aiSummary?: string;
+  aiSummaryAt?: number;
+}) {
+  const { colors } = useTheme();
+  const generate = useAction(api.ai.userSummary.generate);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onGenerate() {
+    setError(null);
+    setBusy(true);
+    try {
+      await generate({ patientId });
+    } catch (e: any) {
+      setError(e?.message ?? "Falha");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <View
+      style={{
+        marginTop: spacing.sm,
+        padding: spacing.sm,
+        borderRadius: radius.md,
+        backgroundColor: colors.background.secondary,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.primary,
+        gap: spacing.xs,
+      }}
+    >
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <Text style={{ ...typography.xs, fontWeight: "700", color: colors.primary }}>
+          Perfil AI da utente
+        </Text>
+        {aiSummaryAt && (
+          <Text style={{ ...typography.xs, color: colors.text.tertiary }}>
+            {new Date(aiSummaryAt).toLocaleDateString("pt-PT")}
+          </Text>
+        )}
+      </View>
+      {aiSummary ? (
+        <Text style={{ ...typography.xs, color: colors.text.primary, lineHeight: 18 }}>
+          {aiSummary}
+        </Text>
+      ) : (
+        <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+          Sem perfil gerado.
+        </Text>
+      )}
+      {error && (
+        <Text style={{ ...typography.xs, color: colors.danger }}>{error}</Text>
+      )}
+      <Pressable
+        testID="generate-user-summary-button"
+        disabled={busy}
+        onPress={onGenerate}
+        style={{
+          alignSelf: "flex-start",
+          paddingHorizontal: spacing.sm,
+          paddingVertical: 4,
+          borderRadius: radius.sm,
+          backgroundColor: busy ? colors.border : colors.primary,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.xs,
+        }}
+      >
+        {busy && <ActivityIndicator color="#fff" size="small" />}
+        <Text style={{ ...typography.xs, fontWeight: "600", color: "#fff" }}>
+          {busy ? "A gerar..." : aiSummary ? "Atualizar" : "Gerar perfil AI"}
+        </Text>
+      </Pressable>
+    </View>
   );
 }

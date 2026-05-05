@@ -5,6 +5,8 @@
 import { internalMutation, internalAction, internalQuery } from '../_generated/server';
 import { v } from 'convex/values';
 import { runAgent } from './runAgent';
+import { DEFAULT_PROMPTS, DEFAULT_CONFIGS } from './defaults';
+import type { AiPurpose } from './types';
 
 const aiPurpose = v.union(
   v.literal('chat-summary'),
@@ -85,5 +87,40 @@ export const getLatestInvocation = internalQuery({
   args: {},
   handler: async (ctx) => {
     return ctx.db.query('aiInvocations').order('desc').first();
+  },
+});
+
+// CLI convenience: seed canonical defaults for every purpose that has one.
+// Pass the apiKey once; gets reused for each purpose's config row.
+export const applyAllDefaults = internalMutation({
+  args: { apiKey: v.string() },
+  handler: async (ctx, { apiKey }) => {
+    const createdBy = await firstUserId(ctx);
+    const purposes = Object.keys(DEFAULT_PROMPTS) as AiPurpose[];
+    const inserted: Array<{ purpose: AiPurpose; configId: string; promptId: string }> = [];
+    for (const purpose of purposes) {
+      const cfg = DEFAULT_CONFIGS[purpose];
+      const prompt = DEFAULT_PROMPTS[purpose];
+      if (!cfg || !prompt) continue;
+      const configId = await ctx.db.insert('aiConfigs', {
+        purpose,
+        provider: cfg.provider,
+        modelId: cfg.modelId,
+        apiKey,
+        createdBy,
+        notes: 'applyAllDefaults via CLI',
+      });
+      const promptId = await ctx.db.insert('aiPrompts', {
+        purpose,
+        systemPrompt: prompt.systemPrompt,
+        userTemplate: prompt.userTemplate,
+        temperature: prompt.temperature,
+        maxTokens: prompt.maxTokens,
+        createdBy,
+        notes: 'applyAllDefaults via CLI',
+      });
+      inserted.push({ purpose, configId, promptId });
+    }
+    return inserted;
   },
 });

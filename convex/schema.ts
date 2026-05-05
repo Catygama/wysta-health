@@ -95,6 +95,8 @@ export default defineSchema({
         })
       )
     ),
+    aiSummary: v.optional(v.string()),
+    aiSummaryAt: v.optional(v.number()),
   }).index('by_user', ['userId']),
 
   conversations: defineTable({
@@ -125,8 +127,10 @@ export default defineSchema({
       v.literal('image'),
       v.literal('file'),
       v.literal('system'),
-      v.literal('triage-response')
+      v.literal('triage-response'),
+      v.literal('ai-response')
     ),
+    aiInvocationId: v.optional(v.id('aiInvocations')),
     imageId: v.optional(v.id('_storage')),
     attachmentId: v.optional(v.id('_storage')),
     attachmentName: v.optional(v.string()),

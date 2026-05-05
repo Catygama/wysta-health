@@ -34,6 +34,20 @@ export async function runAgent<T extends ZodTypeAny | undefined = undefined>(
 ): Promise<
   RunAgentResult<T extends ZodTypeAny ? z.infer<T> : string>
 > {
+  // Per-user daily cost cap. Default $0.50/day; override via env
+  // AI_DAILY_COST_CAP_USD. Skipped when userId is unset (cron/system).
+  if (args.userId) {
+    const cap = Number(process.env.AI_DAILY_COST_CAP_USD ?? '0.50');
+    const spent = await ctx.runQuery(internal.ai.invocations.dailySpentForUser, {
+      userId: args.userId,
+    });
+    if (spent >= cap) {
+      throw new Error(
+        `Daily AI cost cap reached for user ($${spent.toFixed(4)} / $${cap.toFixed(2)})`
+      );
+    }
+  }
+
   const config = await ctx.runQuery(internal.ai.configs.getActiveConfig, {
     purpose: args.purpose,
   });

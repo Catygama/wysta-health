@@ -3,7 +3,7 @@
 // on `conversations.aiSummary` and not duplicated in `aiInvocations` (RGPD
 // data minimisation — input is reconstructable via conversationId + messages).
 
-import { action, internalMutation, internalQuery } from '../_generated/server';
+import { action, internalAction, internalMutation, internalQuery } from '../_generated/server';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
@@ -80,6 +80,48 @@ export const storeSummary = internalMutation({
       aiSummary: summary,
       aiSummaryAt: Date.now(),
     });
+  },
+});
+
+// Background trigger: scheduled by conversations.close. Tolerates failures
+// so the close mutation always succeeds — if config/prompt are missing, or
+// the LLM rejects, the conversation simply ends without an aiSummary.
+export const generateOnClose = internalAction({
+  args: {
+    conversationId: v.id('conversations'),
+    triggeredBy: v.id('users'),
+  },
+  handler: async (ctx, { conversationId, triggeredBy }) => {
+    try {
+      const access = await ctx.runQuery(internal.ai.chatSummary.assertAccess, {
+        conversationId,
+        userId: triggeredBy,
+      });
+      if (!access.allowed || access.messages.length === 0) return;
+
+      const text = access.messages
+        .map((m) =>
+          `${m.senderId === m.patientId ? 'Utente' : 'Profissional'}: ${m.content}`
+        )
+        .join('\n');
+
+      const result = await runAgent(ctx, {
+        purpose: 'chat-summary',
+        vars: { conversationText: text },
+        userId: triggeredBy,
+        conversationId,
+      });
+      await ctx.runMutation(internal.ai.chatSummary.storeSummary, {
+        conversationId,
+        summary: result.output,
+      });
+    } catch (e) {
+      console.warn(
+        `[chatSummary.generateOnClose] failed for ${conversationId}: ${
+          e instanceof Error ? e.message : String(e)
+        }`
+      );
+    }
   },
 });
 

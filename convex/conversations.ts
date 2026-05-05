@@ -1,4 +1,5 @@
 import { mutation, query } from './_generated/server';
+import { internal } from './_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import {
@@ -159,6 +160,8 @@ export const get = query({
           // Clinical fields only exposed to professionals/admins
           conditions: isProfessional ? patientProfile?.conditions : undefined,
           medications: isProfessional ? patientProfile?.medications : undefined,
+          aiSummary: isProfessional ? patientProfile?.aiSummary : undefined,
+          aiSummaryAt: isProfessional ? patientProfile?.aiSummaryAt : undefined,
         }
       : null;
     return { ...conv, patient: patientPayload };
@@ -299,6 +302,14 @@ export const close = mutation({
       action: 'closure',
       details: 'Conversa encerrada',
     });
+    // Schedule AI summary generation in the background. If config/prompt
+    // are missing or generation fails, the close still succeeds — the
+    // summary just doesn't exist (handled by the action's own try/catch).
+    await ctx.scheduler.runAfter(
+      0,
+      internal.ai.chatSummary.generateOnClose,
+      { conversationId: args.id, triggeredBy: userId }
+    );
   },
 });
 
