@@ -1,6 +1,6 @@
+import { useState } from 'react';
 import { TextInput, View, Text } from 'react-native';
-import { spacing, radius, typography } from '@/constants/theme';
-import { useTheme } from '@/lib/theme';
+import { StyleSheet } from 'react-native-unistyles';
 
 type Props = {
   label: string;
@@ -25,33 +25,62 @@ export function Input({
   autoCapitalize = 'sentences',
   testID,
 }: Props) {
-  const { colors } = useTheme();
+  const [focused, setFocused] = useState(false);
+  styles.useVariants({ state: error ? 'error' : focused ? 'focused' : 'idle' });
+
   return (
-    <View style={{ gap: spacing.xs }}>
-      <Text style={{ ...typography.sm, fontWeight: '500', color: colors.text.secondary }}>
-        {label}
-      </Text>
+    <View style={styles.wrap}>
+      <Text style={styles.label}>{label}</Text>
       <TextInput
         testID={testID}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
+        placeholderTextColor={styles.placeholderColor.color}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
-        style={{
-          borderWidth: 1,
-          borderColor: error ? colors.danger : colors.border,
-          borderRadius: radius.md,
-          padding: spacing.md,
-          ...typography.base,
-          color: colors.text.primary,
-          backgroundColor: colors.background.primary,
-        }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={styles.field}
       />
       {error ? (
-        <Text testID={testID ? `${testID}-error` : undefined} style={{ ...typography.xs, color: colors.danger }}>{error}</Text>
+        <Text
+          testID={testID ? `${testID}-error` : undefined}
+          style={styles.error}
+        >
+          {error}
+        </Text>
       ) : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  wrap: { gap: theme.spacing.xs },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.textSecondary,
+  },
+  field: {
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surfaceSunken,
+    borderWidth: 2,
+    variants: {
+      state: {
+        idle: { borderColor: 'transparent' },
+        focused: { borderColor: theme.colors.accent },
+        error: { borderColor: theme.colors.danger },
+      },
+    },
+  },
+  error: { fontSize: 12, color: theme.colors.danger },
+  placeholderColor: { color: theme.colors.textTertiary },
+}));
