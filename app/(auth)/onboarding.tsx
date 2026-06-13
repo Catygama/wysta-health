@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
+import { StyleSheet } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Icon } from '@/components/ui/Icon';
-import { spacing, typography, radius } from '@/constants/theme';
-import { useTheme } from '@/lib/theme';
+import { fonts } from '@/lib/fonts';
 
 const AGE_RANGES = ['18-25', '26-35', '36-45', '46+'];
 const PREGNANCY_OPTIONS = [
@@ -21,7 +20,6 @@ export default function Onboarding() {
   const router = useRouter();
   const ensureProfile = useMutation(api.users.ensureProfile);
   const updateProfile = useMutation(api.users.updateProfile);
-  const { colors } = useTheme();
   const [displayName, setDisplayName] = useState('');
   const [ageRange, setAgeRange] = useState('');
   const [pregnancyStatus, setPregnancyStatus] = useState('');
@@ -54,132 +52,69 @@ export default function Onboarding() {
 
   return (
     <ScrollView
-      contentContainerStyle={{ padding: spacing.lg, gap: spacing.xl }}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
-      <View style={{ gap: spacing.sm }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.sm,
-          }}
-        >
-          <Icon
-            name={{ sf: 'sparkles', ion: 'sparkles' }}
-            size={28}
-            color={colors.primary}
-          />
-          <Text
-            style={{
-              ...typography['2xl'],
-              fontWeight: '700',
-              color: colors.text.primary,
-            }}
-          >
-            Bem-vinda à Wysta
-          </Text>
-        </View>
-        <Text style={{ ...typography.base, color: colors.text.secondary }}>
-          Algumas perguntas rápidas para personalizarmos a tua experiência. Podes saltar e completar mais tarde.
+      <View style={styles.hero}>
+        <Text style={styles.title}>Bem-vinda à Wysta</Text>
+        <Text style={styles.sub}>
+          Algumas perguntas rápidas para personalizarmos a tua experiência. Podes
+          saltar e completar mais tarde.
         </Text>
       </View>
 
-      <View style={{ gap: spacing.md }}>
-        <Input
-          testID="onboarding-name-input"
-          label="Como queres ser tratada? (opcional)"
-          value={displayName}
-          onChangeText={setDisplayName}
-          placeholder="ex.: Maria"
-          autoCapitalize="words"
-        />
-      </View>
+      <Input
+        testID="onboarding-name-input"
+        label="Como queres ser tratada? (opcional)"
+        value={displayName}
+        onChangeText={setDisplayName}
+        placeholder="ex.: Maria"
+        autoCapitalize="words"
+      />
 
-      <View style={{ gap: spacing.md }}>
-        <Text
-          style={{
-            ...typography.base,
-            fontWeight: '600',
-            color: colors.text.primary,
-          }}
-        >
-          Faixa etária
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          {AGE_RANGES.map((age) => (
-            <Pressable
-              key={age}
-              testID={`onboarding-age-${age}`}
-              onPress={() => setAgeRange(age)}
-              style={{
-                paddingVertical: spacing.sm,
-                paddingHorizontal: spacing.md,
-                borderRadius: radius.full,
-                borderWidth: 1.5,
-                borderColor: ageRange === age ? colors.primary : colors.border,
-                backgroundColor:
-                  ageRange === age ? colors.primaryLight : colors.background.primary,
-              }}
-            >
-              <Text
-                style={{
-                  ...typography.sm,
-                  fontWeight: '500',
-                  color: ageRange === age ? colors.primary : colors.text.secondary,
-                }}
+      <View style={styles.section}>
+        <Text style={styles.label}>Faixa etária</Text>
+        <View style={styles.pillRow}>
+          {AGE_RANGES.map((age) => {
+            const selected = ageRange === age;
+            return (
+              <Pressable
+                key={age}
+                testID={`onboarding-age-${age}`}
+                onPress={() => setAgeRange(age)}
+                style={[styles.pill, selected ? styles.pillOn : styles.pillOff]}
               >
-                {age}
+                <Text style={[styles.pillText, selected ? styles.pillTextOn : styles.pillTextOff]}>
+                  {age}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Estado de gravidez atual</Text>
+        {PREGNANCY_OPTIONS.map((opt) => {
+          const selected = pregnancyStatus === opt.value;
+          return (
+            <Pressable
+              key={opt.value}
+              testID={`onboarding-pregnancy-${opt.value}`}
+              onPress={() => setPregnancyStatus(opt.value)}
+              style={[styles.option, selected ? styles.optionOn : styles.optionOff]}
+            >
+              <Text style={[styles.optionText, selected ? styles.pillTextOn : styles.optionTextOff]}>
+                {opt.label}
               </Text>
             </Pressable>
-          ))}
-        </View>
+          );
+        })}
       </View>
 
-      <View style={{ gap: spacing.md }}>
-        <Text
-          style={{
-            ...typography.base,
-            fontWeight: '600',
-            color: colors.text.primary,
-          }}
-        >
-          Estado de gravidez atual
-        </Text>
-        {PREGNANCY_OPTIONS.map((opt) => (
-          <Pressable
-            key={opt.value}
-            testID={`onboarding-pregnancy-${opt.value}`}
-            onPress={() => setPregnancyStatus(opt.value)}
-            style={{
-              padding: spacing.md,
-              borderRadius: radius.md,
-              borderWidth: 1.5,
-              borderColor:
-                pregnancyStatus === opt.value ? colors.primary : colors.border,
-              backgroundColor:
-                pregnancyStatus === opt.value
-                  ? colors.primaryLight
-                  : colors.background.primary,
-            }}
-          >
-            <Text
-              style={{
-                ...typography.base,
-                color:
-                  pregnancyStatus === opt.value
-                    ? colors.primary
-                    : colors.text.primary,
-              }}
-            >
-              {opt.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <View style={{ gap: spacing.sm }}>
+      <View style={styles.actions}>
         <Button
           testID="onboarding-continue-button"
           label="Continuar"
@@ -198,3 +133,35 @@ export default function Onboarding() {
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.xl },
+  hero: { gap: theme.spacing.sm },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 28, color: theme.colors.ink },
+  sub: { fontSize: 16, color: theme.colors.textSecondary },
+  section: { gap: theme.spacing.md },
+  label: { fontFamily: fonts.displayBold, fontSize: 16, color: theme.colors.textPrimary },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  pill: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.pill,
+    borderCurve: 'continuous',
+  },
+  pillOn: { backgroundColor: theme.colors.ink },
+  pillOff: { backgroundColor: theme.colors.surface },
+  pillText: { fontSize: 14, fontWeight: '500' },
+  pillTextOn: { color: theme.colors.onInk },
+  pillTextOff: { color: theme.colors.textSecondary },
+  option: {
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+  },
+  optionOn: { backgroundColor: theme.colors.ink },
+  optionOff: { backgroundColor: theme.colors.surface },
+  optionText: { fontSize: 16 },
+  optionTextOff: { color: theme.colors.textPrimary },
+  actions: { gap: theme.spacing.sm },
+}));
