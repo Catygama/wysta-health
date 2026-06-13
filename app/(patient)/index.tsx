@@ -10,11 +10,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useAction, useMutation } from 'convex/react';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
-import { TOPICS } from '@/constants/topics';
-import { Icon } from '@/components/ui/Icon';
-import { spacing, typography, radius } from '@/constants/theme';
-import { useTheme } from '@/lib/theme';
+import { TOPICS, type TopicColor } from '@/constants/topics';
+import { Icon, type IconName } from '@/components/ui/Icon';
+import { Card } from '@/components/ui/Card';
+import { fonts } from '@/lib/fonts';
 import {
   STATUS_LABELS,
   STATUS_COLORS,
@@ -23,49 +24,48 @@ import {
 } from '@/constants/conversation';
 import { relativeTime } from '@/lib/format';
 
+function TopicIcon({
+  color,
+  icon,
+  size = 44,
+}: {
+  color: TopicColor;
+  icon: IconName;
+  size?: number;
+}) {
+  const { theme } = useUnistyles();
+  const pastel = theme.topic[color];
+  return (
+    <View
+      style={[
+        styles.topicIcon,
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: pastel.fill },
+      ]}
+    >
+      <Icon name={icon} size={size * 0.5} color={pastel.on} />
+    </View>
+  );
+}
+
 export default function PatientHome() {
   const router = useRouter();
   const user = useQuery(api.users.currentUser);
   const conversations = useQuery(api.conversations.listForPatient) ?? [];
-  const { colors } = useTheme();
-  const greeting = user?.profile?.displayName || user?.email?.split('@')[0] || 'utente';
+  const greeting =
+    user?.profile?.displayName || user?.email?.split('@')[0] || 'utente';
 
   const latest = conversations[0];
-  const activeCount = conversations.filter(
-    (c) => c.status !== 'closed'
-  ).length;
+  const activeCount = conversations.filter((c) => c.status !== 'closed').length;
 
   return (
     <ScrollView
-      contentContainerStyle={{ padding: spacing.lg, gap: spacing.xl }}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
     >
-      <View style={{ gap: spacing.xs }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.sm,
-          }}
-        >
-          <Text
-            style={{
-              ...typography['2xl'],
-              fontWeight: '700',
-              color: colors.text.primary,
-            }}
-          >
-            Olá, {greeting}
-          </Text>
-          <Icon
-            name={{ sf: 'hand.wave.fill', ion: 'hand-left' }}
-            size={28}
-            color={colors.primary}
-          />
-        </View>
-        <Text style={{ ...typography.base, color: colors.text.secondary }}>
-          Sobre o que precisas de ajuda hoje?
-        </Text>
+      <View style={styles.hero}>
+        <Text style={styles.greeting}>Olá, {greeting}</Text>
+        <Text style={styles.subtitle}>Sobre o que precisas de ajuda hoje?</Text>
       </View>
 
       {latest && (
@@ -84,64 +84,34 @@ export default function PatientHome() {
       <AnonymousAiButton />
       <StartAiOnlyButton />
 
-      <EmergencyNotice />
-
-      <View style={{ gap: spacing.md }}>
-        <Text
-          style={{
-            ...typography.lg,
-            fontWeight: '700',
-            color: colors.text.primary,
-          }}
-        >
-          Iniciar nova conversa
-        </Text>
-        <View style={{ gap: spacing.md }}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Iniciar nova conversa</Text>
+        <View style={styles.topicList}>
           {TOPICS.map((topic) => (
-            <Pressable
+            <Card
               key={topic.id}
               testID={`patient-topic-${topic.id}`}
               onPress={() =>
-                router.push({
-                  pathname: '/triage',
-                  params: { topic: topic.id },
-                })
+                router.push({ pathname: '/triage', params: { topic: topic.id } })
               }
-              style={({ pressed }) => ({
-                backgroundColor: pressed
-                  ? colors.background.tertiary
-                  : colors.background.primary,
-                borderRadius: radius.lg,
-                padding: spacing.lg,
-                borderWidth: 1,
-                borderColor: colors.border,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.md,
-              })}
+              style={styles.topicCard}
             >
-              <Icon name={topic.icon} size={36} color={colors.primary} />
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    ...typography.lg,
-                    fontWeight: '600',
-                    color: colors.text.primary,
-                  }}
-                >
-                  {topic.label}
-                </Text>
-                <Text
-                  style={{ ...typography.sm, color: colors.text.secondary }}
-                >
-                  {topic.description}
-                </Text>
+              <TopicIcon color={topic.color} icon={topic.icon} />
+              <View style={styles.topicMeta}>
+                <Text style={styles.topicLabel}>{topic.label}</Text>
+                <Text style={styles.topicDesc}>{topic.description}</Text>
               </View>
-              <Text style={{ color: colors.text.tertiary, fontSize: 20 }}>›</Text>
-            </Pressable>
+              <Icon
+                name={{ sf: 'chevron.right', ion: 'chevron-forward' }}
+                size={18}
+                color={styles.chevron.color}
+              />
+            </Card>
           ))}
         </View>
       </View>
+
+      <EmergencyNotice />
     </ScrollView>
   );
 }
@@ -158,144 +128,56 @@ type ContinueCardProps = {
 };
 
 function ContinueCard({ conversation, activeCount, onPress }: ContinueCardProps) {
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
   const topic = TOPICS.find((t) => t.id === conversation.topic);
-  const statusColor = STATUS_COLORS[conversation.status] ?? colors.text.secondary;
-  const priorityColor = PRIORITY_COLORS[conversation.priority] ?? colors.text.secondary;
+  const statusColor = STATUS_COLORS[conversation.status] ?? theme.colors.textSecondary;
+  const priorityColor =
+    PRIORITY_COLORS[conversation.priority] ?? theme.colors.textSecondary;
   return (
-    <Pressable
-      testID="patient-continue-card"
-      onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: pressed
-          ? colors.background.tertiary
-          : colors.background.primary,
-        borderRadius: radius.lg,
-        padding: spacing.lg,
-        borderWidth: 1,
-        borderColor: colors.primary,
-        gap: spacing.sm,
-      })}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Text
-          style={{
-            ...typography.sm,
-            fontWeight: '600',
-            color: colors.primary,
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-          }}
-        >
-          Continuar conversa
-        </Text>
-        <Text style={{ ...typography.xs, color: colors.text.tertiary }}>
-          {relativeTime(conversation.lastMessageAt)}
-        </Text>
+    <Card testID="patient-continue-card" onPress={onPress} style={styles.continueCard}>
+      <View style={styles.continueHeader}>
+        <Text style={styles.continueEyebrow}>Continuar conversa</Text>
+        <Text style={styles.muted}>{relativeTime(conversation.lastMessageAt)}</Text>
       </View>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.sm,
-        }}
-      >
-        {topic && <Icon name={topic.icon} size={28} color={colors.primary} />}
-        <Text
-          style={{
-            ...typography.lg,
-            fontWeight: '700',
-            color: colors.text.primary,
-          }}
-        >
-          {topic?.label ?? conversation.topic}
-        </Text>
+      <View style={styles.continueTitleRow}>
+        {topic && <TopicIcon color={topic.color} icon={topic.icon} size={34} />}
+        <Text style={styles.continueTitle}>{topic?.label ?? conversation.topic}</Text>
       </View>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.sm,
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: statusColor + '20',
-            paddingVertical: 2,
-            paddingHorizontal: spacing.sm,
-            borderRadius: radius.full,
-          }}
-        >
-          <Text
-            style={{
-              ...typography.xs,
-              fontWeight: '600',
-              color: statusColor,
-            }}
-          >
+      <View style={styles.badgeRow}>
+        <View style={[styles.badge, { backgroundColor: statusColor + '20' }]}>
+          <Text style={[styles.badgeText, { color: statusColor }]}>
             {STATUS_LABELS[conversation.status] ?? conversation.status}
           </Text>
         </View>
-        <View
-          style={{
-            backgroundColor: priorityColor + '15',
-            paddingVertical: 2,
-            paddingHorizontal: spacing.sm,
-            borderRadius: radius.full,
-          }}
-        >
-          <Text
-            style={{
-              ...typography.xs,
-              fontWeight: '600',
-              color: priorityColor,
-            }}
-          >
-            Prioridade {PRIORITY_LABELS[conversation.priority] ?? conversation.priority}
+        <View style={[styles.badge, { backgroundColor: priorityColor + '15' }]}>
+          <Text style={[styles.badgeText, { color: priorityColor }]}>
+            Prioridade{' '}
+            {PRIORITY_LABELS[conversation.priority] ?? conversation.priority}
           </Text>
         </View>
         {activeCount > 1 && (
-          <Text style={{ ...typography.xs, color: colors.text.tertiary }}>
+          <Text style={styles.muted}>
             +{activeCount - 1} ativa{activeCount - 1 === 1 ? '' : 's'}
           </Text>
         )}
       </View>
-    </Pressable>
+    </Card>
   );
 }
 
 function EmergencyNotice() {
-  const { colors } = useTheme();
   return (
-    <View
-      style={{
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-        backgroundColor: colors.background.secondary,
-        borderRadius: radius.md,
-      }}
-    >
-      <Text
-        style={{
-          ...typography.xs,
-          color: colors.text.tertiary,
-          textAlign: 'center',
-        }}
-      >
-        Em caso de emergência liga 112 ou SNS 24 (808 24 24 24). Este serviço não substitui uma urgência médica.
+    <View style={styles.emergency}>
+      <Text style={styles.emergencyText}>
+        Em caso de emergência liga 112 ou SNS 24 (808 24 24 24). Este serviço não
+        substitui uma urgência médica.
       </Text>
     </View>
   );
 }
 
 function AnonymousAiButton() {
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
   const respond = useAction(api.ai.assistant.respondAnonymous);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -304,7 +186,6 @@ function AnonymousAiButton() {
   const [error, setError] = useState<string | null>(null);
 
   function close() {
-    // Discard everything when modal closes — that's the point of anonymous.
     setOpen(false);
     setQuery('');
     setAnswer(null);
@@ -330,92 +211,44 @@ function AnonymousAiButton() {
 
   return (
     <>
-      <Pressable
-        testID="anonymous-ai-open"
-        onPress={() => setOpen(true)}
-        style={{
-          paddingVertical: spacing.sm,
-          paddingHorizontal: spacing.md,
-          borderRadius: radius.md,
-          backgroundColor: colors.primaryLight,
-          borderWidth: 1,
-          borderColor: colors.primary,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.xs,
-        }}
-      >
-        <Text style={{ fontSize: 18 }}>✨</Text>
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{ ...typography.sm, fontWeight: '600', color: colors.primary }}
-          >
-            Pergunta anónima à AI
-          </Text>
-          <Text style={{ ...typography.xs, color: colors.text.secondary }}>
-            Não fica guardado no teu histórico
-          </Text>
+      <Card testID="anonymous-ai-open" onPress={() => setOpen(true)} style={styles.aiCard}>
+        <View style={styles.aiAvatar}>
+          <Text style={styles.aiSparkle}>✨</Text>
         </View>
-      </Pressable>
+        <View style={styles.aiMeta}>
+          <Text style={styles.aiTitle}>Pergunta anónima à AI</Text>
+          <Text style={styles.aiSub}>Não fica guardado no teu histórico</Text>
+        </View>
+        <Icon
+          name={{ sf: 'chevron.right', ion: 'chevron-forward' }}
+          size={18}
+          color={styles.chevron.color}
+        />
+      </Card>
 
       <Modal visible={open} animationType="slide" transparent onRequestClose={close}>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: '#0008',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: colors.background.primary,
-              borderTopLeftRadius: radius.lg,
-              borderTopRightRadius: radius.lg,
-              padding: spacing.lg,
-              gap: spacing.md,
-              maxHeight: '85%',
-            }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  ...typography.lg,
-                  fontWeight: '700',
-                  color: colors.text.primary,
-                }}
-              >
-                ✨ Pergunta anónima
-              </Text>
-              <Pressable testID="anonymous-ai-close" onPress={close}>
-                <Text style={{ ...typography.lg, color: colors.text.secondary }}>×</Text>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.sheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>✨ Pergunta anónima</Text>
+              <Pressable testID="anonymous-ai-close" onPress={close} hitSlop={8}>
+                <Icon
+                  name={{ sf: 'xmark', ion: 'close' }}
+                  size={22}
+                  color={theme.colors.textSecondary}
+                />
               </Pressable>
             </View>
-            <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+            <Text style={styles.sheetNote}>
               Esta pergunta não é guardada na app, nem o teu histórico, nem é
               partilhada com um profissional. A resposta passa pelos mesmos
-              validadores de segurança e é apenas informativa. Para casos
-              urgentes liga 112 ou SNS 24 (808 24 24 24).
+              validadores de segurança e é apenas informativa. Para casos urgentes
+              liga 112 ou SNS 24 (808 24 24 24).
             </Text>
 
             {answer ? (
-              <ScrollView
-                style={{ maxHeight: 320 }}
-                contentContainerStyle={{
-                  backgroundColor: colors.primaryLight,
-                  padding: spacing.md,
-                  borderRadius: radius.md,
-                }}
-              >
-                <Text
-                  style={{ ...typography.sm, color: colors.text.primary, lineHeight: 22 }}
-                  selectable
-                >
+              <ScrollView style={styles.answerScroll} contentContainerStyle={styles.answerBox}>
+                <Text style={styles.answerText} selectable>
                   {answer}
                 </Text>
               </ScrollView>
@@ -426,57 +259,26 @@ function AnonymousAiButton() {
                 value={query}
                 onChangeText={setQuery}
                 placeholder="Escreve a tua pergunta..."
-                placeholderTextColor={colors.text.secondary}
-                style={{
-                  ...typography.sm,
-                  color: colors.text.primary,
-                  backgroundColor: colors.background.secondary,
-                  borderRadius: radius.md,
-                  padding: spacing.sm,
-                  minHeight: 120,
-                  textAlignVertical: 'top',
-                }}
+                placeholderTextColor={theme.colors.textTertiary as any}
+                style={styles.sheetInput}
               />
             )}
 
-            {error && (
-              <Text style={{ ...typography.sm, color: colors.danger }}>{error}</Text>
-            )}
+            {error && <Text style={styles.errorText}>{error}</Text>}
 
             {answer ? (
-              <Pressable
-                testID="anonymous-ai-done"
-                onPress={close}
-                style={{
-                  backgroundColor: colors.primary,
-                  paddingVertical: spacing.sm,
-                  borderRadius: radius.md,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ ...typography.sm, fontWeight: '600', color: '#fff' }}>
-                  Fechar (apaga tudo)
-                </Text>
+              <Pressable testID="anonymous-ai-done" onPress={close} style={styles.sheetCta}>
+                <Text style={styles.sheetCtaText}>Fechar (apaga tudo)</Text>
               </Pressable>
             ) : (
               <Pressable
                 testID="anonymous-ai-submit"
                 disabled={busy}
                 onPress={submit}
-                style={{
-                  backgroundColor: busy ? colors.border : colors.primary,
-                  paddingVertical: spacing.sm,
-                  borderRadius: radius.md,
-                  alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: spacing.xs,
-                }}
+                style={[styles.sheetCta, busy && styles.sheetCtaBusy]}
               >
-                {busy && <ActivityIndicator color="#fff" size="small" />}
-                <Text style={{ ...typography.sm, fontWeight: '600', color: '#fff' }}>
-                  {busy ? 'A processar...' : 'Enviar'}
-                </Text>
+                {busy && <ActivityIndicator color={theme.colors.onInk} size="small" />}
+                <Text style={styles.sheetCtaText}>{busy ? 'A processar...' : 'Enviar'}</Text>
               </Pressable>
             )}
           </View>
@@ -487,10 +289,10 @@ function AnonymousAiButton() {
 }
 
 function StartAiOnlyButton() {
-  const { colors } = useTheme();
   const router = useRouter();
   const create = useMutation(api.conversations.create);
   const [busy, setBusy] = useState(false);
+  const { theme } = useUnistyles();
 
   async function start() {
     if (busy) return;
@@ -511,34 +313,142 @@ function StartAiOnlyButton() {
   }
 
   return (
-    <Pressable
-      testID="start-ai-only"
-      onPress={start}
-      disabled={busy}
-      style={{
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-        borderRadius: radius.md,
-        backgroundColor: colors.background.secondary,
-        borderWidth: 1,
-        borderColor: colors.primary,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-      }}
-    >
-      <Text style={{ fontSize: 18 }}>💬</Text>
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{ ...typography.sm, fontWeight: '600', color: colors.primary }}
-        >
-          Conversar só com AI
-        </Text>
-        <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+    <Card testID="start-ai-only" onPress={start} style={styles.aiCard}>
+      <View style={[styles.aiAvatar, styles.aiAvatarMint]}>
+        <Text style={styles.aiSparkle}>💬</Text>
+      </View>
+      <View style={styles.aiMeta}>
+        <Text style={styles.aiTitle}>Conversar só com AI</Text>
+        <Text style={styles.aiSub}>
           Resposta imediata · podes pedir profissional a qualquer momento
         </Text>
       </View>
-      {busy && <ActivityIndicator color={colors.primary} size="small" />}
-    </Pressable>
+      {busy ? (
+        <ActivityIndicator color={theme.colors.accent} size="small" />
+      ) : (
+        <Icon
+          name={{ sf: 'chevron.right', ion: 'chevron-forward' }}
+          size={18}
+          color={styles.chevron.color}
+        />
+      )}
+    </Card>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.lg },
+  hero: { gap: theme.spacing.xs },
+  greeting: {
+    fontFamily: fonts.displayExtraBold,
+    fontSize: 28,
+    color: theme.colors.ink,
+  },
+  subtitle: { fontSize: 16, color: theme.colors.textSecondary },
+  section: { gap: theme.spacing.md },
+  sectionTitle: {
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+    color: theme.colors.textPrimary,
+  },
+  topicList: { gap: theme.spacing.sm },
+  topicCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  topicIcon: { alignItems: 'center', justifyContent: 'center', borderCurve: 'continuous' },
+  topicMeta: { flex: 1, gap: 2 },
+  topicLabel: { fontSize: 16, fontWeight: '500', color: theme.colors.textPrimary },
+  topicDesc: { fontSize: 13, color: theme.colors.textSecondary },
+  chevron: { color: theme.colors.textTertiary },
+  continueCard: { gap: theme.spacing.sm },
+  continueHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  continueEyebrow: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: theme.colors.ink,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  muted: { fontSize: 12, color: theme.colors.textTertiary },
+  continueTitleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  continueTitle: { fontSize: 18, fontWeight: '500', color: theme.colors.textPrimary },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, flexWrap: 'wrap' },
+  badge: {
+    paddingVertical: 3,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+  },
+  badgeText: { fontSize: 12, fontWeight: '500' },
+  emergency: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    backgroundColor: theme.colors.surfaceSunken,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+  },
+  emergencyText: { fontSize: 12, color: theme.colors.textTertiary, textAlign: 'center' },
+  aiCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  aiAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.topic.contraception.fill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiAvatarMint: { backgroundColor: theme.topic.intimate.fill },
+  aiSparkle: { fontSize: 18 },
+  aiMeta: { flex: 1, gap: 2 },
+  aiTitle: { fontSize: 15, fontWeight: '500', color: theme.colors.textPrimary },
+  aiSub: { fontSize: 12, color: theme.colors.textSecondary },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(23,17,43,0.45)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
+    borderCurve: 'continuous',
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+    maxHeight: '85%',
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sheetTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.textPrimary },
+  sheetNote: { fontSize: 12, color: theme.colors.textSecondary, lineHeight: 18 },
+  answerScroll: { maxHeight: 320 },
+  answerBox: {
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+  },
+  answerText: { fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 },
+  sheetInput: {
+    fontSize: 14,
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surfaceSunken,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    minHeight: 120,
+    textAlignVertical: 'top',
+  },
+  errorText: { fontSize: 14, color: theme.colors.danger },
+  sheetCta: {
+    backgroundColor: theme.colors.ink,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: theme.spacing.xs,
+  },
+  sheetCtaBusy: { opacity: 0.7 },
+  sheetCtaText: { fontSize: 15, fontFamily: fonts.displayBold, color: theme.colors.onInk },
+}));
