@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Avatar } from '@/components/ui/Avatar';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { ChatMessage } from '@/components/chat/ChatMessage';
 import { fonts } from '@/lib/fonts';
 
 export default function Showcase() {
@@ -52,6 +53,40 @@ export default function Showcase() {
       <Text style={styles.h2}>Skeleton</Text>
       <Skeleton height={20} />
       <Skeleton width="60%" height={20} />
+
+      <Text style={styles.h2}>Chat bubbles</Text>
+      <ChatMessage
+        side="other"
+        content="Olá Maria! É bastante comum nas primeiras semanas, e tende a passar."
+        createdAt={Date.now() - 600000}
+        messageType="text"
+        testID="bubble-other"
+      />
+      <ChatMessage
+        side="own"
+        content="Comecei a pílula há 2 semanas e tenho tido enjoos. É normal?"
+        createdAt={Date.now() - 300000}
+        messageType="text"
+        testID="bubble-own"
+      />
+      <ChatMessage
+        side="other"
+        internal
+        content="Paciente refere náuseas. Sem sinais de alarme."
+        createdAt={Date.now() - 120000}
+        messageType="text"
+        testID="bubble-internal"
+      />
+      <ChatMessage
+        side="own"
+        content="exame.pdf"
+        attachmentName="exame.pdf"
+        attachmentUrl="https://example.com/x.pdf"
+        attachmentSize={284000}
+        messageType="file"
+        createdAt={Date.now() - 60000}
+        testID="bubble-file"
+      />
     </ScrollView>
   );
 }
