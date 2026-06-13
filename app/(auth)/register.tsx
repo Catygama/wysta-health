@@ -2,17 +2,16 @@ import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
+import { StyleSheet } from 'react-native-unistyles';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { spacing, typography } from '@/constants/theme';
 import { strings } from '@/constants/strings';
-import { useTheme } from '@/lib/theme';
+import { fonts } from '@/lib/fonts';
 
 export default function Register() {
   const { signIn } = useAuthActions();
   const router = useRouter();
-  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -38,20 +37,13 @@ export default function Register() {
 
   return (
     <ScrollView
-      contentContainerStyle={{
-        flex: 1,
-        padding: spacing.lg,
-        justifyContent: 'center',
-        gap: spacing.lg,
-        backgroundColor: colors.background.primary,
-      }}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
     >
-      <Text style={{ ...typography['2xl'], fontWeight: '700', color: colors.text.primary }}>
-        Criar conta
-      </Text>
+      <Text style={styles.title}>Criar conta</Text>
 
-      <View style={{ gap: spacing.md }}>
+      <View style={styles.form}>
         <Input
           testID="auth-email-input"
           label={strings.auth.email}
@@ -76,44 +68,61 @@ export default function Register() {
           secureTextEntry
         />
         {error ? (
-          <Text testID="auth-error" style={{ ...typography.sm, color: colors.danger }}>{error}</Text>
+          <Text testID="auth-error" style={styles.error}>
+            {error}
+          </Text>
         ) : null}
-        <Button testID="auth-register-button" label={strings.auth.register} onPress={handleRegister} loading={loading} />
+        <Button
+          testID="auth-register-button"
+          label={strings.auth.register}
+          onPress={handleRegister}
+          loading={loading}
+        />
       </View>
 
       <Pressable testID="auth-back-link" onPress={() => router.back()} hitSlop={8}>
-        <Text style={{ ...typography.sm, color: colors.primary, textAlign: 'center' }}>
-          {strings.auth.hasAccount} {strings.auth.login}
+        <Text style={styles.backLink}>
+          {strings.auth.hasAccount}{' '}
+          <Text style={styles.backLinkStrong}>{strings.auth.login}</Text>
         </Text>
       </Pressable>
 
       <Pressable
         onPress={() => router.push('/(auth)/professional-signup')}
-        style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: spacing.xs,
-          paddingVertical: spacing.sm,
-          opacity: pressed ? 0.7 : 1,
-        })}
+        style={({ pressed }) => [styles.proLink, pressed && styles.dim]}
         hitSlop={8}
       >
         <Icon
           name={{ sf: 'stethoscope', ion: 'medkit' }}
           size={16}
-          color={colors.text.secondary}
+          color={styles.proLinkText.color}
         />
-        <Text
-          style={{
-            ...typography.sm,
-            color: colors.text.secondary,
-            fontWeight: '500',
-          }}
-        >
-          Sou profissional de saúde →
-        </Text>
+        <Text style={styles.proLinkText}>Sou profissional de saúde →</Text>
       </Pressable>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  content: {
+    flexGrow: 1,
+    padding: theme.spacing.lg,
+    justifyContent: 'center',
+    gap: theme.spacing.lg,
+  },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 28, color: theme.colors.ink },
+  form: { gap: theme.spacing.md },
+  error: { fontSize: 14, color: theme.colors.danger },
+  backLink: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center' },
+  backLinkStrong: { color: theme.colors.accent, fontWeight: '500' },
+  proLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+    paddingVertical: theme.spacing.sm,
+  },
+  dim: { opacity: 0.7 },
+  proLinkText: { fontSize: 14, color: theme.colors.textSecondary, fontWeight: '500' },
+}));
