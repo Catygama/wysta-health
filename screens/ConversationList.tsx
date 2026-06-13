@@ -26,12 +26,15 @@ type Props = {
   conversations: Conversation[];
   basePath: string;
   showPriority?: boolean;
+  /** Status badge is professional-facing triage metadata; off for patients. */
+  showStatus?: boolean;
 };
 
 export function ConversationList({
   conversations,
   basePath,
   showPriority = false,
+  showStatus = false,
 }: Props) {
   const router = useRouter();
   const { theme } = useUnistyles();
@@ -69,11 +72,13 @@ export function ConversationList({
                 <Text style={styles.title} numberOfLines={1}>
                   {topic?.label ?? item.topic}
                 </Text>
-                <View style={[styles.badge, { backgroundColor: statusColor + '20' }]}>
-                  <Text style={[styles.badgeText, { color: statusColor }]}>
-                    {STATUS_LABELS[item.status] ?? item.status}
-                  </Text>
-                </View>
+                {showStatus ? (
+                  <View style={[styles.badge, { backgroundColor: statusColor + '20' }]}>
+                    <Text style={[styles.badgeText, { color: statusColor }]}>
+                      {STATUS_LABELS[item.status] ?? item.status}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               <Text style={styles.subtitle} numberOfLines={1}>
                 {item.title}

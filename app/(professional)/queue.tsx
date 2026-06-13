@@ -131,6 +131,7 @@ export default function Queue() {
         conversations={conversations as any}
         basePath="/(professional)/conversations"
         showPriority
+        showStatus
       />
     </View>
   );

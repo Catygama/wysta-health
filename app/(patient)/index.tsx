@@ -16,12 +16,6 @@ import { TOPICS, type TopicColor } from '@/constants/topics';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Card';
 import { fonts } from '@/lib/fonts';
-import {
-  STATUS_LABELS,
-  STATUS_COLORS,
-  PRIORITY_LABELS,
-  PRIORITY_COLORS,
-} from '@/constants/conversation';
 import { relativeTime } from '@/lib/format';
 
 function TopicIcon({
@@ -110,8 +104,6 @@ export default function PatientHome() {
           ))}
         </View>
       </View>
-
-      <EmergencyNotice />
     </ScrollView>
   );
 }
@@ -128,11 +120,7 @@ type ContinueCardProps = {
 };
 
 function ContinueCard({ conversation, activeCount, onPress }: ContinueCardProps) {
-  const { theme } = useUnistyles();
   const topic = TOPICS.find((t) => t.id === conversation.topic);
-  const statusColor = STATUS_COLORS[conversation.status] ?? theme.colors.textSecondary;
-  const priorityColor =
-    PRIORITY_COLORS[conversation.priority] ?? theme.colors.textSecondary;
   return (
     <Card testID="patient-continue-card" onPress={onPress} style={styles.continueCard}>
       <View style={styles.continueHeader}>
@@ -143,36 +131,15 @@ function ContinueCard({ conversation, activeCount, onPress }: ContinueCardProps)
         {topic && <TopicIcon color={topic.color} icon={topic.icon} size={34} />}
         <Text style={styles.continueTitle}>{topic?.label ?? conversation.topic}</Text>
       </View>
-      <View style={styles.badgeRow}>
-        <View style={[styles.badge, { backgroundColor: statusColor + '20' }]}>
-          <Text style={[styles.badgeText, { color: statusColor }]}>
-            {STATUS_LABELS[conversation.status] ?? conversation.status}
-          </Text>
-        </View>
-        <View style={[styles.badge, { backgroundColor: priorityColor + '15' }]}>
-          <Text style={[styles.badgeText, { color: priorityColor }]}>
-            Prioridade{' '}
-            {PRIORITY_LABELS[conversation.priority] ?? conversation.priority}
-          </Text>
-        </View>
+      <View style={styles.continueMeta}>
+        <Text style={styles.muted}>Responde normalmente em 24h</Text>
         {activeCount > 1 && (
           <Text style={styles.muted}>
-            +{activeCount - 1} ativa{activeCount - 1 === 1 ? '' : 's'}
+            · +{activeCount - 1} ativa{activeCount - 1 === 1 ? '' : 's'}
           </Text>
         )}
       </View>
     </Card>
-  );
-}
-
-function EmergencyNotice() {
-  return (
-    <View style={styles.emergency}>
-      <Text style={styles.emergencyText}>
-        Em caso de emergência liga 112 ou SNS 24 (808 24 24 24). Este serviço não
-        substitui uma urgência médica.
-      </Text>
-    </View>
   );
 }
 
@@ -375,21 +342,7 @@ const styles = StyleSheet.create((theme) => ({
   muted: { fontSize: 12, color: theme.colors.textTertiary },
   continueTitleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   continueTitle: { fontSize: 18, fontWeight: '500', color: theme.colors.textPrimary },
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, flexWrap: 'wrap' },
-  badge: {
-    paddingVertical: 3,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radius.pill,
-  },
-  badgeText: { fontSize: 12, fontWeight: '500' },
-  emergency: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    backgroundColor: theme.colors.surfaceSunken,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-  },
-  emergencyText: { fontSize: 12, color: theme.colors.textTertiary, textAlign: 'center' },
+  continueMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
   aiCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   aiAvatar: {
     width: 40,
