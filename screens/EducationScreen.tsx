@@ -1,19 +1,12 @@
 import { useMemo, useState } from 'react';
-import {
-  FlatList,
-  View,
-  Text,
-  Pressable,
-  TextInput,
-  ScrollView,
-} from 'react-native';
+import { FlatList, View, Text, Pressable, TextInput, ScrollView } from 'react-native';
 import { useQuery } from 'convex/react';
 import { useRouter, useSegments } from 'expo-router';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
-import { spacing, typography, radius } from '@/constants/theme';
-import { useTheme } from '@/lib/theme';
 import { TOPICS, type TopicId } from '@/constants/topics';
-import { Icon } from '@/components/ui/Icon';
+import { Icon, type IconName } from '@/components/ui/Icon';
+import { Card } from '@/components/ui/Card';
 
 export function EducationScreen() {
   const [topicFilter, setTopicFilter] = useState<TopicId | null>(null);
@@ -21,11 +14,9 @@ export function EducationScreen() {
   const articles = useQuery(api.education.listByTopic, {}) ?? [];
   const router = useRouter();
   const segments = useSegments();
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
   const isPatient = segments[0] === '(patient)';
-  const basePath = isPatient
-    ? '/(patient)/education'
-    : '/(professional)/education';
+  const basePath = isPatient ? '/(patient)/education' : '/(professional)/education';
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -44,39 +35,24 @@ export function EducationScreen() {
     <FlatList
       data={filtered}
       keyExtractor={(item) => item._id}
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+      style={styles.list}
+      contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
       ListHeaderComponent={
-        <View style={{ gap: spacing.md, paddingBottom: spacing.sm }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.sm,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: radius.md,
-              paddingHorizontal: spacing.md,
-              backgroundColor: colors.background.primary,
-            }}
-          >
+        <View style={styles.header}>
+          <View style={styles.searchBar}>
             <Icon
               name={{ sf: 'magnifyingglass', ion: 'search' }}
               size={16}
-              color={colors.text.tertiary}
+              color={theme.colors.textTertiary}
             />
             <TextInput
               testID="edu-search"
               value={search}
               onChangeText={setSearch}
               placeholder="Pesquisar conteúdos..."
-              placeholderTextColor={colors.text.tertiary as any}
-              style={{
-                flex: 1,
-                paddingVertical: spacing.sm,
-                ...typography.base,
-                color: colors.text.primary,
-              }}
+              placeholderTextColor={theme.colors.textTertiary as any}
+              style={styles.searchInput}
               autoCapitalize="none"
               autoCorrect={false}
               clearButtonMode="while-editing"
@@ -86,7 +62,7 @@ export function EducationScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: spacing.sm }}
+            contentContainerStyle={styles.chips}
           >
             <FilterChip
               testID="edu-chip-all"
@@ -108,25 +84,13 @@ export function EducationScreen() {
         </View>
       }
       ListEmptyComponent={
-        <View
-          style={{
-            padding: spacing.xl,
-            alignItems: 'center',
-            gap: spacing.md,
-          }}
-        >
+        <View style={styles.empty}>
           <Icon
             name={{ sf: 'book.fill', ion: 'book-outline' }}
             size={48}
-            color={colors.text.tertiary}
+            color={theme.colors.textTertiary}
           />
-          <Text
-            style={{
-              ...typography.base,
-              color: colors.text.secondary,
-              textAlign: 'center',
-            }}
-          >
+          <Text style={styles.emptyText}>
             {search || topicFilter
               ? 'Nenhum conteúdo encontrado para esta pesquisa.'
               : 'Ainda não há conteúdos disponíveis.'}
@@ -135,103 +99,43 @@ export function EducationScreen() {
       }
       ListFooterComponent={
         filtered.length > 0 ? (
-          <View
-            style={{
-              backgroundColor: colors.background.secondary,
-              borderRadius: radius.md,
-              padding: spacing.md,
-              marginTop: spacing.md,
-              gap: spacing.xs,
-              flexDirection: 'row',
-            }}
-          >
+          <View style={styles.disclaimer}>
             <Icon
               name={{ sf: 'info.circle', ion: 'information-circle' }}
               size={18}
-              color={colors.text.secondary}
+              color={theme.colors.textSecondary}
             />
-            <Text
-              style={{
-                ...typography.xs,
-                color: colors.text.secondary,
-                flex: 1,
-              }}
-            >
-              A informação disponibilizada é educativa e não substitui aconselhamento médico. Em caso de urgência liga 112 ou contacta o SNS 24.
+            <Text style={styles.disclaimerText}>
+              A informação disponibilizada é educativa e não substitui
+              aconselhamento médico. Em caso de urgência liga 112 ou contacta o
+              SNS 24.
             </Text>
           </View>
         ) : null
       }
       renderItem={({ item }) => {
         const topic = TOPICS.find((t) => t.id === item.topic);
+        const pastel = theme.topic[topic?.color ?? 'general'];
         return (
-          <Pressable
+          <Card
             testID={`edu-article-${item._id}`}
             onPress={() => router.push(`${basePath}/${item._id}`)}
-            style={({ pressed }) => ({
-              backgroundColor: pressed
-                ? colors.background.tertiary
-                : colors.background.primary,
-              borderRadius: radius.md,
-              padding: spacing.md,
-              borderWidth: 1,
-              borderColor: colors.border,
-              gap: spacing.xs,
-            })}
+            style={styles.articleCard}
           >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  backgroundColor: colors.primaryLight,
-                  paddingVertical: 2,
-                  paddingHorizontal: spacing.sm,
-                  borderRadius: radius.full,
-                }}
-              >
-                {topic && (
-                  <Icon name={topic.icon} size={12} color={colors.primary} />
-                )}
-                <Text
-                  style={{
-                    ...typography.xs,
-                    fontWeight: '600',
-                    color: colors.primary,
-                  }}
-                >
+            <View style={styles.articleHeader}>
+              <View style={[styles.topicPill, { backgroundColor: pastel.fill }]}>
+                {topic && <Icon name={topic.icon} size={12} color={pastel.on} />}
+                <Text style={[styles.topicPillText, { color: pastel.on }]}>
                   {topic?.label ?? item.topic}
                 </Text>
               </View>
-              <Text
-                style={{ ...typography.xs, color: colors.text.tertiary }}
-              >
-                {item.readingTimeMinutes} min
-              </Text>
+              <Text style={styles.readingTime}>{item.readingTimeMinutes} min</Text>
             </View>
-            <Text
-              style={{
-                ...typography.base,
-                fontWeight: '600',
-                color: colors.text.primary,
-              }}
-            >
-              {item.title}
-            </Text>
-            <Text
-              style={{ ...typography.sm, color: colors.text.secondary }}
-              numberOfLines={2}
-            >
+            <Text style={styles.articleTitle}>{item.title}</Text>
+            <Text style={styles.articleSummary} numberOfLines={2}>
               {item.summary}
             </Text>
-          </Pressable>
+          </Card>
         );
       }}
     />
@@ -240,46 +144,106 @@ export function EducationScreen() {
 
 type ChipProps = {
   label: string;
-  icon?: { sf: any; ion: any };
+  icon?: IconName;
   active: boolean;
   onPress: () => void;
   testID?: string;
 };
 
 function FilterChip({ label, icon, active, onPress, testID }: ChipProps) {
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
+  styles.useVariants({ active });
   return (
     <Pressable
       testID={testID}
       onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-        paddingVertical: spacing.xs,
-        paddingHorizontal: spacing.md,
-        borderRadius: radius.full,
-        borderWidth: 1,
-        borderColor: active ? colors.primary : colors.border,
-        backgroundColor: active
-          ? colors.primary
-          : pressed
-            ? colors.background.tertiary
-            : colors.background.primary,
-      })}
+      style={({ pressed }) => [styles.filterChip, pressed && styles.dim]}
     >
       {icon && (
-        <Icon name={icon} size={14} color={active ? '#fff' : colors.primary} />
+        <Icon
+          name={icon}
+          size={14}
+          color={active ? theme.colors.onInk : theme.colors.accent}
+        />
       )}
-      <Text
-        style={{
-          ...typography.sm,
-          fontWeight: '600',
-          color: active ? '#fff' : colors.text.primary,
-        }}
-      >
-        {label}
-      </Text>
+      <Text style={styles.filterChipText}>{label}</Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  list: { flex: 1, backgroundColor: theme.colors.background },
+  content: { padding: theme.spacing.md, gap: theme.spacing.sm },
+  header: { gap: theme.spacing.md, paddingBottom: theme.spacing.sm },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: theme.spacing.md,
+    backgroundColor: theme.colors.surfaceSunken,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: theme.spacing.sm,
+    fontSize: 16,
+    color: theme.colors.textPrimary,
+  },
+  chips: { gap: theme.spacing.sm },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.pill,
+    borderCurve: 'continuous',
+    variants: {
+      active: {
+        true: { backgroundColor: theme.colors.ink },
+        false: { backgroundColor: theme.colors.surface },
+      },
+    },
+  },
+  dim: { opacity: 0.8 },
+  filterChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+    variants: {
+      active: {
+        true: { color: theme.colors.onInk },
+        false: { color: theme.colors.textPrimary },
+      },
+    },
+  },
+  empty: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.md },
+  emptyText: { fontSize: 16, color: theme.colors.textSecondary, textAlign: 'center' },
+  disclaimer: {
+    backgroundColor: theme.colors.surfaceSunken,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
+    gap: theme.spacing.sm,
+    flexDirection: 'row',
+  },
+  disclaimerText: { fontSize: 12, color: theme.colors.textSecondary, flex: 1 },
+  articleCard: { gap: theme.spacing.xs },
+  articleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  topicPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 3,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+  },
+  topicPillText: { fontSize: 12, fontWeight: '500' },
+  readingTime: { fontSize: 12, color: theme.colors.textTertiary },
+  articleTitle: { fontSize: 16, fontWeight: '500', color: theme.colors.textPrimary },
+  articleSummary: { fontSize: 14, color: theme.colors.textSecondary },
+}));
