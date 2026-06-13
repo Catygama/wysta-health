@@ -690,7 +690,7 @@ function RequestReviewSheet({
           </View>
           <Text style={{ ...typography.xs, color: colors.text.secondary }}>
             Descreve a dúvida clínica. A pergunta vai para notas internas e a
-            conversa aparece no filtro "Para revisão" para os colegas.
+            conversa aparece no filtro «Para revisão» para os colegas.
           </Text>
           <TextInput
             testID="review-question-input"
