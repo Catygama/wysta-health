@@ -380,6 +380,18 @@ export default function Profile() {
       <BootstrapAdminCard />
 
       <Button testID="profile-logout-button" label="Terminar sessão" variant="secondary" onPress={confirmSignOut} />
+
+      <Text
+        style={{
+          ...typography.xs,
+          color: colors.text.tertiary,
+          textAlign: 'center',
+          paddingHorizontal: spacing.md,
+        }}
+      >
+        Em emergência liga 112 ou SNS 24 (808 24 24 24). A Wysta não substitui uma
+        urgência médica.
+      </Text>
     </ScrollView>
   );
 }
