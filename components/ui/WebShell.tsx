@@ -1,15 +1,11 @@
 import { type ReactNode } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import { Slot, useRouter, usePathname } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Icon, type IconName } from '@/components/ui/Icon';
-import { spacing, typography } from '@/constants/theme';
 import { useTheme, type ThemeMode } from '@/lib/theme';
+import { fonts } from '@/lib/fonts';
 
 export type NavItem = {
   label: string;
@@ -48,18 +44,9 @@ const MODE_LABEL: Record<ThemeMode, string> = {
 export function WebShell({ items, brandHref = '/', maxWidth = 1040 }: Props) {
   const { width } = useWindowDimensions();
   const isMobile = width < MOBILE_BREAKPOINT;
-  const { colors } = useTheme();
 
   return (
-    <View
-      style={
-        {
-          flex: 1,
-          backgroundColor: colors.background.secondary,
-          minHeight: '100vh',
-        } as any
-      }
-    >
+    <View style={styles.root}>
       {isMobile ? (
         <MobileBrandBar brandHref={brandHref} />
       ) : (
@@ -68,6 +55,7 @@ export function WebShell({ items, brandHref = '/', maxWidth = 1040 }: Props) {
       <ContentContainer
         maxWidth={isMobile ? Number.POSITIVE_INFINITY : maxWidth}
         bottomInset={isMobile ? 64 : 0}
+        framed={!isMobile}
       >
         <Slot />
       </ContentContainer>
@@ -88,53 +76,19 @@ function Header({
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useAuthActions();
-  const { colors, mode, setMode } = useTheme();
+  const { mode, setMode } = useTheme();
+  const { theme } = useUnistyles();
 
   return (
-    <View
-      style={{
-        backgroundColor: colors.background.primary,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-      }}
-    >
-      <View
-        style={{
-          width: '100%',
-          maxWidth,
-          marginHorizontal: 'auto',
-          paddingHorizontal: spacing.lg,
-          paddingVertical: spacing.md,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.lg,
-        }}
-      >
-        <Pressable
-          onPress={() => router.push(brandHref as any)}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.xs,
-          }}
-          accessibilityLabel="Wysta"
-        >
+    <View style={styles.header}>
+      <View style={[styles.headerInner, { maxWidth }]}>
+        <Pressable onPress={() => router.push(brandHref as any)} style={styles.brand} accessibilityLabel="Wysta">
           <Brand />
         </Pressable>
 
-        <View
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-            gap: spacing.xs,
-            flexWrap: 'wrap',
-          }}
-        >
+        <View style={styles.navRight}>
           {items.map((item) => {
-            const active = item.match
-              ? item.match(pathname)
-              : isActive(pathname, item.href);
+            const active = item.match ? item.match(pathname) : isActive(pathname, item.href);
             return (
               <NavPill
                 key={item.href}
@@ -149,51 +103,23 @@ function Header({
             testID="theme-toggle"
             onPress={() => setMode(NEXT_MODE[mode])}
             hitSlop={8}
-            style={({ pressed }) => ({
-              width: 32,
-              height: 32,
-              borderRadius: 999,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: pressed
-                ? colors.background.tertiary
-                : 'transparent',
-            })}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
             accessibilityLabel={MODE_LABEL[mode]}
           >
-            <Icon name={MODE_ICON[mode]} size={18} color={colors.text.secondary} />
+            <Icon name={MODE_ICON[mode]} size={18} color={theme.colors.textSecondary} />
           </Pressable>
           <Pressable
             onPress={() => signOut()}
             hitSlop={8}
-            style={({ pressed }) => ({
-              paddingHorizontal: spacing.sm,
-              paddingVertical: spacing.xs,
-              borderRadius: 999,
-              opacity: pressed ? 0.7 : 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.xs,
-            })}
+            style={({ pressed }) => [styles.signOut, pressed && styles.dim]}
             accessibilityLabel="Terminar sessão"
           >
             <Icon
-              name={{
-                sf: 'rectangle.portrait.and.arrow.right',
-                ion: 'log-out-outline',
-              }}
+              name={{ sf: 'rectangle.portrait.and.arrow.right', ion: 'log-out-outline' }}
               size={16}
-              color={colors.text.secondary}
+              color={theme.colors.textSecondary}
             />
-            <Text
-              style={{
-                ...typography.sm,
-                color: colors.text.secondary,
-                fontWeight: '500',
-              }}
-            >
-              Sair
-            </Text>
+            <Text style={styles.signOutText}>Sair</Text>
           </Pressable>
         </View>
       </View>
@@ -203,26 +129,9 @@ function Header({
 
 function MobileBrandBar({ brandHref }: { brandHref: string }) {
   const router = useRouter();
-  const { colors } = useTheme();
   return (
-    <View
-      style={{
-        backgroundColor: colors.background.primary,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-      }}
-    >
-      <Pressable
-        onPress={() => router.push(brandHref as any)}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.xs,
-        }}
-        accessibilityLabel="Wysta"
-      >
+    <View style={styles.mobileBar}>
+      <Pressable onPress={() => router.push(brandHref as any)} style={styles.brand} accessibilityLabel="Wysta">
         <Brand />
       </Pressable>
     </View>
@@ -232,50 +141,21 @@ function MobileBrandBar({ brandHref }: { brandHref: string }) {
 function BottomNav({ items }: { items: NavItem[] }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        backgroundColor: colors.background.primary,
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
-        paddingBottom: 4,
-      }}
-    >
+    <View style={styles.bottomNav}>
       {items.map((item) => {
-        const active = item.match
-          ? item.match(pathname)
-          : isActive(pathname, item.href);
+        const active = item.match ? item.match(pathname) : isActive(pathname, item.href);
+        const color = active ? theme.colors.ink : theme.colors.textSecondary;
         return (
           <Pressable
             key={item.href}
             onPress={() => router.push(item.href as any)}
-            style={{
-              flex: 1,
-              paddingVertical: spacing.sm,
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 2,
-            }}
+            style={styles.bottomTab}
             accessibilityLabel={item.label}
           >
-            {item.icon && (
-              <Icon
-                name={item.icon}
-                size={22}
-                color={active ? colors.primary : colors.text.secondary}
-              />
-            )}
-            <Text
-              style={{
-                ...typography.xs,
-                fontWeight: active ? '600' : '500',
-                color: active ? colors.primary : colors.text.secondary,
-              }}
-            >
-              {item.label}
-            </Text>
+            {item.icon && <Icon name={item.icon} size={22} color={color} />}
+            <Text style={[styles.bottomLabel, { color }]}>{item.label}</Text>
           </Pressable>
         );
       })}
@@ -294,70 +174,25 @@ function NavPill({
   active: boolean;
   onPress: () => void;
 }) {
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
+  styles.useVariants({ active });
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-        borderRadius: 999,
-        backgroundColor: active
-          ? colors.primaryLight
-          : pressed
-            ? colors.background.tertiary
-            : 'transparent',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-      })}
-    >
+    <Pressable onPress={onPress} style={[styles.navPill, !active && styles.navPillIdle]}>
       {icon && (
-        <Icon
-          name={icon}
-          size={14}
-          color={active ? colors.primary : colors.text.secondary}
-        />
+        <Icon name={icon} size={14} color={active ? theme.colors.onInk : theme.colors.textSecondary} />
       )}
-      <Text
-        style={{
-          ...typography.sm,
-          fontWeight: active ? '700' : '500',
-          color: active ? colors.primary : colors.text.primary,
-        }}
-      >
-        {label}
-      </Text>
+      <Text style={styles.navPillText}>{label}</Text>
     </Pressable>
   );
 }
 
 function Brand() {
-  const { colors } = useTheme();
   return (
     <>
-      <View
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 6,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>W</Text>
+      <View style={styles.logo}>
+        <Text style={styles.logoText}>W</Text>
       </View>
-      <Text
-        style={{
-          ...typography.lg,
-          fontWeight: '700',
-          color: colors.text.primary,
-          letterSpacing: -0.3,
-        }}
-      >
-        Wysta
-      </Text>
+      <Text style={styles.wordmark}>Wysta</Text>
     </>
   );
 }
@@ -366,28 +201,24 @@ function ContentContainer({
   children,
   maxWidth,
   bottomInset,
+  framed,
 }: {
   children: ReactNode;
   maxWidth: number;
   bottomInset: number;
+  framed: boolean;
 }) {
-  const { colors } = useTheme();
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        backgroundColor: colors.background.secondary,
-      }}
-    >
+    <View style={styles.contentOuter}>
       <View
-        style={{
-          flex: 1,
-          width: '100%',
-          maxWidth: Number.isFinite(maxWidth) ? maxWidth : undefined,
-          backgroundColor: colors.background.primary,
-          paddingBottom: bottomInset,
-        }}
+        style={[
+          styles.contentPanel,
+          framed && styles.contentPanelFramed,
+          {
+            maxWidth: Number.isFinite(maxWidth) ? maxWidth : undefined,
+            paddingBottom: bottomInset,
+          },
+        ]}
       >
         {children}
       </View>
@@ -399,3 +230,123 @@ function isActive(pathname: string, href: string): boolean {
   if (href === '/') return pathname === '/';
   return pathname === href || pathname.startsWith(href + '/');
 }
+
+const styles = StyleSheet.create((theme) => ({
+  root: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    minHeight: '100vh' as any,
+  },
+  header: { backgroundColor: theme.colors.background },
+  headerInner: {
+    width: '100%',
+    marginHorizontal: 'auto',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.lg,
+  },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  navRight: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    flexWrap: 'wrap',
+  },
+  iconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  iconBtnPressed: { backgroundColor: theme.colors.surfaceSunken },
+  signOut: {
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  dim: { opacity: 0.7 },
+  signOutText: { fontSize: 14, color: theme.colors.textSecondary, fontWeight: '500' },
+  mobileBar: {
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.divider,
+    paddingBottom: 4,
+  },
+  bottomTab: {
+    flex: 1,
+    paddingVertical: theme.spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  bottomLabel: { fontSize: 12, fontWeight: '500' },
+  navPill: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    variants: {
+      active: {
+        true: { backgroundColor: theme.colors.ink },
+        false: { backgroundColor: 'transparent' },
+      },
+    },
+  },
+  navPillIdle: {},
+  navPillText: {
+    fontSize: 14,
+    variants: {
+      active: {
+        true: { color: theme.colors.onInk, fontWeight: '500' },
+        false: { color: theme.colors.textPrimary, fontWeight: '500' },
+      },
+    },
+  },
+  logo: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderCurve: 'continuous',
+    backgroundColor: theme.colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: { color: theme.colors.onInk, fontFamily: fonts.displayExtraBold, fontSize: 15 },
+  wordmark: {
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+    color: theme.colors.ink,
+    letterSpacing: -0.3,
+  },
+  contentOuter: { flex: 1, alignItems: 'center', backgroundColor: theme.colors.background },
+  contentPanel: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: theme.colors.background,
+  },
+  contentPanelFramed: {
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
+    borderCurve: 'continuous',
+    borderTopWidth: 1,
+    borderColor: theme.colors.divider,
+  },
+}));
