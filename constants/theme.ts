@@ -32,66 +32,71 @@ type ColorPalette = {
   borderOpaque: string;
 };
 
+// Ink & pastel palette, mapped onto the legacy ColorPalette shape so every
+// existing useTheme() consumer adopts the new look without changes. The new
+// canonical tokens live in lib/unistyles.ts; these values are kept in sync by
+// hand (primary = ink, warm off-white surfaces, warm text). Screens migrated to
+// unistyles should read from the theme there instead of this static palette.
 export const lightColors: ColorPalette = {
-  primary: '#7C3AED',
-  primaryLight: '#EDE9FE',
-  primaryDark: '#5B21B6',
+  primary: '#2E1065',
+  primaryLight: '#EDE7FB',
+  primaryDark: '#7C3AED',
 
-  danger: '#DC2626',
-  dangerLight: '#FEE2E2',
-  warning: '#D97706',
-  warningLight: '#FEF3C7',
-  success: '#059669',
-  successLight: '#D1FAE5',
+  danger: '#D7264C',
+  dangerLight: '#F8DBE2',
+  warning: '#C77B16',
+  warningLight: '#FBEFD9',
+  success: '#1E6B56',
+  successLight: '#DCEFE7',
 
   text: {
-    primary: '#111827',
-    secondary: '#6B7280',
-    tertiary: '#9CA3AF',
+    primary: '#2B2438',
+    secondary: '#6E6880',
+    tertiary: '#B7B0C6',
     inverse: '#FFFFFF',
   },
 
   background: {
-    primary: '#FFFFFF',
-    secondary: '#F9FAFB',
-    tertiary: '#F3F4F6',
-    grouped: '#F9FAFB',
-    groupedSecondary: '#FFFFFF',
+    primary: '#FBF8F2',
+    secondary: '#F4EEE3',
+    tertiary: '#ECE3D4',
+    grouped: '#F4EEE3',
+    groupedSecondary: '#FBF8F2',
   },
 
-  border: '#E5E7EB',
-  borderOpaque: '#D1D5DB',
+  border: '#E7DFD0',
+  borderOpaque: '#D8CDB9',
 };
 
 export const darkColors: ColorPalette = {
   primary: '#A78BFA',
-  primaryLight: '#3B2A66',
+  primaryLight: '#3B2380',
   primaryDark: '#C4B5FD',
 
-  danger: '#F87171',
+  danger: '#F2879E',
   dangerLight: '#4C1D24',
-  warning: '#FBBF24',
-  warningLight: '#4A3315',
-  success: '#34D399',
+  warning: '#E0AE5C',
+  warningLight: '#3A2E16',
+  success: '#6FC8AC',
   successLight: '#14322A',
 
   text: {
-    primary: '#F9FAFB',
-    secondary: '#9CA3AF',
-    tertiary: '#6B7280',
-    inverse: '#111827',
+    primary: '#EFEAFB',
+    secondary: '#A79FC0',
+    tertiary: '#6E6688',
+    inverse: '#17112B',
   },
 
   background: {
-    primary: '#0F172A',
-    secondary: '#0B1220',
-    tertiary: '#1E293B',
-    grouped: '#0B1220',
-    groupedSecondary: '#0F172A',
+    primary: '#221A3A',
+    secondary: '#1D1631',
+    tertiary: '#2C2348',
+    grouped: '#17112B',
+    groupedSecondary: '#221A3A',
   },
 
-  border: '#1F2937',
-  borderOpaque: '#334155',
+  border: '#33294F',
+  borderOpaque: '#473A66',
 };
 
 export const colors: ColorPalette = lightColors;
