@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useQuery } from 'convex/react';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
-import { Icon } from '@/components/ui/Icon';
-import { spacing, typography, radius } from '@/constants/theme';
-import { useTheme } from '@/lib/theme';
+import { Icon, type IconName } from '@/components/ui/Icon';
+import { fonts } from '@/lib/fonts';
 
 type Status = 'waiting' | 'active' | 'closed';
 type Scope = 'mine' | 'unassigned' | 'review' | 'all';
@@ -25,10 +25,10 @@ const SCOPE_FILTERS: { label: string; value: Scope }[] = [
 ];
 
 const PRIORITY_FILTERS: { label: string; value: Priority; color: string }[] = [
-  { label: 'Urgente', value: 'urgent', color: '#DC2626' },
-  { label: 'Alta', value: 'high', color: '#EA580C' },
-  { label: 'Média', value: 'medium', color: '#D97706' },
-  { label: 'Baixa', value: 'low', color: '#059669' },
+  { label: 'Urgente', value: 'urgent', color: '#D7264C' },
+  { label: 'Alta', value: 'high', color: '#D85A30' },
+  { label: 'Média', value: 'medium', color: '#C77B16' },
+  { label: 'Baixa', value: 'low', color: '#1E6B56' },
 ];
 
 export default function Queue() {
@@ -43,43 +43,36 @@ export default function Queue() {
       scope: scopeFilter,
       priority: priorityFilter,
     }) ?? [];
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
 
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView
-        style={{ flexGrow: 0 }}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
-      >
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+    <View style={styles.root}>
+      <ScrollView style={styles.headerScroll} contentContainerStyle={styles.header}>
+        <View style={styles.statRow}>
           <StatCard
             testID="queue-stat-mine"
             label="Minhas"
             value={stats?.mine ?? 0}
             icon={{ sf: 'person.fill', ion: 'person' }}
-            color={colors.primary}
+            color={theme.colors.ink}
           />
           <StatCard
             testID="queue-stat-unassigned"
             label="Não atribuídas"
             value={stats?.unassigned ?? 0}
             icon={{ sf: 'tray', ion: 'mail-unread-outline' }}
-            color="#D97706"
+            color={theme.colors.warning}
           />
           <StatCard
             testID="queue-stat-urgent"
             label="Urgentes"
             value={stats?.urgent ?? 0}
             icon={{ sf: 'exclamationmark.triangle.fill', ion: 'warning' }}
-            color="#DC2626"
+            color={theme.colors.danger}
           />
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: spacing.sm }}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
           {SCOPE_FILTERS.map((f) => (
             <Chip
               key={f.value}
@@ -91,11 +84,7 @@ export default function Queue() {
           ))}
         </ScrollView>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: spacing.sm }}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
           {STATUS_FILTERS.map((f) => (
             <Chip
               key={String(f.value)}
@@ -107,11 +96,7 @@ export default function Queue() {
           ))}
         </ScrollView>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: spacing.sm }}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
           {PRIORITY_FILTERS.map((f) => (
             <Chip
               key={f.value}
@@ -119,9 +104,7 @@ export default function Queue() {
               label={f.label}
               accentColor={f.color}
               active={priorityFilter === f.value}
-              onPress={() =>
-                setPriorityFilter((cur) => (cur === f.value ? undefined : f.value))
-              }
+              onPress={() => setPriorityFilter((cur) => (cur === f.value ? undefined : f.value))}
             />
           ))}
         </ScrollView>
@@ -140,54 +123,19 @@ export default function Queue() {
 type StatCardProps = {
   label: string;
   value: number;
-  icon: { sf: any; ion: any };
+  icon: IconName;
   color: string;
   testID?: string;
 };
 
 function StatCard({ label, value, icon, color, testID }: StatCardProps) {
-  const { colors } = useTheme();
   return (
-    <View
-      testID={testID}
-      style={{
-        flex: 1,
-        backgroundColor: colors.background.primary,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: radius.md,
-        padding: spacing.md,
-        gap: spacing.xs,
-      }}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.xs,
-        }}
-      >
+    <View testID={testID} style={styles.statCard}>
+      <View style={styles.statHead}>
         <Icon name={icon} size={14} color={color} />
-        <Text
-          style={{
-            ...typography.xs,
-            color: colors.text.secondary,
-            fontWeight: '500',
-          }}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
+        <Text style={styles.statLabel} numberOfLines={1}>{label}</Text>
       </View>
-      <Text
-        style={{
-          ...typography['2xl'],
-          fontWeight: '700',
-          color: colors.text.primary,
-        }}
-      >
-        {value}
-      </Text>
+      <Text style={styles.statValue}>{value}</Text>
     </View>
   );
 }
@@ -201,34 +149,46 @@ type ChipProps = {
 };
 
 function Chip({ label, active, onPress, accentColor, testID }: ChipProps) {
-  const { colors } = useTheme();
-  const activeBg = accentColor ?? colors.primary;
+  const { theme } = useUnistyles();
+  const activeBg = accentColor ?? theme.colors.ink;
   return (
     <Pressable
       testID={testID}
       onPress={onPress}
-      style={({ pressed }) => ({
-        paddingVertical: spacing.xs,
-        paddingHorizontal: spacing.md,
-        borderRadius: radius.full,
-        borderWidth: 1,
-        borderColor: active ? activeBg : colors.border,
-        backgroundColor: active
-          ? activeBg
-          : pressed
-            ? colors.background.tertiary
-            : colors.background.primary,
-      })}
+      style={[styles.chip, active ? { backgroundColor: activeBg } : styles.chipIdle]}
     >
-      <Text
-        style={{
-          ...typography.sm,
-          fontWeight: '600',
-          color: active ? '#fff' : colors.text.primary,
-        }}
-      >
+      <Text style={[styles.chipText, active ? styles.chipTextOn : styles.chipTextOff]}>
         {label}
       </Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  root: { flex: 1, backgroundColor: theme.colors.background },
+  headerScroll: { flexGrow: 0 },
+  header: { padding: theme.spacing.md, gap: theme.spacing.md },
+  statRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  statCard: {
+    flex: 1,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    gap: theme.spacing.xs,
+  },
+  statHead: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  statLabel: { fontSize: 12, color: theme.colors.textSecondary, fontWeight: '500' },
+  statValue: { fontFamily: fonts.displayExtraBold, fontSize: 24, color: theme.colors.textPrimary },
+  chipRow: { gap: theme.spacing.sm },
+  chip: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.pill,
+    borderCurve: 'continuous',
+  },
+  chipIdle: { backgroundColor: theme.colors.surface },
+  chipText: { fontSize: 14, fontWeight: '500' },
+  chipTextOn: { color: theme.colors.onInk },
+  chipTextOff: { color: theme.colors.textPrimary },
+}));
