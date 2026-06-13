@@ -5,11 +5,16 @@ import { Stack } from 'expo-router';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { authStorage } from '@/lib/storage';
 import { ThemeProvider, useTheme } from '@/lib/theme';
+import { useBrandFonts } from '@/lib/fonts';
 import { E2EBridge } from '@/components/E2EBridge';
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!);
 
 export default function RootLayout() {
+  const fontsLoaded = useBrandFonts();
+  if (!fontsLoaded) {
+    return null;
+  }
   return (
     <ThemeProvider>
       <KeyboardProvider>
