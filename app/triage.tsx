@@ -9,14 +9,14 @@ import {
 } from 'react-native';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { UrgencyAlert } from '@/screens/UrgencyAlert';
-import { spacing, typography, radius } from '@/constants/theme';
 import { TOPICS, type TopicId } from '@/constants/topics';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useTheme } from '@/lib/theme';
+import { fonts } from '@/lib/fonts';
 
 type Question = {
   id: string;
@@ -31,7 +31,7 @@ export default function Triage() {
   const { topic } = useLocalSearchParams<{ topic: TopicId }>();
   const router = useRouter();
   const { user, isLoading: authLoading, role } = useCurrentUser();
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
   const triage = useQuery(api.triage.getByTopic, topic ? { topic } : 'skip');
   const createConversation = useMutation(api.conversations.create);
 
@@ -41,10 +41,8 @@ export default function Triage() {
   const [loading, setLoading] = useState(false);
 
   const topicInfo = TOPICS.find((t) => t.id === topic);
-  const questions = useMemo(
-    () => (triage?.questions ?? []) as Question[],
-    [triage]
-  );
+  const pastel = theme.topic[topicInfo?.color ?? 'general'];
+  const questions = useMemo(() => (triage?.questions ?? []) as Question[], [triage]);
   const total = questions.length;
   const current = questions[step];
   const isLast = step === total - 1;
@@ -68,10 +66,7 @@ export default function Triage() {
         title: `${topicInfo?.label} — nova conversa`,
         triageData: { responses: answers },
       });
-      router.replace({
-        pathname: '/(patient)/conversations/[id]',
-        params: { id },
-      });
+      router.replace({ pathname: '/(patient)/conversations/[id]', params: { id } });
     } finally {
       setLoading(false);
     }
@@ -98,83 +93,54 @@ export default function Triage() {
 
   if (triage === undefined) {
     return (
-      <View
-        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-      >
-        <ActivityIndicator color={colors.primary} />
+      <View style={styles.centered}>
+        <ActivityIndicator color={theme.colors.ink} />
       </View>
     );
   }
 
   if (!triage || total === 0) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: spacing.lg,
-          gap: spacing.md,
-        }}
-      >
+      <View style={styles.fallback}>
         {topicInfo && (
-          <Icon name={topicInfo.icon} size={48} color={colors.primary} />
+          <View style={[styles.bigIcon, { backgroundColor: pastel.fill }]}>
+            <Icon name={topicInfo.icon} size={32} color={pastel.on} />
+          </View>
         )}
-        <Text
-          style={{
-            ...typography.lg,
-            fontWeight: '600',
-            color: colors.text.primary,
-          }}
-        >
-          {topicInfo?.label}
-        </Text>
-        <Text
-          style={{
-            ...typography.sm,
-            color: colors.text.secondary,
-            textAlign: 'center',
-          }}
-        >
+        <Text style={styles.fallbackTitle}>{topicInfo?.label}</Text>
+        <Text style={styles.fallbackSub}>
           Ainda não há triagem para este tópico. Podes iniciar a conversa diretamente.
         </Text>
-        <Button
-          label="Iniciar conversa"
-          onPress={async () => {
-            setLoading(true);
-            try {
-              const id = await createConversation({
-                topic,
-                title: `${topicInfo?.label} — nova conversa`,
-              });
-              router.replace({
-                pathname: '/(patient)/conversations/[id]',
-                params: { id },
-              });
-            } finally {
-              setLoading(false);
-            }
-          }}
-          loading={loading}
-        />
+        <View style={styles.fallbackCta}>
+          <Button
+            label="Iniciar conversa"
+            onPress={async () => {
+              setLoading(true);
+              try {
+                const id = await createConversation({
+                  topic,
+                  title: `${topicInfo?.label} — nova conversa`,
+                });
+                router.replace({
+                  pathname: '/(patient)/conversations/[id]',
+                  params: { id },
+                });
+              } finally {
+                setLoading(false);
+              }
+            }}
+            loading={loading}
+          />
+        </View>
       </View>
     );
   }
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: spacing.md,
-        }}
-      >
-        <ActivityIndicator color={colors.primary} />
-        <Text style={{ ...typography.base, color: colors.text.secondary }}>
-          A criar a tua conversa...
-        </Text>
+      <View style={styles.centered}>
+        <ActivityIndicator color={theme.colors.ink} />
+        <Text style={styles.loadingText}>A criar a tua conversa...</Text>
       </View>
     );
   }
@@ -182,15 +148,13 @@ export default function Triage() {
   return (
     <ScrollView
       testID="triage-screen"
-      contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
-      <View style={{ gap: spacing.sm }}>
-        <Text
-          testID="triage-current-meta"
-          style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
-        >
+      <View style={styles.head}>
+        <Text testID="triage-current-meta" style={styles.srOnly}>
           {JSON.stringify({
             id: current.id,
             type: current.type,
@@ -201,167 +165,76 @@ export default function Triage() {
             isLast,
           })}
         </Text>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.sm,
-          }}
-        >
+        <View style={styles.titleRow}>
           {topicInfo && (
-            <Icon name={topicInfo.icon} size={28} color={colors.primary} />
+            <View style={[styles.topicChip, { backgroundColor: pastel.fill }]}>
+              <Icon name={topicInfo.icon} size={20} color={pastel.on} />
+            </View>
           )}
-          <Text
-            style={{
-              ...typography['2xl'],
-              fontWeight: '700',
-              color: colors.text.primary,
-            }}
-          >
-            {topicInfo?.label}
-          </Text>
+          <Text style={styles.title}>{topicInfo?.label}</Text>
         </View>
 
-        <View style={{ gap: spacing.xs }}>
-          <Text
-            style={{ ...typography.xs, color: colors.text.secondary }}
-          >
+        <View style={styles.progressWrap}>
+          <Text style={styles.progressLabel}>
             Pergunta {step + 1} de {total}
           </Text>
-          <View
-            style={{
-              height: 6,
-              backgroundColor: colors.background.tertiary,
-              borderRadius: radius.full,
-              overflow: 'hidden',
-            }}
-          >
-            <View
-              style={{
-                height: 6,
-                width: `${((step + 1) / total) * 100}%`,
-                backgroundColor: colors.primary,
-              }}
-            />
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${((step + 1) / total) * 100}%` }]} />
           </View>
         </View>
       </View>
 
       {showUrgency && <UrgencyAlert onDismiss={() => setShowUrgency(false)} />}
 
-      <View
-        style={{
-          backgroundColor: colors.background.primary,
-          borderWidth: 1,
-          borderColor: colors.border,
-          borderRadius: radius.lg,
-          padding: spacing.lg,
-          gap: spacing.md,
-        }}
-      >
-        <Text
-          style={{
-            ...typography.lg,
-            fontWeight: '600',
-            color: colors.text.primary,
-          }}
-        >
+      <View style={styles.card}>
+        <Text style={styles.question}>
           {current.question}
-          {current.required && (
-            <Text style={{ color: colors.danger }}> *</Text>
-          )}
+          {current.required && <Text style={styles.required}> *</Text>}
         </Text>
 
         {current.type === 'yes-no' && (
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            {(['yes', 'no'] as const).map((opt) => (
-              <Pressable
-                key={opt}
-                testID={`triage-option-${opt}`}
-                onPress={() => handleAnswer(opt)}
-                style={({ pressed }) => ({
-                  flex: 1,
-                  padding: spacing.md,
-                  borderRadius: radius.md,
-                  borderWidth: 1.5,
-                  borderColor:
-                    answers[current.id] === opt
-                      ? colors.primary
-                      : colors.border,
-                  backgroundColor:
-                    answers[current.id] === opt
-                      ? colors.primaryLight
-                      : pressed
-                        ? colors.background.tertiary
-                        : colors.background.primary,
-                  alignItems: 'center',
-                })}
-              >
-                <Text
-                  style={{
-                    ...typography.base,
-                    fontWeight: '600',
-                    color:
-                      answers[current.id] === opt
-                        ? colors.primary
-                        : colors.text.primary,
-                  }}
+          <View style={styles.yesNoRow}>
+            {(['yes', 'no'] as const).map((opt) => {
+              const selected = answers[current.id] === opt;
+              return (
+                <Pressable
+                  key={opt}
+                  testID={`triage-option-${opt}`}
+                  onPress={() => handleAnswer(opt)}
+                  style={[styles.yesNo, selected ? styles.optOn : styles.optOff]}
                 >
-                  {opt === 'yes' ? 'Sim' : 'Não'}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text style={[styles.optText, selected ? styles.optTextOn : styles.optTextOff]}>
+                    {opt === 'yes' ? 'Sim' : 'Não'}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         )}
 
         {current.type === 'multiple-choice' && current.options && (
-          <View style={{ gap: spacing.sm }}>
-            {current.options.map((opt, idx) => (
-              <Pressable
-                key={opt}
-                testID={`triage-option-${idx}`}
-                onPress={() => handleAnswer(opt)}
-                style={({ pressed }) => ({
-                  padding: spacing.md,
-                  borderRadius: radius.md,
-                  borderWidth: 1.5,
-                  borderColor:
-                    answers[current.id] === opt
-                      ? colors.primary
-                      : colors.border,
-                  backgroundColor:
-                    answers[current.id] === opt
-                      ? colors.primaryLight
-                      : pressed
-                        ? colors.background.tertiary
-                        : colors.background.primary,
-                })}
-              >
-                <Text
-                  style={{
-                    ...typography.base,
-                    color:
-                      answers[current.id] === opt
-                        ? colors.primary
-                        : colors.text.primary,
-                  }}
+          <View style={styles.optionList}>
+            {current.options.map((opt, idx) => {
+              const selected = answers[current.id] === opt;
+              return (
+                <Pressable
+                  key={opt}
+                  testID={`triage-option-${idx}`}
+                  onPress={() => handleAnswer(opt)}
+                  style={[styles.option, selected ? styles.optOn : styles.optOff]}
                 >
-                  {opt}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text style={[styles.optText, selected ? styles.optTextOn : styles.optTextOff]}>
+                    {opt}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         )}
 
         {current.type === 'scale' && current.options && (
-          <View style={{ gap: spacing.sm }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: spacing.xs,
-              }}
-            >
+          <View style={styles.scaleWrap}>
+            <View style={styles.scaleRow}>
               {current.options.map((opt) => {
                 const value = Number(opt);
                 const selected = answers[current.id] === value;
@@ -370,157 +243,188 @@ export default function Triage() {
                     key={opt}
                     testID={`triage-scale-${opt}`}
                     onPress={() => handleAnswer(value)}
-                    style={({ pressed }) => ({
-                      width: 44,
-                      height: 44,
-                      borderRadius: radius.md,
-                      borderWidth: 1.5,
-                      borderColor: selected ? colors.primary : colors.border,
-                      backgroundColor: selected
-                        ? colors.primary
-                        : pressed
-                          ? colors.background.tertiary
-                          : colors.background.primary,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    })}
+                    style={[styles.scaleCell, selected ? styles.optOn : styles.optOff]}
                   >
-                    <Text
-                      style={{
-                        ...typography.base,
-                        fontWeight: '600',
-                        color: selected ? '#fff' : colors.text.primary,
-                      }}
-                    >
+                    <Text style={[styles.optText, selected ? styles.optTextOn : styles.optTextOff]}>
                       {opt}
                     </Text>
                   </Pressable>
                 );
               })}
             </View>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Text
-                style={{ ...typography.xs, color: colors.text.tertiary }}
-              >
-                Sem dor
-              </Text>
-              <Text
-                style={{ ...typography.xs, color: colors.text.tertiary }}
-              >
-                Dor máxima
-              </Text>
+            <View style={styles.scaleLabels}>
+              <Text style={styles.scaleHint}>Sem dor</Text>
+              <Text style={styles.scaleHint}>Dor máxima</Text>
             </View>
           </View>
         )}
 
         {current.type === 'text' && (
-          <View style={{ gap: spacing.sm }}>
+          <View style={styles.textWrap}>
             <TextInput
               testID="triage-text-input"
               value={String(answers[current.id] ?? '')}
-              onChangeText={(v) =>
-                setAnswers({ ...answers, [current.id]: v })
-              }
+              onChangeText={(v) => setAnswers({ ...answers, [current.id]: v })}
               placeholder="Descreve os teus sintomas ou dúvidas..."
+              placeholderTextColor={theme.colors.textTertiary as any}
               multiline
               numberOfLines={4}
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: radius.md,
-                padding: spacing.md,
-                ...typography.base,
-                color: colors.text.primary,
-                backgroundColor: colors.background.primary,
-                minHeight: 100,
-                textAlignVertical: 'top',
-              }}
+              style={styles.textInput}
             />
             <Button
               testID="triage-text-submit"
               label={isLast ? 'Concluir' : 'Continuar'}
               onPress={() => handleAnswer(String(answers[current.id] ?? ''))}
-              disabled={
-                current.required &&
-                !String(answers[current.id] ?? '').trim()
-              }
+              disabled={current.required && !String(answers[current.id] ?? '').trim()}
             />
           </View>
         )}
       </View>
 
       {current.isRedFlag && (
-        <View
-          style={{
-            padding: spacing.md,
-            backgroundColor: colors.dangerLight,
-            borderRadius: radius.md,
-            borderWidth: 1,
-            borderColor: colors.danger,
-            flexDirection: 'row',
-            gap: spacing.sm,
-          }}
-        >
+        <View style={styles.redFlag}>
           <Icon
-            name={{
-              sf: 'exclamationmark.triangle.fill',
-              ion: 'warning',
-            }}
+            name={{ sf: 'exclamationmark.triangle.fill', ion: 'warning' }}
             size={18}
-            color={colors.danger}
+            color={theme.colors.danger}
           />
-          <Text
-            style={{
-              ...typography.sm,
-              color: colors.danger,
-              flex: 1,
-            }}
-          >
+          <Text style={styles.redFlagText}>
             Se tiveres sintomas graves, liga 112 ou contacta o SNS 24.
           </Text>
         </View>
       )}
 
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
+      <View style={styles.nav}>
         <Pressable
           onPress={() => (step > 0 ? setStep((s) => s - 1) : router.back())}
           hitSlop={8}
         >
-          <Text
-            style={{
-              ...typography.sm,
-              color: colors.primary,
-              fontWeight: '500',
-            }}
-          >
+          <Text style={styles.navLink}>
             ← {step > 0 ? 'Pergunta anterior' : 'Voltar'}
           </Text>
         </Pressable>
         {redFlagTriggered && (
           <Pressable onPress={() => setShowUrgency(true)} hitSlop={8}>
-            <Text
-              style={{
-                ...typography.sm,
-                color: colors.danger,
-                fontWeight: '600',
-              }}
-            >
-              Ver aviso urgente
-            </Text>
+            <Text style={styles.navUrgent}>Ver aviso urgente</Text>
           </Pressable>
         )}
       </View>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+  },
+  loadingText: { fontSize: 16, color: theme.colors.textSecondary },
+  fallback: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+  },
+  bigIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fallbackTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.textPrimary },
+  fallbackSub: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center' },
+  fallbackCta: { width: '100%', maxWidth: 320 },
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.lg },
+  head: { gap: theme.spacing.sm },
+  srOnly: { position: 'absolute', width: 1, height: 1, opacity: 0 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  topicChip: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 24, color: theme.colors.ink },
+  progressWrap: { gap: theme.spacing.xs },
+  progressLabel: { fontSize: 12, color: theme.colors.textSecondary },
+  progressTrack: {
+    height: 6,
+    backgroundColor: theme.colors.surfaceSunken,
+    borderRadius: theme.radius.pill,
+    overflow: 'hidden',
+  },
+  progressFill: { height: 6, backgroundColor: theme.colors.ink },
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  question: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.textPrimary },
+  required: { color: theme.colors.danger },
+  yesNoRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  yesNo: {
+    flex: 1,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+  },
+  optionList: { gap: theme.spacing.sm },
+  option: {
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+  },
+  optOn: { backgroundColor: theme.colors.ink },
+  optOff: { backgroundColor: theme.colors.surfaceSunken },
+  optText: { fontSize: 16, fontWeight: '500' },
+  optTextOn: { color: theme.colors.onInk },
+  optTextOff: { color: theme.colors.textPrimary },
+  scaleWrap: { gap: theme.spacing.sm },
+  scaleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
+  scaleCell: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scaleLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+  scaleHint: { fontSize: 12, color: theme.colors.textTertiary },
+  textWrap: { gap: theme.spacing.sm },
+  textInput: {
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    fontSize: 16,
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surfaceSunken,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  redFlag: {
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.dangerLight,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  redFlagText: { fontSize: 14, color: theme.colors.danger, flex: 1 },
+  nav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  navLink: { fontSize: 14, color: theme.colors.accent, fontWeight: '500' },
+  navUrgent: { fontSize: 14, color: theme.colors.danger, fontWeight: '500' },
+}));
