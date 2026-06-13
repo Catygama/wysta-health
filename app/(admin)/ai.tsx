@@ -383,7 +383,7 @@ function Card({
         gap: spacing.sm,
       }}
     >
-      <Text style={{ ...typography.md, fontWeight: '700', color: colors.text.primary }}>
+      <Text style={{ ...typography.base, fontWeight: '700', color: colors.text.primary }}>
         {title}
       </Text>
       {children}

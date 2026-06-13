@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Appearance, type ColorSchemeName } from 'react-native';
+import { UnistylesRuntime } from 'react-native-unistyles';
 import {
   lightColors,
   darkColors,
@@ -74,6 +75,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       // Best-effort persistence; ignore failures (e.g. private-mode storage).
     });
   }, []);
+
+  // Keep unistyles in sync with the legacy mode controller so old (useTheme)
+  // and new (unistyles) components always show the same theme during migration.
+  useEffect(() => {
+    if (mode === 'system') {
+      if (!UnistylesRuntime.hasAdaptiveThemes) {
+        UnistylesRuntime.setAdaptiveThemes(true);
+      }
+      return;
+    }
+    if (UnistylesRuntime.hasAdaptiveThemes) {
+      UnistylesRuntime.setAdaptiveThemes(false);
+    }
+    UnistylesRuntime.setTheme(mode);
+  }, [mode, systemScheme]);
 
   const value = useMemo<ThemeContextValue>(() => {
     const effective = resolveEffective(mode, systemScheme);
