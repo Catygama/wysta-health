@@ -1,13 +1,12 @@
 import { View, Text } from 'react-native';
-import { spacing, typography, radius } from '@/constants/theme';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Icon } from '@/components/ui/Icon';
 import { RISK_LABELS } from '@/constants/conversation';
-import { useTheme } from '@/lib/theme';
 
 const RISK_COLORS: Record<string, string> = {
-  high: '#DC2626',
-  medium: '#D97706',
-  low: '#059669',
+  high: '#D7264C',
+  medium: '#C77B16',
+  low: '#1E6B56',
 };
 
 type Props = {
@@ -17,87 +16,29 @@ type Props = {
 };
 
 export function TriageSummary({ riskLevel, responses, questionLabels }: Props) {
-  const { colors } = useTheme();
-  const color = RISK_COLORS[riskLevel ?? 'low'] ?? colors.text.secondary;
+  const { theme } = useUnistyles();
+  const color = RISK_COLORS[riskLevel ?? 'low'] ?? theme.colors.textSecondary;
   const entries = Object.entries(responses);
   if (entries.length === 0) return null;
 
   return (
-    <View
-      style={{
-        backgroundColor: colors.primaryLight,
-        borderWidth: 1,
-        borderColor: colors.primary + '40',
-        borderRadius: radius.md,
-        padding: spacing.md,
-        gap: spacing.sm,
-      }}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.sm,
-        }}
-      >
-        <Icon
-          name={{ sf: 'doc.text.fill', ion: 'document-text' }}
-          size={16}
-          color={colors.primary}
-        />
-        <Text
-          style={{
-            ...typography.sm,
-            fontWeight: '700',
-            color: colors.primary,
-            flex: 1,
-          }}
-        >
-          Resumo de triagem
-        </Text>
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <Icon name={{ sf: 'doc.text.fill', ion: 'document-text' }} size={16} color={theme.colors.ink} />
+        <Text style={styles.title}>Resumo de triagem</Text>
         {riskLevel && (
-          <View
-            style={{
-              backgroundColor: color + '20',
-              paddingVertical: 2,
-              paddingHorizontal: spacing.sm,
-              borderRadius: radius.full,
-            }}
-          >
-            <Text
-              style={{
-                ...typography.xs,
-                fontWeight: '700',
-                color,
-              }}
-            >
+          <View style={[styles.riskBadge, { backgroundColor: color + '20' }]}>
+            <Text style={[styles.riskText, { color }]}>
               Risco {RISK_LABELS[riskLevel] ?? riskLevel}
             </Text>
           </View>
         )}
       </View>
-      <View style={{ gap: 4 }}>
+      <View style={styles.rows}>
         {entries.map(([key, value]) => (
-          <View key={key} style={{ flexDirection: 'row', gap: spacing.xs }}>
-            <Text
-              style={{
-                ...typography.xs,
-                color: colors.text.secondary,
-                fontWeight: '600',
-                minWidth: 110,
-              }}
-            >
-              {questionLabels?.[key] ?? key}:
-            </Text>
-            <Text
-              style={{
-                ...typography.xs,
-                color: colors.text.primary,
-                flex: 1,
-              }}
-            >
-              {formatValue(value)}
-            </Text>
+          <View key={key} style={styles.row}>
+            <Text style={styles.key}>{questionLabels?.[key] ?? key}:</Text>
+            <Text style={styles.value}>{formatValue(value)}</Text>
           </View>
         ))}
       </View>
@@ -113,3 +54,25 @@ function formatValue(value: unknown): string {
   if (value === null || value === undefined) return '—';
   return String(value);
 }
+
+const styles = StyleSheet.create((theme) => ({
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  header: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  title: { fontSize: 14, fontWeight: '500', color: theme.colors.ink, flex: 1 },
+  riskBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+  },
+  riskText: { fontSize: 12, fontWeight: '500' },
+  rows: { gap: 4 },
+  row: { flexDirection: 'row', gap: theme.spacing.xs },
+  key: { fontSize: 12, color: theme.colors.textSecondary, fontWeight: '500', minWidth: 110 },
+  value: { fontSize: 12, color: theme.colors.textPrimary, flex: 1 },
+}));
