@@ -1,7 +1,6 @@
-import { View, Text, Pressable, FlatList } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
-import { spacing, typography, radius } from '@/constants/theme';
-import { useTheme } from '@/lib/theme';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { TOPICS } from '@/constants/topics';
 import {
   STATUS_LABELS,
@@ -10,6 +9,7 @@ import {
   PRIORITY_COLORS,
 } from '@/constants/conversation';
 import { Icon } from '@/components/ui/Icon';
+import { Card } from '@/components/ui/Card';
 import { relativeTime } from '@/lib/format';
 
 type Conversation = {
@@ -34,21 +34,24 @@ export function ConversationList({
   showPriority = false,
 }: Props) {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
 
   return (
     <FlatList
       testID="conversations-list"
       data={conversations}
       keyExtractor={(item) => item._id}
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+      style={styles.list}
+      contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
       renderItem={({ item }) => {
         const topic = TOPICS.find((t) => t.id === item.topic);
-        const statusColor = STATUS_COLORS[item.status] ?? '#6B7280';
-        const priorityColor = PRIORITY_COLORS[item.priority] ?? '#6B7280';
+        const pastel = theme.topic[topic?.color ?? 'general'];
+        const statusColor = STATUS_COLORS[item.status] ?? theme.colors.textSecondary;
+        const priorityColor =
+          PRIORITY_COLORS[item.priority] ?? theme.colors.textSecondary;
         return (
-          <Pressable
+          <Card
             testID={`conversation-row-${item._id}`}
             onPress={() =>
               router.push({
@@ -56,104 +59,75 @@ export function ConversationList({
                 params: { id: item._id },
               })
             }
-            style={({ pressed }) => ({
-              backgroundColor: pressed
-                ? colors.background.tertiary
-                : colors.background.primary,
-              borderRadius: radius.md,
-              padding: spacing.md,
-              borderWidth: 1,
-              borderColor: colors.border,
-              gap: spacing.xs,
-            })}
+            style={styles.card}
           >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: spacing.sm,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: spacing.xs,
-                  flex: 1,
-                }}
-              >
-                {topic && <Icon name={topic.icon} size={18} color={colors.primary} />}
-                <Text
-                  style={{
-                    ...typography.base,
-                    fontWeight: '600',
-                    color: colors.text.primary,
-                  }}
-                  numberOfLines={1}
-                >
+            <View style={[styles.iconChip, { backgroundColor: pastel.fill }]}>
+              {topic && <Icon name={topic.icon} size={20} color={pastel.on} />}
+            </View>
+            <View style={styles.body}>
+              <View style={styles.titleRow}>
+                <Text style={styles.title} numberOfLines={1}>
                   {topic?.label ?? item.topic}
                 </Text>
-              </View>
-              <View
-                style={{
-                  backgroundColor: statusColor + '20',
-                  paddingVertical: 2,
-                  paddingHorizontal: spacing.sm,
-                  borderRadius: radius.full,
-                }}
-              >
-                <Text
-                  style={{
-                    ...typography.xs,
-                    fontWeight: '600',
-                    color: statusColor,
-                  }}
-                >
-                  {STATUS_LABELS[item.status] ?? item.status}
-                </Text>
-              </View>
-            </View>
-            <Text
-              style={{ ...typography.sm, color: colors.text.secondary }}
-              numberOfLines={1}
-            >
-              {item.title}
-            </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.sm,
-              }}
-            >
-              {showPriority && item.priority && (
-                <View
-                  style={{
-                    backgroundColor: priorityColor + '15',
-                    paddingVertical: 1,
-                    paddingHorizontal: spacing.xs,
-                    borderRadius: radius.sm,
-                  }}
-                >
-                  <Text
-                    style={{
-                      ...typography.xs,
-                      fontWeight: '600',
-                      color: priorityColor,
-                    }}
-                  >
-                    {PRIORITY_LABELS[item.priority] ?? item.priority}
+                <View style={[styles.badge, { backgroundColor: statusColor + '20' }]}>
+                  <Text style={[styles.badgeText, { color: statusColor }]}>
+                    {STATUS_LABELS[item.status] ?? item.status}
                   </Text>
                 </View>
-              )}
-              <Text style={{ ...typography.xs, color: colors.text.tertiary }}>
-                {relativeTime(item.lastMessageAt)}
+              </View>
+              <Text style={styles.subtitle} numberOfLines={1}>
+                {item.title}
               </Text>
+              <View style={styles.metaRow}>
+                {showPriority && item.priority ? (
+                  <View style={[styles.badge, { backgroundColor: priorityColor + '15' }]}>
+                    <Text style={[styles.badgeText, { color: priorityColor }]}>
+                      {PRIORITY_LABELS[item.priority] ?? item.priority}
+                    </Text>
+                  </View>
+                ) : null}
+                <Text style={styles.time}>{relativeTime(item.lastMessageAt)}</Text>
+              </View>
             </View>
-          </Pressable>
+          </Card>
         );
       }}
     />
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  list: { flex: 1, backgroundColor: theme.colors.background },
+  content: { padding: theme.spacing.md, gap: theme.spacing.sm },
+  card: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  iconChip: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  body: { flex: 1, gap: 3 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  title: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.colors.textPrimary,
+  },
+  subtitle: { fontSize: 14, color: theme.colors.textSecondary },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  badge: {
+    paddingVertical: 2,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+  },
+  badgeText: { fontSize: 12, fontWeight: '500' },
+  time: { fontSize: 12, color: theme.colors.textTertiary },
+}));
