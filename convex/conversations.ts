@@ -434,7 +434,7 @@ export const recommendInPerson = mutation({
     const baseMsg =
       'Pelo que descreves, recomendamos que procures consulta presencial nos teus cuidados primários ou liga ao SNS 24 (808 24 24 24). Se for uma situação urgente, liga 112.';
     const content = args.extraNote?.trim()
-      ? `${baseMsg}\n\nNota da profissional: ${args.extraNote.trim()}`
+      ? `${baseMsg}\n\nNota do profissional: ${args.extraNote.trim()}`
       : baseMsg;
     const now = Date.now();
 
@@ -496,7 +496,7 @@ export const requestAiHandoff = mutation({
       conversationId: args.id,
       senderId: userId,
       content:
-        'A utente pediu acompanhamento por uma profissional. Esta conversa transitou da modalidade AI-only para fila de profissionais.',
+        'O utente pediu acompanhamento por um profissional. Esta conversa transitou da modalidade AI-only para fila de profissionais.',
       messageType: 'system',
     });
   },

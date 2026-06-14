@@ -173,7 +173,7 @@ export const respondAuto = internalAction({
       const sent = judged.output.action === 'send';
       const answer = sent
         ? judged.output.finalAnswer
-        : 'Esta pergunta merece resposta de uma profissional. Toca em "Falar com profissional" para entrar na fila.';
+        : 'Esta pergunta merece resposta de um profissional. Toca em "Falar com profissional" para entrar na fila.';
       await ctx.runMutation(internal.ai.assistant.recordAssistantMessage, {
         conversationId,
         patientId: owner,
@@ -296,7 +296,7 @@ export const respond = action({
     const sent = judged.output.action === 'send';
     const answer = sent
       ? judged.output.finalAnswer
-      : 'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de uma profissional.';
+      : 'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um profissional.';
 
     await ctx.runMutation(internal.ai.assistant.recordAssistantMessage, {
       conversationId,

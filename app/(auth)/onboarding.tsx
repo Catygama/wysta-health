@@ -58,7 +58,7 @@ export default function Onboarding() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.hero}>
-        <Text style={styles.title}>Bem-vinda à Wysta</Text>
+        <Text style={styles.title}>Boas-vindas à Wysta</Text>
         <Text style={styles.sub}>
           Algumas perguntas rápidas para personalizarmos a tua experiência. Podes
           saltar e completar mais tarde.
@@ -67,7 +67,7 @@ export default function Onboarding() {
 
       <Input
         testID="onboarding-name-input"
-        label="Como queres ser tratada? (opcional)"
+        label="Como queres que te chamemos? (opcional)"
         value={displayName}
         onChangeText={setDisplayName}
         placeholder="ex.: Maria"
