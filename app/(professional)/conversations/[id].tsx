@@ -592,7 +592,7 @@ function UserSummaryBanner({
     >
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <Text style={{ ...typography.xs, fontWeight: "700", color: colors.primary }}>
-          Perfil AI do utente
+          Perfil clínico (AI)
         </Text>
         {aiSummaryAt && (
           <Text style={{ ...typography.xs, color: colors.text.tertiary }}>
@@ -793,7 +793,7 @@ function RecommendInPersonSheet({
             }}
           >
             <Text style={{ ...typography.xs, fontWeight: '600', color: colors.text.secondary }}>
-              Mensagem que o utente vai receber
+              Pré-visualização da mensagem
             </Text>
             <Text style={{ ...typography.sm, color: colors.text.primary, lineHeight: 20 }}>
               Pelo que descreves, recomendamos que procures consulta presencial nos teus cuidados primários ou liga ao SNS 24 (808 24 24 24). Se for uma situação urgente, liga 112.
@@ -804,7 +804,7 @@ function RecommendInPersonSheet({
             multiline
             value={extraNote}
             onChangeText={setExtraNote}
-            placeholder="Nota adicional para o utente (opcional)"
+            placeholder="Nota adicional (opcional)"
             placeholderTextColor={colors.text.secondary}
             style={{
               ...typography.sm,
