@@ -46,11 +46,48 @@ export const listForPatient = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
-    return ctx.db
+    const conversations = await ctx.db
       .query('conversations')
       .withIndex('by_patient', (q) => q.eq('patientId', userId))
       .order('desc')
       .collect();
+
+    // Enrich each conversation for the care-feed home: latest visible message
+    // preview + the most recent professional responder's name (continuity is
+    // shown, never promised — null falls back to "Equipa Wysta" in the UI).
+    const enriched = await Promise.all(
+      conversations.map(async (conv) => {
+        const recent = await ctx.db
+          .query('messages')
+          .withIndex('by_conversation', (q) => q.eq('conversationId', conv._id))
+          .order('desc')
+          .take(15);
+        const visible = recent.filter((m) => !m.isInternal);
+        const last = visible[0];
+        const lastFromPro = visible.find((m) => m.senderId !== userId);
+        let responderName: string | null = null;
+        if (lastFromPro && conv.kind !== 'ai-only') {
+          const profile = await ctx.db
+            .query('userProfiles')
+            .withIndex('by_user', (q) => q.eq('userId', lastFromPro.senderId))
+            .unique();
+          responderName = profile?.displayName ?? null;
+        }
+        return {
+          ...conv,
+          preview: last?.content ?? null,
+          previewAt: last?._creationTime ?? null,
+          responderName,
+          isAiOnly: conv.kind === 'ai-only',
+        };
+      })
+    );
+
+    return enriched.sort(
+      (a, b) =>
+        (b.previewAt ?? b.lastMessageAt ?? b._creationTime) -
+        (a.previewAt ?? a.lastMessageAt ?? a._creationTime)
+    );
   },
 });
 

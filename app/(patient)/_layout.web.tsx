@@ -10,14 +10,6 @@ const ITEMS: NavItem[] = [
     match: (p) => p === '/',
   },
   {
-    label: 'Conversas',
-    href: '/conversations',
-    icon: {
-      sf: 'bubble.left.and.bubble.right',
-      ion: 'chatbubbles-outline',
-    },
-  },
-  {
     label: 'Saúde',
     href: '/education',
     icon: { sf: 'book', ion: 'book-outline' },
