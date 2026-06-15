@@ -386,7 +386,8 @@ export const gatherContext = internalQuery({
     const recentSummary = profile?.aiSummary ?? 'Sem histórico clínico.';
 
     const riskLabel = conv.riskLevel ? ` (risco ${conv.riskLevel})` : '';
-    const topicAndRisk = `Tópico: ${conv.topic}${riskLabel}`;
+    const goalLabel = conv.wellbeingGoal ? ` · Objetivo: ${conv.wellbeingGoal}` : '';
+    const topicAndRisk = `Tópico: ${conv.topic}${riskLabel}${goalLabel}`;
 
     return {
       allowed: true as const,
