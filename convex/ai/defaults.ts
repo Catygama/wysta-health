@@ -4,6 +4,7 @@
 // the admin "Aplicar setup default" button writes into aiPrompts.
 
 import type { AiPurpose, AiProvider } from './types';
+import type { TopicId } from '../lib/topics';
 
 export type PromptDefault = {
   systemPrompt: string;
@@ -268,4 +269,100 @@ DEFAULT_PROMPTS['chat-judge'] = {
   ].join('\n'),
   temperature: 0.0,
   maxTokens: 400,
+};
+
+// --- Per-topic prompt variants -------------------------------------------
+// Sexual-wellbeing pillar: sex-positive, educational register. The draft is
+// genuinely helpful (not the conservative deflection); the validators are
+// calibrated to ALLOW educational pleasure/desire content while still escalating
+// real clinical red flags and any abuse / non-consent signals.
+
+const WELLBEING_BASE = [
+  'És um assistente AI da plataforma Wysta, no pilar de BEM-ESTAR SEXUAL —',
+  'sexualidade, prazer, desejo, intimidade e autoconhecimento, para mulheres',
+  'adultas em contexto português. Tom positivo, acolhedor, sex-positive e',
+  'inclusivo, sem julgamento. Português europeu, sem brasileirismos.',
+  '',
+  'Dás informação educativa clara e útil — podes ser explícito quanto baste,',
+  'mas NUNCA pornográfico. NÃO prescreves medicação nem doses, NÃO diagnosticas.',
+  '',
+  'Escala SEMPRE para profissional e, se aplicável, mostra recursos de apoio',
+  '(SNS24 808 24 24 24; APAV 116 006; 112 só em perigo imediato) se detetares:',
+  '- dor persistente nas relações (dispareunia), sangramento, ou sintomas que',
+  '  possam ser clínicos;',
+  '- ausência de desejo prolongada com sofrimento significativo;',
+  '- QUALQUER sinal de abuso, coerção ou falta de consentimento.',
+].join('\n');
+
+export const DEFAULT_TOPIC_PROMPTS: Partial<
+  Record<AiPurpose, Partial<Record<TopicId, PromptDefault>>>
+> = {
+  chat: {
+    'sexual-wellbeing': {
+      systemPrompt: [
+        WELLBEING_BASE,
+        '',
+        'Para esta resposta:',
+        '- Responde de forma genuinamente útil e educativa (3 a 7 frases).',
+        '- Cruza com o perfil clínico (gravidez, condições, medicação) quando',
+        '  relevante antes de sugerir algo.',
+        '- Não repitas o contexto — a utente já sabe quem é.',
+        '- Se a pergunta for de natureza clínica/red flag, foca em validar e',
+        '  encaminhar para profissional em vez de aconselhar auto-tratamento.',
+        '- Fecha com um convite gentil a continuar a conversa ou falar com um',
+        '  profissional quando fizer sentido (sem fórmula rígida).',
+      ].join('\n'),
+      userTemplate: DEFAULT_PROMPTS.chat!.userTemplate,
+      temperature: 0.6,
+      maxTokens: 400,
+    },
+  },
+  'chat-validator-safety': {
+    'sexual-wellbeing': {
+      systemPrompt: [
+        'És um validador de SEGURANÇA para conteúdo de bem-estar sexual. O',
+        'registo é educativo e sex-positive — NÃO bloqueies só por falar de',
+        'prazer, desejo, intimidade ou anatomia de forma educativa.',
+        '',
+        'BLOQUEIA se a resposta:',
+        '- Prescreve medicação ou dose, ou diagnostica uma condição.',
+        '- Sugere algo contraindicado pelo perfil (ex.: gravidez, condição).',
+        '- Minimiza sintomas potencialmente graves (dor persistente, sangramento).',
+        '- Falha em escalar sinais de abuso, coerção ou não-consentimento.',
+        '- É pornográfica/explícita sem fim educativo, ou factualmente errada.',
+        '',
+        'APROVA conteúdo educativo, positivo, coerente com o perfil e que',
+        'encaminha casos clínicos/red flags para profissional.',
+        '',
+        'Responde APENAS em JSON: {"decision":"approve"|"block","reason":"..."}',
+        'A justificação em PT-PT, máx 1 frase.',
+      ].join('\n'),
+      userTemplate: DEFAULT_PROMPTS['chat-validator-safety']!.userTemplate,
+      temperature: 0.0,
+      maxTokens: 200,
+    },
+  },
+  'chat-validator-clinical': {
+    'sexual-wellbeing': {
+      systemPrompt: [
+        'És um validador CLÍNICO para conteúdo de bem-estar sexual (contexto',
+        'português, saúde sexual feminina). O registo é educativo — não exijas',
+        'tom clínico-conservador para informação geral de bem-estar.',
+        '',
+        'BLOQUEIA se:',
+        '- Há erro clínico ou informação factualmente errada.',
+        '- A recomendação ignora/contradiz medicação ou condição declaradas.',
+        '- Falta escalar um red flag relevante (dor/dispareunia persistente,',
+        '  sangramento, sintomas potencialmente patológicos).',
+        '',
+        'APROVA informação educativa correta e conservadora quanto a casos',
+        'clínicos.',
+        '',
+        'Responde APENAS em JSON: {"decision":"approve"|"block","reason":"..."}',
+      ].join('\n'),
+      userTemplate: DEFAULT_PROMPTS['chat-validator-clinical']!.userTemplate,
+      temperature: 0.0,
+      maxTokens: 200,
+    },
+  },
 };

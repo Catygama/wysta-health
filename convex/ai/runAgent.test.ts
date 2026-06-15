@@ -48,6 +48,15 @@ async function seed(t: ReturnType<typeof convexTest>) {
       maxTokens: 800,
       createdBy: userId,
     });
+    await ctx.db.insert('aiPrompts', {
+      purpose: 'chat-summary',
+      topic: 'sexual-wellbeing',
+      systemPrompt: 'Wellbeing summary.',
+      userTemplate: 'Conversa:\n{{conversationText}}',
+      temperature: 0.3,
+      maxTokens: 800,
+      createdBy: userId,
+    });
     return { userId, configId, promptId };
   });
 }
@@ -161,6 +170,26 @@ describe('runAgent', () => {
     expect(result.output).toEqual({ summary: 'ok' });
     expect(callLlmObject).toHaveBeenCalledTimes(1);
     expect(callLlmText).not.toHaveBeenCalled();
+  });
+
+  it('uses the topic-specific prompt when topic is passed', async () => {
+    const t = convexTest(schema, modules);
+    const { userId } = await seed(t);
+    vi.mocked(callLlmText).mockResolvedValue({
+      output: 'ok',
+      inputTokens: 10,
+      outputTokens: 5,
+    });
+    await t.run(async (ctx) =>
+      runAgent(ctx, {
+        purpose: 'chat-summary',
+        topic: 'sexual-wellbeing',
+        vars: { conversationText: 'x' },
+        userId,
+      })
+    );
+    const callArgs = vi.mocked(callLlmText).mock.calls[0][0];
+    expect(callArgs.systemPrompt).toBe('Wellbeing summary.');
   });
 
   it('throws clearly when template variable missing', async () => {

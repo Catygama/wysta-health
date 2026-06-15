@@ -137,6 +137,7 @@ export const respondAuto = internalAction({
 
       const draft = await runAgent(ctx, {
         purpose: 'chat',
+        topic: ctxData.topic,
         vars: baseVars,
         userId: owner,
         conversationId,
@@ -144,6 +145,7 @@ export const respondAuto = internalAction({
       const [safety, clinical] = await Promise.all([
         runAgent(ctx, {
           purpose: 'chat-validator-safety',
+          topic: ctxData.topic,
           vars: { ...baseVars, draft: draft.output },
           userId: owner,
           conversationId,
@@ -152,6 +154,7 @@ export const respondAuto = internalAction({
         }),
         runAgent(ctx, {
           purpose: 'chat-validator-clinical',
+          topic: ctxData.topic,
           vars: { ...baseVars, draft: draft.output },
           userId: owner,
           conversationId,
@@ -161,6 +164,7 @@ export const respondAuto = internalAction({
       ]);
       const judged = await runAgent(ctx, {
         purpose: 'chat-judge',
+        topic: ctxData.topic,
         vars: {
           ...baseVars,
           draft: draft.output,
@@ -256,6 +260,7 @@ export const respond = action({
     // Step 1: draft
     const draft = await runAgent(ctx, {
       purpose: 'chat',
+      topic: ctxData.topic,
       vars: baseVars,
       userId,
       conversationId,
@@ -265,6 +270,7 @@ export const respond = action({
     const [safety, clinical] = await Promise.all([
       runAgent(ctx, {
         purpose: 'chat-validator-safety',
+        topic: ctxData.topic,
         vars: { ...baseVars, draft: draft.output },
         userId,
         conversationId,
@@ -273,6 +279,7 @@ export const respond = action({
       }),
       runAgent(ctx, {
         purpose: 'chat-validator-clinical',
+        topic: ctxData.topic,
         vars: { ...baseVars, draft: draft.output },
         userId,
         conversationId,
@@ -284,6 +291,7 @@ export const respond = action({
     // Step 3: judge
     const judged = await runAgent(ctx, {
       purpose: 'chat-judge',
+      topic: ctxData.topic,
       vars: {
         ...baseVars,
         draft: draft.output,
@@ -382,6 +390,7 @@ export const gatherContext = internalQuery({
 
     return {
       allowed: true as const,
+      topic: conv.topic,
       conversationHistory,
       patientProfile,
       recentSummary,

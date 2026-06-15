@@ -81,4 +81,64 @@ describe('aiPrompts', () => {
       )
     ).rejects.toThrow(/no aiPrompts/i);
   });
+
+  it('getActivePrompt returns the topic variant when one exists', async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await seedAdmin(t);
+    await asAdmin.mutation(api.ai.prompts.insertPrompt, {
+      purpose: 'chat',
+      systemPrompt: 'global draft',
+    });
+    await asAdmin.mutation(api.ai.prompts.insertPrompt, {
+      purpose: 'chat',
+      systemPrompt: 'wellbeing draft',
+      topic: 'sexual-wellbeing',
+    });
+    const variant = await t.run(async (ctx) =>
+      ctx.runQuery(internal.ai.prompts.getActivePrompt, {
+        purpose: 'chat',
+        topic: 'sexual-wellbeing',
+      })
+    );
+    expect(variant.systemPrompt).toBe('wellbeing draft');
+  });
+
+  it('getActivePrompt falls back to global when no variant for the topic', async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await seedAdmin(t);
+    await asAdmin.mutation(api.ai.prompts.insertPrompt, {
+      purpose: 'chat',
+      systemPrompt: 'global draft',
+    });
+    await asAdmin.mutation(api.ai.prompts.insertPrompt, {
+      purpose: 'chat',
+      systemPrompt: 'wellbeing draft',
+      topic: 'sexual-wellbeing',
+    });
+    const general = await t.run(async (ctx) =>
+      ctx.runQuery(internal.ai.prompts.getActivePrompt, {
+        purpose: 'chat',
+        topic: 'general',
+      })
+    );
+    expect(general.systemPrompt).toBe('global draft');
+  });
+
+  it('getActivePrompt without topic ignores topic variants (returns global)', async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await seedAdmin(t);
+    await asAdmin.mutation(api.ai.prompts.insertPrompt, {
+      purpose: 'chat',
+      systemPrompt: 'global draft',
+    });
+    await asAdmin.mutation(api.ai.prompts.insertPrompt, {
+      purpose: 'chat',
+      systemPrompt: 'wellbeing draft',
+      topic: 'sexual-wellbeing',
+    });
+    const active = await t.run(async (ctx) =>
+      ctx.runQuery(internal.ai.prompts.getActivePrompt, { purpose: 'chat' })
+    );
+    expect(active.systemPrompt).toBe('global draft');
+  });
 });

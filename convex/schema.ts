@@ -212,13 +212,16 @@ export default defineSchema({
 
   aiPrompts: defineTable({
     purpose: aiPurpose,
+    topic: v.optional(topic),
     systemPrompt: v.string(),
     userTemplate: v.optional(v.string()),
     temperature: v.optional(v.number()),
     maxTokens: v.optional(v.number()),
     createdBy: v.id('users'),
     notes: v.optional(v.string()),
-  }).index('by_purpose', ['purpose']),
+  })
+    .index('by_purpose', ['purpose'])
+    .index('by_purpose_and_topic', ['purpose', 'topic']),
 
   aiSettings: defineTable({
     dailyCostCapUsd: v.number(),
