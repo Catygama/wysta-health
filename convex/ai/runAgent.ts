@@ -9,6 +9,7 @@ import { callLlmText, callLlmObject } from './llm';
 import { renderTemplate } from './template';
 import { computeCostUsd } from './pricing';
 import type { AiPurpose } from './types';
+import { aiPurposeValidator as aiPurpose } from './registry';
 
 type RunAgentCtx =
   | GenericMutationCtx<DataModel>
@@ -134,15 +135,6 @@ export async function runAgent<T extends ZodTypeAny | undefined = undefined>(
 // Registered action wrapper — allows calling runAgent from Convex actions
 // where each ctx.runMutation is an independently committed transaction.
 // Use this when you need durable error audit trails.
-const aiPurpose = v.union(
-  v.literal('chat-summary'),
-  v.literal('user-summary'),
-  v.literal('chat'),
-  v.literal('chat-validator-safety'),
-  v.literal('chat-validator-clinical'),
-  v.literal('chat-judge')
-);
-
 export const run = internalAction({
   args: {
     purpose: aiPurpose,

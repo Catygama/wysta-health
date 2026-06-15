@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as ai_admin from "../ai/admin.js";
 import type * as ai_assistant from "../ai/assistant.js";
 import type * as ai_chatSummary from "../ai/chatSummary.js";
 import type * as ai_configs from "../ai/configs.js";
@@ -16,6 +17,7 @@ import type * as ai_invocations from "../ai/invocations.js";
 import type * as ai_llm from "../ai/llm.js";
 import type * as ai_pricing from "../ai/pricing.js";
 import type * as ai_prompts from "../ai/prompts.js";
+import type * as ai_registry from "../ai/registry.js";
 import type * as ai_runAgent from "../ai/runAgent.js";
 import type * as ai_settings from "../ai/settings.js";
 import type * as ai_setup from "../ai/setup.js";
@@ -44,6 +46,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "ai/admin": typeof ai_admin;
   "ai/assistant": typeof ai_assistant;
   "ai/chatSummary": typeof ai_chatSummary;
   "ai/configs": typeof ai_configs;
@@ -52,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   "ai/llm": typeof ai_llm;
   "ai/pricing": typeof ai_pricing;
   "ai/prompts": typeof ai_prompts;
+  "ai/registry": typeof ai_registry;
   "ai/runAgent": typeof ai_runAgent;
   "ai/settings": typeof ai_settings;
   "ai/setup": typeof ai_setup;

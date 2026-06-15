@@ -1,15 +1,7 @@
 import { v } from 'convex/values';
 import { internalMutation, internalQuery, query } from '../_generated/server';
 import { requireAdmin } from '../lib/auth';
-
-const aiPurpose = v.union(
-  v.literal('chat-summary'),
-  v.literal('user-summary'),
-  v.literal('chat'),
-  v.literal('chat-validator-safety'),
-  v.literal('chat-validator-clinical'),
-  v.literal('chat-judge')
-);
+import { aiPurposeValidator as aiPurpose } from './registry';
 
 const aiInvocationStatus = v.union(
   v.literal('pending'),

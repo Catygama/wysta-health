@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 import { authTables } from '@convex-dev/auth/server';
+import { aiPurposeValidator as aiPurpose, aiProviderValidator as aiProvider } from './ai/registry';
 
 const topic = v.union(
   v.literal('contraception'),
@@ -35,24 +36,6 @@ const riskBucket = v.object({
   criteria: v.array(v.string()),
   guidance: v.string(),
 });
-
-const aiPurpose = v.union(
-  v.literal('chat-summary'),
-  v.literal('user-summary'),
-  v.literal('chat'),
-  v.literal('chat-validator-safety'),
-  v.literal('chat-validator-clinical'),
-  v.literal('chat-judge')
-);
-
-const aiProvider = v.union(
-  v.literal('openai'),
-  v.literal('anthropic'),
-  v.literal('mistral'),
-  v.literal('google'),
-  v.literal('azure-openai'),
-  v.literal('custom')
-);
 
 export default defineSchema({
   ...authTables,

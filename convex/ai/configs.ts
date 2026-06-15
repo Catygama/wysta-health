@@ -2,26 +2,10 @@ import { v } from 'convex/values';
 import { mutation, query, internalQuery } from '../_generated/server';
 import { requireAdmin } from '../lib/auth';
 import { DEFAULT_PROMPTS, DEFAULT_CONFIGS } from './defaults';
+import { aiPurposeValidator as aiPurpose, aiProviderValidator as aiProvider } from './registry';
 
-const aiPurpose = v.union(
-  v.literal('chat-summary'),
-  v.literal('user-summary'),
-  v.literal('chat'),
-  v.literal('chat-validator-safety'),
-  v.literal('chat-validator-clinical'),
-  v.literal('chat-judge')
-);
-
-const aiProvider = v.union(
-  v.literal('openai'),
-  v.literal('anthropic'),
-  v.literal('mistral'),
-  v.literal('google'),
-  v.literal('azure-openai'),
-  v.literal('custom')
-);
-
-function maskApiKey(key: string): string {
+export function maskApiKey(key: string): string {
+  if (!key) return '—';
   const last4 = key.slice(-4);
   return `sk-…${last4}`;
 }
