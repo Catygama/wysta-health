@@ -1,21 +1,13 @@
 import { useState } from 'react';
-import {
-  FlatList,
-  View,
-  Text,
-  Pressable,
-  Alert,
-  ActivityIndicator,
-  TextInput,
-} from 'react-native';
+import { FlatList, View, Text, Pressable, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { Link } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { spacing, typography, radius } from '@/constants/theme';
-import { useTheme } from '@/lib/theme';
+import { fonts } from '@/lib/fonts';
 
 const ROLE_LABELS: Record<string, string> = {
   patient: 'Utente',
@@ -24,9 +16,9 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  patient: '#7C3AED',
-  professional: '#0891B2',
-  admin: '#D97706',
+  patient: '#2E1065',
+  professional: '#0F6E56',
+  admin: '#C77B16',
 };
 
 export default function AdminPanel() {
@@ -37,14 +29,12 @@ export default function AdminPanel() {
   const [seedResult, setSeedResult] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [search, setSearch] = useState('');
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
 
   if (users === undefined) {
     return (
-      <View
-        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-      >
-        <ActivityIndicator color={colors.primary} />
+      <View style={styles.loading}>
+        <ActivityIndicator color={theme.colors.ink} />
       </View>
     );
   }
@@ -59,11 +49,7 @@ export default function AdminPanel() {
       `Mudar de ${ROLE_LABELS[currentRole] ?? currentRole} para ${ROLE_LABELS[newRole]}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          onPress: () =>
-            setRole({ targetUserId: userId as any, role: newRole }),
-        },
+        { text: 'Confirmar', onPress: () => setRole({ targetUserId: userId as any, role: newRole }) },
       ]
     );
   }
@@ -107,51 +93,24 @@ export default function AdminPanel() {
     <FlatList
       data={filtered}
       keyExtractor={(item) => item._id}
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
       ListHeaderComponent={
-        <View style={{ gap: spacing.md, paddingBottom: spacing.sm }}>
-          <Text
-            style={{
-              ...typography['2xl'],
-              fontWeight: '700',
-              color: colors.text.primary,
-            }}
-          >
-            Administração
-          </Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Administração</Text>
 
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <View style={styles.countRow}>
             <CountCard testID="admin-count-patient" label="Utentes" value={counts.patient ?? 0} />
-            <CountCard
-              testID="admin-count-professional"
-              label="Profissionais"
-              value={counts.professional ?? 0}
-            />
+            <CountCard testID="admin-count-professional" label="Profissionais" value={counts.professional ?? 0} />
             <CountCard testID="admin-count-admin" label="Admins" value={counts.admin ?? 0} />
           </View>
 
-          <View
-            style={{
-              backgroundColor: colors.background.secondary,
-              borderRadius: radius.lg,
-              padding: spacing.md,
-              gap: spacing.sm,
-            }}
-          >
-            <Text
-              style={{
-                ...typography.sm,
-                fontWeight: '600',
-                color: colors.text.primary,
-              }}
-            >
-              Conteúdo da plataforma
-            </Text>
-            <Text
-              style={{ ...typography.xs, color: colors.text.secondary }}
-            >
-              Insere ou atualiza triagens e artigos educativos pré-definidos. Pode ser executado várias vezes sem duplicar registos.
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Conteúdo da plataforma</Text>
+            <Text style={styles.cardSub}>
+              Insere ou atualiza triagens e artigos educativos pré-definidos. Pode ser
+              executado várias vezes sem duplicar registos.
             </Text>
             <Button
               testID="admin-seed-button"
@@ -161,257 +120,171 @@ export default function AdminPanel() {
               loading={seeding}
             />
             {seedResult && (
-              <Text
-                testID="admin-seed-result"
-                style={{
-                  ...typography.xs,
-                  color: colors.text.secondary,
-                }}
-              >
-                {seedResult}
-              </Text>
+              <Text testID="admin-seed-result" style={styles.cardSub}>{seedResult}</Text>
             )}
           </View>
 
           <Link href="/(admin)/ai" asChild>
-            <Pressable
-              testID="admin-ai-link"
-              style={{
-                backgroundColor: colors.background.secondary,
-                borderRadius: radius.lg,
-                padding: spacing.md,
-                gap: spacing.xs,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text
-                  style={{
-                    ...typography.sm,
-                    fontWeight: '600',
-                    color: colors.text.primary,
-                  }}
-                >
-                  AI Infra
-                </Text>
-                <Text style={{ ...typography.xs, color: colors.text.secondary }}>
-                  Configs, prompts, audit das invocações + teste rápido.
-                </Text>
+            <Pressable testID="admin-ai-link" style={styles.linkCard}>
+              <View style={styles.linkBody}>
+                <Text style={styles.cardTitle}>AI Infra</Text>
+                <Text style={styles.cardSub}>Configs, prompts, audit das invocações + teste rápido.</Text>
               </View>
-              <Icon
-                name={{ sf: 'chevron.right', ion: 'chevron-forward' }}
-                size={16}
-                color={colors.text.tertiary}
-              />
+              <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={16} color={theme.colors.textTertiary} />
             </Pressable>
           </Link>
 
-          <Text
-            style={{
-              ...typography.lg,
-              fontWeight: '600',
-              color: colors.text.primary,
-              marginTop: spacing.sm,
-            }}
-          >
-            Utilizadores
-          </Text>
+          <Text style={styles.usersHeading}>Utilizadores</Text>
 
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.sm,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: radius.md,
-              paddingHorizontal: spacing.md,
-              backgroundColor: colors.background.primary,
-            }}
-          >
-            <Icon
-              name={{ sf: 'magnifyingglass', ion: 'search' }}
-              size={16}
-              color={colors.text.tertiary}
-            />
+          <View style={styles.searchBar}>
+            <Icon name={{ sf: 'magnifyingglass', ion: 'search' }} size={16} color={theme.colors.textTertiary} />
             <TextInput
               testID="admin-search-input"
               value={search}
               onChangeText={setSearch}
               placeholder="Pesquisar por email ou role..."
-              placeholderTextColor={colors.text.tertiary as any}
+              placeholderTextColor={theme.colors.textTertiary as any}
               autoCapitalize="none"
               autoCorrect={false}
               clearButtonMode="while-editing"
-              style={{
-                flex: 1,
-                paddingVertical: spacing.sm,
-                ...typography.base,
-                color: colors.text.primary,
-              }}
+              style={styles.searchInput}
             />
           </View>
         </View>
       }
       ListEmptyComponent={
-        <View style={{ padding: spacing.xl, alignItems: 'center' }}>
-          <Text style={{ ...typography.base, color: colors.text.secondary }}>
-            Nenhum utilizador encontrado.
-          </Text>
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>Nenhum utilizador encontrado.</Text>
         </View>
       }
       ListFooterComponent={
-        <View style={{ marginTop: spacing.lg }}>
-          <Button
-            label="Terminar sessão"
-            variant="secondary"
-            onPress={() => signOut()}
-          />
+        <View style={styles.footer}>
+          <Button label="Terminar sessão" variant="secondary" onPress={() => signOut()} />
         </View>
       }
-      renderItem={({ item }) => (
-        <View
-          testID={`admin-user-row-${item.user?.email ?? item.userId}`}
-          style={{
-            backgroundColor: colors.background.primary,
-            borderRadius: radius.md,
-            padding: spacing.md,
-            borderWidth: 1,
-            borderColor: colors.border,
-            gap: spacing.sm,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: spacing.sm,
-            }}
-          >
-            <Text
-              style={{
-                ...typography.base,
-                fontWeight: '600',
-                color: colors.text.primary,
-                flex: 1,
-              }}
-              selectable
-              numberOfLines={1}
-            >
-              {item.user?.email ?? item.userId}
-            </Text>
-            <View
-              style={{
-                backgroundColor: (ROLE_COLORS[item.role] ?? '#6B7280') + '20',
-                paddingVertical: 2,
-                paddingHorizontal: spacing.sm,
-                borderRadius: radius.full,
-              }}
-            >
-              <Text
-                style={{
-                  ...typography.xs,
-                  fontWeight: '700',
-                  color: ROLE_COLORS[item.role] ?? '#6B7280',
-                }}
-              >
-                {ROLE_LABELS[item.role] ?? item.role}
+      renderItem={({ item }) => {
+        const roleColor = ROLE_COLORS[item.role] ?? theme.colors.textSecondary;
+        return (
+          <View testID={`admin-user-row-${item.user?.email ?? item.userId}`} style={styles.userRow}>
+            <View style={styles.userTop}>
+              <Text style={styles.userEmail} selectable numberOfLines={1}>
+                {item.user?.email ?? item.userId}
               </Text>
+              <View style={[styles.roleBadge, { backgroundColor: roleColor + '20' }]}>
+                <Text style={[styles.roleBadgeText, { color: roleColor }]}>
+                  {ROLE_LABELS[item.role] ?? item.role}
+                </Text>
+              </View>
+            </View>
+
+            {(item.displayName || item.location || item.ageRange) && (
+              <Text style={styles.userMeta}>
+                {[item.displayName, item.ageRange, item.location].filter(Boolean).join(' • ')}
+              </Text>
+            )}
+
+            <View style={styles.roleActions}>
+              {(['patient', 'professional', 'admin'] as const)
+                .filter((r) => r !== item.role)
+                .map((r) => (
+                  <Pressable
+                    key={r}
+                    testID={`admin-role-${item.user?.email ?? item.userId}-${r}`}
+                    onPress={() => confirmRoleChange(item.userId, item.role, r)}
+                    style={styles.rolePill}
+                  >
+                    <Icon name={{ sf: 'arrow.right.circle.fill', ion: 'arrow-forward-circle' }} size={12} color={theme.colors.ink} />
+                    <Text style={styles.rolePillText}>{ROLE_LABELS[r]}</Text>
+                  </Pressable>
+                ))}
             </View>
           </View>
-
-          {(item.displayName || item.location || item.ageRange) && (
-            <Text style={{ ...typography.xs, color: colors.text.secondary }}>
-              {[item.displayName, item.ageRange, item.location]
-                .filter(Boolean)
-                .join(' • ')}
-            </Text>
-          )}
-
-          <View
-            style={{
-              flexDirection: 'row',
-              gap: spacing.xs,
-              flexWrap: 'wrap',
-            }}
-          >
-            {(['patient', 'professional', 'admin'] as const)
-              .filter((r) => r !== item.role)
-              .map((r) => (
-                <Pressable
-                  key={r}
-                  testID={`admin-role-${item.user?.email ?? item.userId}-${r}`}
-                  onPress={() =>
-                    confirmRoleChange(item.userId, item.role, r)
-                  }
-                  style={({ pressed }) => ({
-                    backgroundColor: pressed
-                      ? colors.background.tertiary
-                      : colors.primaryLight,
-                    borderRadius: radius.full,
-                    paddingVertical: spacing.xs,
-                    paddingHorizontal: spacing.md,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                  })}
-                >
-                  <Icon
-                    name={{
-                      sf: 'arrow.right.circle.fill',
-                      ion: 'arrow-forward-circle',
-                    }}
-                    size={12}
-                    color={colors.primary}
-                  />
-                  <Text
-                    style={{
-                      ...typography.xs,
-                      fontWeight: '600',
-                      color: colors.primary,
-                    }}
-                  >
-                    {ROLE_LABELS[r]}
-                  </Text>
-                </Pressable>
-              ))}
-          </View>
-        </View>
-      )}
+        );
+      }}
     />
   );
 }
 
 function CountCard({ label, value, testID }: { label: string; value: number; testID?: string }) {
-  const { colors } = useTheme();
   return (
-    <View
-      testID={testID}
-      style={{
-        flex: 1,
-        backgroundColor: colors.background.primary,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: radius.md,
-        padding: spacing.md,
-        gap: spacing.xs,
-      }}
-    >
-      <Text style={{ ...typography.xs, color: colors.text.secondary }}>
-        {label}
-      </Text>
-      <Text
-        style={{
-          ...typography['2xl'],
-          fontWeight: '700',
-          color: colors.text.primary,
-        }}
-      >
-        {value}
-      </Text>
+    <View testID={testID} style={styles.countCard}>
+      <Text style={styles.countLabel}>{label}</Text>
+      <Text style={styles.countValue}>{value}</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background },
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  content: { padding: theme.spacing.md, gap: theme.spacing.sm },
+  header: { gap: theme.spacing.md, paddingBottom: theme.spacing.sm },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.ink },
+  countRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  countCard: {
+    flex: 1,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    gap: theme.spacing.xs,
+  },
+  countLabel: { fontSize: 12, color: theme.colors.textSecondary },
+  countValue: { fontFamily: fonts.displayExtraBold, fontSize: 24, color: theme.colors.textPrimary },
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 14, color: theme.colors.textPrimary },
+  cardSub: { fontSize: 12, color: theme.colors.textSecondary },
+  linkCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    gap: theme.spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  linkBody: { flex: 1, gap: 2 },
+  usersHeading: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.textPrimary, marginTop: theme.spacing.sm },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: theme.spacing.md,
+    backgroundColor: theme.colors.surfaceSunken,
+  },
+  searchInput: { flex: 1, paddingVertical: theme.spacing.sm, fontSize: 16, color: theme.colors.textPrimary },
+  empty: { padding: theme.spacing.xl, alignItems: 'center' },
+  emptyText: { fontSize: 16, color: theme.colors.textSecondary },
+  footer: { marginTop: theme.spacing.lg },
+  userRow: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  userTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: theme.spacing.sm },
+  userEmail: { fontSize: 16, fontWeight: '500', color: theme.colors.textPrimary, flex: 1 },
+  roleBadge: { paddingVertical: 2, paddingHorizontal: theme.spacing.sm, borderRadius: theme.radius.pill },
+  roleBadgeText: { fontSize: 12, fontWeight: '500' },
+  userMeta: { fontSize: 12, color: theme.colors.textSecondary },
+  roleActions: { flexDirection: 'row', gap: theme.spacing.xs, flexWrap: 'wrap' },
+  rolePill: {
+    backgroundColor: theme.colors.surfaceSunken,
+    borderRadius: theme.radius.pill,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  rolePillText: { fontSize: 12, fontWeight: '500', color: theme.colors.ink },
+}));
