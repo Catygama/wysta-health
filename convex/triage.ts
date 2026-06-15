@@ -1,13 +1,5 @@
 import { query } from './_generated/server';
-import { v } from 'convex/values';
-
-const topic = v.union(
-  v.literal('contraception'),
-  v.literal('pregnancy'),
-  v.literal('sti'),
-  v.literal('menstrual-cycle'),
-  v.literal('general')
-);
+import { topicValidator as topic } from './lib/topics';
 
 export const getByTopic = query({
   args: { topic },

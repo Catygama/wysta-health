@@ -22,6 +22,7 @@ const topicsLight = {
   intimate: { fill: '#A8E8D8', on: '#0B4A3A' },
   pregnancy: { fill: '#FFD2A8', on: '#7A3B0A' },
   general: { fill: '#C9D8FC', on: '#1F2D5C' },
+  wellbeing: { fill: '#FBC9BE', on: '#7A2E1E' },
 } as const;
 
 const topicsDark = {
@@ -30,6 +31,7 @@ const topicsDark = {
   intimate: { fill: '#13463A', on: '#A8E8D8' },
   pregnancy: { fill: '#5A3413', on: '#FFD2A8' },
   general: { fill: '#26345E', on: '#C9D8FC' },
+  wellbeing: { fill: '#5A2A1E', on: '#FBC9BE' },
 } as const;
 
 const lightTheme = {

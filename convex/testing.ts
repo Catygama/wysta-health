@@ -14,6 +14,7 @@ import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { TRIAGE_SEEDS, ARTICLE_SEEDS } from './lib/seedData';
 import { runAgent } from './ai/runAgent';
+import { topicValidator as topic } from './lib/topics';
 
 function assertE2E() {
   if (process.env.CONVEX_E2E_ENABLED !== 'true') {
@@ -196,14 +197,6 @@ export const getUserIdByEmail = query({
     return user?._id ?? null;
   },
 });
-
-const topic = v.union(
-  v.literal('contraception'),
-  v.literal('pregnancy'),
-  v.literal('sti'),
-  v.literal('menstrual-cycle'),
-  v.literal('general'),
-);
 
 const priority = v.union(
   v.literal('low'),
