@@ -1,16 +1,16 @@
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useTheme } from '@/lib/theme';
+import { useUnistyles } from 'react-native-unistyles';
 
 export default function Index() {
   const { user, isLoading, role } = useCurrentUser();
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
 
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={theme.colors.ink} />
       </View>
     );
   }

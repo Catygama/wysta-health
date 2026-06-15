@@ -1,10 +1,10 @@
 import { Redirect, Stack } from 'expo-router';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useTheme } from '@/lib/theme';
+import { useStackHeaderOptions } from '@/hooks/useHeaderOptions';
 
 export default function AdminLayout() {
   const { user, isLoading, role } = useCurrentUser();
-  const { colors } = useTheme();
+  const headerOptions = useStackHeaderOptions();
   if (isLoading) return null;
   if (!user) return <Redirect href="/(auth)/login" />;
   if (!role) return <Redirect href="/(auth)/onboarding" />;
@@ -12,15 +12,7 @@ export default function AdminLayout() {
   if (role === 'professional') return <Redirect href="/(professional)/queue" />;
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: true,
-        headerTintColor: colors.primary as any,
-        headerTitleStyle: { fontWeight: '700', color: colors.text.primary as any },
-        headerStyle: { backgroundColor: colors.background.primary as any },
-        contentStyle: { backgroundColor: colors.background.primary as any },
-      }}
-    >
+    <Stack screenOptions={headerOptions}>
       <Stack.Screen name="index" options={{ title: 'Administração' }} />
       <Stack.Screen name="ai" options={{ title: 'AI Infra' }} />
     </Stack>
