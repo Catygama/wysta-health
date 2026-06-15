@@ -16,6 +16,7 @@ import {
   AI_PROVIDERS,
   WIRED_PROVIDERS,
   AI_PURPOSE_META,
+  AI_PIPELINES,
   aiPurposeValidator as aiPurpose,
   aiProviderValidator as aiProvider,
 } from './registry';
@@ -87,6 +88,7 @@ export const overview = query({
       purposes,
       providers: AI_PROVIDERS,
       wiredProviders: WIRED_PROVIDERS,
+      pipelines: AI_PIPELINES,
     };
   },
 });

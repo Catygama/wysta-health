@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { ScrollView, View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import { useQuery, useAction, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -26,6 +26,12 @@ export default function AdminAi() {
   const [capInput, setCapInput] = useState('');
   const [savingCap, setSavingCap] = useState(false);
   const [capMsg, setCapMsg] = useState<string | null>(null);
+
+  // Card open state is lifted so the pipeline diagram can open a card on tap.
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
+  const toggle = (purpose: string) =>
+    setOpenMap((m) => ({ ...m, [purpose]: !m[purpose] }));
+  const focus = (purpose: string) => setOpenMap((m) => ({ ...m, [purpose]: true }));
 
   async function saveCap() {
     setCapMsg(null);
@@ -108,6 +114,12 @@ export default function AdminAi() {
         <ActivityIndicator color={theme.colors.ink} style={{ marginTop: 24 }} />
       ) : (
         <>
+          <PipelineDiagram
+            pipelines={overview.pipelines}
+            purposes={overview.purposes}
+            onSelect={focus}
+          />
+
           <SectionLabel>Resumos</SectionLabel>
           {groups!.resumos.map((row) => (
             <PurposeCard
@@ -115,6 +127,8 @@ export default function AdminAi() {
               row={row}
               providers={overview.providers}
               wired={overview.wiredProviders}
+              open={!!openMap[row.purpose]}
+              onToggle={() => toggle(row.purpose)}
             />
           ))}
 
@@ -125,6 +139,8 @@ export default function AdminAi() {
               row={row}
               providers={overview.providers}
               wired={overview.wiredProviders}
+              open={!!openMap[row.purpose]}
+              onToggle={() => toggle(row.purpose)}
             />
           ))}
         </>
@@ -164,19 +180,123 @@ export default function AdminAi() {
   );
 }
 
+// --- Pipeline diagram -----------------------------------------------------
+
+// Lays each pipeline out in topological levels (entry nodes at the top, each
+// node below its dependencies) so the chain reads draft → validators → judge.
+function levelsOf(steps: Overview['pipelines'][number]['steps']) {
+  const byPurpose = new Map(steps.map((s) => [s.purpose, s]));
+  const memo = new Map<string, number>();
+  const lvl = (p: string): number => {
+    if (memo.has(p)) return memo.get(p)!;
+    const s = byPurpose.get(p as any);
+    const v = !s || s.dependsOn.length === 0 ? 0 : 1 + Math.max(...s.dependsOn.map((d) => lvl(d)));
+    memo.set(p, v);
+    return v;
+  };
+  const max = Math.max(0, ...steps.map((s) => lvl(s.purpose)));
+  const rows: string[][] = Array.from({ length: max + 1 }, () => []);
+  for (const s of steps) rows[lvl(s.purpose)].push(s.purpose);
+  return rows;
+}
+
+function PipelineDiagram({
+  pipelines,
+  purposes,
+  onSelect,
+}: {
+  pipelines: Overview['pipelines'];
+  purposes: PurposeRow[];
+  onSelect: (purpose: string) => void;
+}) {
+  const info: Record<string, { label: string; model: string | null; configured: boolean }> = {};
+  for (const p of purposes) {
+    info[p.purpose] = {
+      label: p.meta.label,
+      model: p.config ? `${p.config.provider} / ${p.config.modelId}` : null,
+      configured: !!p.config && !!p.prompt,
+    };
+  }
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Como os agentes se ligam</Text>
+      <Text style={styles.hint}>Toca num nó para abrir a sua configuração.</Text>
+      {pipelines.map((pl) => {
+        const rows = levelsOf(pl.steps);
+        return (
+          <View key={pl.id} style={styles.pipelineBlock}>
+            <Text style={styles.pipelineLabel}>{pl.label}</Text>
+            <Text style={styles.muted}>{pl.description}</Text>
+            {rows.map((row, i) => (
+              <Fragment key={i}>
+                <View style={styles.diagRow}>
+                  {row.map((p) => (
+                    <DiagramNode key={p} purpose={p} info={info[p]} onSelect={onSelect} />
+                  ))}
+                </View>
+                {i < rows.length - 1 && (
+                  <View style={styles.connector}>
+                    <View style={styles.connectorLine} />
+                  </View>
+                )}
+              </Fragment>
+            ))}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function DiagramNode({
+  purpose,
+  info,
+  onSelect,
+}: {
+  purpose: string;
+  info?: { label: string; model: string | null; configured: boolean };
+  onSelect: (purpose: string) => void;
+}) {
+  const { theme } = useUnistyles();
+  return (
+    <Pressable
+      testID={`admin-ai-node-${purpose}`}
+      onPress={() => onSelect(purpose)}
+      style={styles.node}
+    >
+      <View
+        style={[
+          styles.nodeDot,
+          { backgroundColor: info?.configured ? theme.colors.success : theme.colors.warning },
+        ]}
+      />
+      <Text style={styles.nodeLabel} numberOfLines={2}>
+        {info?.label ?? purpose}
+      </Text>
+      <Text style={styles.nodeModel} numberOfLines={1}>
+        {info?.model ?? 'sem config'}
+      </Text>
+    </Pressable>
+  );
+}
+
 // --- Per-purpose editor ---------------------------------------------------
 
 function PurposeCard({
   row,
   providers,
   wired,
+  open,
+  onToggle,
 }: {
   row: PurposeRow;
   providers: readonly string[];
   wired: readonly string[];
+  open: boolean;
+  onToggle: () => void;
 }) {
   const { theme } = useUnistyles();
-  const [open, setOpen] = useState(false);
 
   const configured = !!row.config && !!row.prompt;
 
@@ -184,7 +304,7 @@ function PurposeCard({
     <View style={styles.card}>
       <Pressable
         testID={`admin-ai-purpose-${row.purpose}`}
-        onPress={() => setOpen((o) => !o)}
+        onPress={onToggle}
         style={styles.purposeHeader}
       >
         <View style={styles.purposeHeaderText}>
@@ -618,6 +738,43 @@ const styles = StyleSheet.create((theme) => ({
   capValue: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.ink },
   inputRow: { flexDirection: 'row', gap: theme.spacing.sm },
   half: { flex: 1 },
+
+  pipelineBlock: {
+    gap: 2,
+    paddingTop: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.divider,
+  },
+  pipelineLabel: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
+  diagRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
+  },
+  connector: { alignItems: 'center', height: 18, justifyContent: 'center' },
+  connectorLine: { width: 2, height: 18, backgroundColor: theme.colors.textTertiary },
+  node: {
+    backgroundColor: theme.colors.surfaceSunken,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.sm,
+    alignItems: 'center',
+    gap: 4,
+    minWidth: 120,
+    maxWidth: 170,
+  },
+  nodeDot: { width: 8, height: 8, borderRadius: 4 },
+  nodeLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  nodeModel: { fontSize: 10, color: theme.colors.textTertiary, textAlign: 'center' },
 
   purposeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   purposeHeaderText: { flex: 1, gap: 2 },
