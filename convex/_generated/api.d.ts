@@ -39,6 +39,7 @@ import type * as seed from "../seed.js";
 import type * as testing from "../testing.js";
 import type * as triage from "../triage.js";
 import type * as users from "../users.js";
+import type * as wellbeing from "../wellbeing.js";
 
 import type {
   ApiFromModules,
@@ -78,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   testing: typeof testing;
   triage: typeof triage;
   users: typeof users;
+  wellbeing: typeof wellbeing;
 }>;
 
 /**
