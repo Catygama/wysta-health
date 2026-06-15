@@ -5,6 +5,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import type { FunctionReturnType } from 'convex/server';
 import { api } from '@/convex/_generated/api';
 import { fonts } from '@/lib/fonts';
+import type { TopicId } from '@/convex/lib/topics';
 
 const STATUS_COLOR: Record<string, string> = {
   pending: '#B7B0C6',
@@ -495,7 +496,7 @@ function PromptEditor({
   const resetPrompt = useMutation(api.ai.admin.resetPromptToDefault);
 
   // 'default' = global prompt; otherwise a topic id.
-  const [scope, setScope] = useState<string>('default');
+  const [scope, setScope] = useState<'default' | TopicId>('default');
   const variant =
     scope === 'default'
       ? row.prompt
@@ -514,7 +515,7 @@ function PromptEditor({
   const [msg, setMsg] = useState<string | null>(null);
 
   // Re-load fields when the admin switches scope (default ↔ a topic).
-  function selectScope(next: string) {
+  function selectScope(next: 'default' | TopicId) {
     setScope(next);
     setMsg(null);
     const v =
@@ -527,7 +528,7 @@ function PromptEditor({
     setMaxTokens(v?.maxTokens != null ? String(v.maxTokens) : '');
   }
 
-  const topicArg = scope === 'default' ? undefined : (scope as any);
+  const topicArg = scope === 'default' ? undefined : scope;
 
   async function save() {
     setMsg(null);
@@ -579,7 +580,7 @@ function PromptEditor({
   const hasDefault =
     scope === 'default'
       ? row.hasDefaultPrompt
-      : true; // topic variants reset from DEFAULT_TOPIC_PROMPTS (may not exist → backend throws, surfaced as msg)
+      : row.topicDefaults.includes(scope);
 
   return (
     <View style={styles.block}>
@@ -600,7 +601,7 @@ function PromptEditor({
           return (
             <Pressable
               key={tp}
-              onPress={() => selectScope(tp)}
+              onPress={() => selectScope(tp as TopicId)}
               style={[styles.chip, active && styles.chipActive]}
             >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>

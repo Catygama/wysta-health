@@ -79,10 +79,13 @@ export const overview = query({
         });
       }
 
+      const topicDefaults = Object.keys(DEFAULT_TOPIC_PROMPTS[purpose] ?? {});
+
       purposes.push({
         purpose,
         meta,
         hasDefaultPrompt: !!DEFAULT_PROMPTS[purpose],
+        topicDefaults,
         defaultModel: DEFAULT_CONFIGS[purpose]
           ? `${DEFAULT_CONFIGS[purpose]!.provider} / ${DEFAULT_CONFIGS[purpose]!.modelId}`
           : null,
