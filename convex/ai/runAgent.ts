@@ -10,6 +10,8 @@ import { renderTemplate } from './template';
 import { computeCostUsd } from './pricing';
 import type { AiPurpose } from './types';
 import { aiPurposeValidator as aiPurpose } from './registry';
+import type { TopicId } from '../lib/topics';
+import { topicValidator } from '../lib/topics';
 
 type RunAgentCtx =
   | GenericMutationCtx<DataModel>
@@ -17,6 +19,7 @@ type RunAgentCtx =
 
 export type RunAgentArgs<T extends ZodTypeAny | undefined = undefined> = {
   purpose: AiPurpose;
+  topic?: TopicId;
   vars: Record<string, string>;
   userId?: Id<'users'>;
   conversationId?: Id<'conversations'>;
@@ -55,11 +58,13 @@ export async function runAgent<T extends ZodTypeAny | undefined = undefined>(
   });
   const prompt = await ctx.runQuery(internal.ai.prompts.getActivePrompt, {
     purpose: args.purpose,
+    topic: args.topic,
   });
 
   // Render template before creating the invocation row — throws early if vars missing,
   // so no orphaned 'pending' rows are left behind.
-  const userPrompt = renderTemplate(prompt.userTemplate ?? '', args.vars);
+  const vars = args.topic ? { ...args.vars, topic: args.topic } : args.vars;
+  const userPrompt = renderTemplate(prompt.userTemplate ?? '', vars);
 
   const invocationId = await ctx.runMutation(
     internal.ai.invocations.createInvocation,
@@ -138,6 +143,7 @@ export async function runAgent<T extends ZodTypeAny | undefined = undefined>(
 export const run = internalAction({
   args: {
     purpose: aiPurpose,
+    topic: v.optional(topicValidator),
     vars: v.record(v.string(), v.string()),
     userId: v.optional(v.id('users')),
     conversationId: v.optional(v.id('conversations')),
