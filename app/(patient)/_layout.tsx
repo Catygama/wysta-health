@@ -29,14 +29,6 @@ function PatientTabs() {
         <NativeTabs.Trigger.Label>Início</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="conversations">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'bubble.left.and.bubble.right', selected: 'bubble.left.and.bubble.right.fill' }}
-          md="chat_bubble"
-        />
-        <NativeTabs.Trigger.Label>Conversas</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
       <NativeTabs.Trigger name="education">
         <NativeTabs.Trigger.Icon sf={{ default: 'book', selected: 'book.fill' }} md="book" />
         <NativeTabs.Trigger.Label>Saúde</NativeTabs.Trigger.Label>
