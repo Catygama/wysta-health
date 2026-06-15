@@ -210,6 +210,7 @@ export const create = mutation({
   args: {
     topic,
     title: v.string(),
+    wellbeingGoal: v.optional(v.string()),
     triageData: v.optional(
       v.object({
         responses: v.record(v.string(), v.any()),
@@ -247,6 +248,7 @@ export const create = mutation({
       lastMessageAt: Date.now(),
       riskLevel,
       kind,
+      wellbeingGoal: args.wellbeingGoal,
     });
 
     if (args.triageData) {
