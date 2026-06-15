@@ -1,22 +1,15 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation } from 'convex/react';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { spacing, typography, radius } from '@/constants/theme';
-import { useTheme } from '@/lib/theme';
 import { strings } from '@/constants/strings';
+import { fonts } from '@/lib/fonts';
 import { pickImage, uploadImage, type PickedImage } from '@/lib/upload';
 import { guestAuthEnabled } from '@/lib/env';
 import { withAuthRetry } from '@/lib/authRetry';
@@ -36,7 +29,6 @@ export default function ProfessionalSignup() {
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
   const submit = useMutation(api.users.submitProfessionalVerification);
   const router = useRouter();
-  const { colors } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,9 +60,7 @@ export default function ProfessionalSignup() {
       } else {
         setOtherDocs((prev) =>
           prev.map((d) =>
-            d.picked.uri === picked.uri
-              ? { ...d, storageId, uploading: false }
-              : d
+            d.picked.uri === picked.uri ? { ...d, storageId, uploading: false } : d
           )
         );
       }
@@ -107,9 +97,7 @@ export default function ProfessionalSignup() {
       await signIn('password', { email, password, flow: 'signUp' });
       const docIds = [
         licenseDoc.storageId,
-        ...otherDocs
-          .map((d) => d.storageId)
-          .filter((id): id is string => Boolean(id)),
+        ...otherDocs.map((d) => d.storageId).filter((id): id is string => Boolean(id)),
       ];
       await withAuthRetry(() =>
         submit({
@@ -132,7 +120,6 @@ export default function ProfessionalSignup() {
     setError('');
     setGuestLoading(true);
     try {
-      // Profile is created server-side by afterUserCreatedOrUpdated.
       await signIn('anonymous-professional');
       router.replace('/');
     } catch (e: any) {
@@ -145,39 +132,21 @@ export default function ProfessionalSignup() {
 
   return (
     <ScrollView
-      contentContainerStyle={{
-        padding: spacing.lg,
-        gap: spacing.xl,
-        backgroundColor: colors.background.primary,
-      }}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
-      <View style={{ gap: spacing.sm }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.sm,
-          }}
-        >
-          <Icon
-            name={{ sf: 'stethoscope', ion: 'medkit' }}
-            size={26}
-            color={colors.primary}
-          />
-          <Text
-            style={{
-              ...typography.xl,
-              fontWeight: '700',
-              color: colors.text.primary,
-            }}
-          >
-            Pedido de verificação
-          </Text>
+      <View style={styles.head}>
+        <View style={styles.headRow}>
+          <View style={styles.logo}>
+            <Icon name={{ sf: 'stethoscope', ion: 'medkit' }} size={22} color={styles.onInk.color} />
+          </View>
+          <Text style={styles.title}>Pedido de verificação</Text>
         </View>
-        <Text style={{ ...typography.sm, color: colors.text.secondary }}>
-          Cria a conta e envia os documentos. A equipa Wysta valida a tua cédula antes do acesso clínico.
+        <Text style={styles.subtitle}>
+          Cria a conta e envia os documentos. A equipa Wysta valida a tua cédula antes
+          do acesso clínico.
         </Text>
       </View>
 
@@ -238,8 +207,9 @@ export default function ProfessionalSignup() {
       </Section>
 
       <Section title="4. Documentos adicionais (opcional)">
-        <Text style={{ ...typography.xs, color: colors.text.secondary }}>
-          Comprovativo de inscrição na Ordem, certificado da entidade empregadora, ou outros documentos relevantes.
+        <Text style={styles.hint}>
+          Comprovativo de inscrição na Ordem, certificado da entidade empregadora, ou
+          outros documentos relevantes.
         </Text>
         {otherDocs.map((doc) => (
           <DocSlot
@@ -252,35 +222,10 @@ export default function ProfessionalSignup() {
         ))}
         <Pressable
           onPress={() => pickAndUpload('other')}
-          style={({ pressed }) => ({
-            borderRadius: radius.md,
-            borderWidth: 1.5,
-            borderStyle: 'dashed',
-            borderColor: colors.border,
-            padding: spacing.md,
-            alignItems: 'center',
-            backgroundColor: pressed
-              ? colors.background.tertiary
-              : colors.background.primary,
-            flexDirection: 'row',
-            justifyContent: 'center',
-            gap: spacing.xs,
-          })}
+          style={({ pressed }) => [styles.dashed, pressed && styles.dim]}
         >
-          <Icon
-            name={{ sf: 'plus.circle', ion: 'add-circle-outline' }}
-            size={18}
-            color={colors.primary}
-          />
-          <Text
-            style={{
-              ...typography.sm,
-              color: colors.primary,
-              fontWeight: '600',
-            }}
-          >
-            Adicionar documento
-          </Text>
+          <Icon name={{ sf: 'plus.circle', ion: 'add-circle-outline' }} size={18} color={styles.ink.color} />
+          <Text style={styles.dashedText}>Adicionar documento</Text>
         </Pressable>
       </Section>
 
@@ -296,29 +241,23 @@ export default function ProfessionalSignup() {
       </Section>
 
       {error ? (
-        <Text testID="prof-signup-error" style={{ ...typography.sm, color: colors.danger }}>{error}</Text>
+        <Text testID="prof-signup-error" style={styles.error}>{error}</Text>
       ) : null}
 
-      <View style={{ gap: spacing.sm }}>
+      <View style={styles.submitGroup}>
         <Button
           testID="prof-signup-submit-button"
           label="Submeter pedido"
           onPress={handleSubmit}
           loading={loading}
         />
-        <Text
-          style={{
-            ...typography.xs,
-            color: colors.text.tertiary,
-            textAlign: 'center',
-          }}
-        >
+        <Text style={styles.fineprint}>
           A conta fica pendente até a Wysta validar a documentação.
         </Text>
       </View>
 
       {guestAuthEnabled && (
-        <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+        <View style={styles.guest}>
           <Divider label="testes internos" />
           <Button
             testID="prof-signup-guest-button"
@@ -327,13 +266,7 @@ export default function ProfessionalSignup() {
             onPress={handleGuest}
             loading={guestLoading}
           />
-          <Text
-            style={{
-              ...typography.xs,
-              color: colors.text.tertiary,
-              textAlign: 'center',
-            }}
-          >
+          <Text style={styles.fineprint}>
             Modo de teste — sem cédula real, conta auto-verificada.
           </Text>
         </View>
@@ -341,69 +274,29 @@ export default function ProfessionalSignup() {
 
       <Pressable
         onPress={() => router.replace('/(auth)/professional-login')}
-        style={{ paddingVertical: spacing.sm }}
+        style={styles.back}
         hitSlop={8}
       >
-        <Text
-          style={{
-            ...typography.sm,
-            color: colors.text.secondary,
-            textAlign: 'center',
-          }}
-        >
-          ← Já tenho conta profissional
-        </Text>
+        <Text style={styles.backText}>← Já tenho conta profissional</Text>
       </Pressable>
     </ScrollView>
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  const { colors } = useTheme();
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <View style={{ gap: spacing.sm }}>
-      <Text
-        style={{
-          ...typography.sm,
-          fontWeight: '700',
-          color: colors.text.primary,
-          textTransform: 'uppercase',
-          letterSpacing: 0.5,
-        }}
-      >
-        {title}
-      </Text>
-      <View style={{ gap: spacing.md }}>{children}</View>
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionBody}>{children}</View>
     </View>
   );
 }
 
-function SpecialtyPicker({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const { colors } = useTheme();
+function SpecialtyPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <View style={{ gap: spacing.sm }}>
-      <Text
-        style={{
-          ...typography.sm,
-          fontWeight: '500',
-          color: colors.text.secondary,
-        }}
-      >
-        Especialidade
-      </Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+    <View style={styles.specWrap}>
+      <Text style={styles.specLabel}>Especialidade</Text>
+      <View style={styles.specChips}>
         {SPECIALTIES.map((opt) => {
           const active = value === opt;
           return (
@@ -411,24 +304,9 @@ function SpecialtyPicker({
               key={opt}
               testID={`prof-signup-specialty-${opt.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`}
               onPress={() => onChange(opt)}
-              style={{
-                paddingVertical: spacing.xs,
-                paddingHorizontal: spacing.md,
-                borderRadius: radius.full,
-                borderWidth: 1.5,
-                borderColor: active ? colors.primary : colors.border,
-                backgroundColor: active
-                  ? colors.primaryLight
-                  : colors.background.primary,
-              }}
+              style={[styles.specChip, active ? styles.specChipOn : styles.specChipOff]}
             >
-              <Text
-                style={{
-                  ...typography.sm,
-                  fontWeight: '500',
-                  color: active ? colors.primary : colors.text.secondary,
-                }}
-              >
+              <Text style={[styles.specChipText, active ? styles.onInk : styles.specChipTextOff]}>
                 {opt}
               </Text>
             </Pressable>
@@ -448,97 +326,33 @@ type DocSlotProps = {
 };
 
 function DocSlot({ label, doc, required, onPress, onRemove }: DocSlotProps) {
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
   if (!doc) {
     return (
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => ({
-          borderRadius: radius.md,
-          borderWidth: 1.5,
-          borderStyle: 'dashed',
-          borderColor: required ? colors.primary : colors.border,
-          padding: spacing.md,
-          alignItems: 'center',
-          gap: spacing.xs,
-          backgroundColor: pressed
-            ? colors.background.tertiary
-            : colors.background.primary,
-        })}
-      >
-        <Icon
-          name={{ sf: 'doc.badge.plus', ion: 'document-attach' }}
-          size={20}
-          color={colors.primary}
-        />
-        <Text
-          style={{
-            ...typography.sm,
-            fontWeight: '600',
-            color: colors.primary,
-          }}
-        >
+      <Pressable onPress={onPress} style={({ pressed }) => [styles.docEmpty, pressed && styles.dim]}>
+        <Icon name={{ sf: 'doc.badge.plus', ion: 'document-attach' }} size={20} color={theme.colors.ink} />
+        <Text style={styles.docEmptyLabel}>
           {label}
-          {required && <Text style={{ color: colors.danger }}> *</Text>}
+          {required && <Text style={styles.required}> *</Text>}
         </Text>
-        <Text
-          style={{
-            ...typography.xs,
-            color: colors.text.tertiary,
-          }}
-        >
-          Toca para escolher imagem
-        </Text>
+        <Text style={styles.docEmptyHint}>Toca para escolher imagem</Text>
       </Pressable>
     );
   }
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-        padding: spacing.sm,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: doc.uploading ? colors.warning : colors.success,
-        backgroundColor: colors.background.primary,
-      }}
-    >
-      <Image
-        source={{ uri: doc.picked.uri }}
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: radius.sm,
-          backgroundColor: colors.background.tertiary,
-        }}
-        resizeMode="cover"
-      />
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text
-          style={{
-            ...typography.sm,
-            fontWeight: '600',
-            color: colors.text.primary,
-          }}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-        <Text style={{ ...typography.xs, color: colors.text.secondary }}>
+    <View style={styles.docFilled}>
+      <Image source={{ uri: doc.picked.uri }} style={styles.docThumb} resizeMode="cover" />
+      <View style={styles.docMeta}>
+        <Text style={styles.docName} numberOfLines={1}>{label}</Text>
+        <Text style={[styles.docStatus, { color: doc.uploading ? theme.colors.warning : theme.colors.success }]}>
           {doc.uploading ? 'A enviar...' : 'Enviado ✓'}
         </Text>
       </View>
       {doc.uploading ? (
-        <ActivityIndicator color={colors.primary} size="small" />
+        <ActivityIndicator color={theme.colors.ink} size="small" />
       ) : (
         <Pressable onPress={onRemove} hitSlop={8}>
-          <Icon
-            name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }}
-            size={22}
-            color={colors.text.tertiary}
-          />
+          <Icon name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }} size={22} color={theme.colors.textTertiary} />
         </Pressable>
       )}
     </View>
@@ -546,20 +360,110 @@ function DocSlot({ label, doc, required, onPress, onRemove }: DocSlotProps) {
 }
 
 function Divider({ label }: { label: string }) {
-  const { colors } = useTheme();
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-      }}
-    >
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-      <Text style={{ ...typography.xs, color: colors.text.tertiary }}>
-        {label}
-      </Text>
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+    <View style={styles.divider}>
+      <View style={styles.dividerLine} />
+      <Text style={styles.dividerLabel}>{label}</Text>
+      <View style={styles.dividerLine} />
     </View>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.xl },
+  ink: { color: theme.colors.ink },
+  onInk: { color: theme.colors.onInk },
+  head: { gap: theme.spacing.sm },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  logo: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    backgroundColor: theme.colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 22, color: theme.colors.ink },
+  subtitle: { fontSize: 14, color: theme.colors.textSecondary },
+  section: { gap: theme.spacing.sm },
+  sectionTitle: {
+    fontFamily: fonts.displayBold,
+    fontSize: 13,
+    color: theme.colors.textPrimary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionBody: { gap: theme.spacing.md },
+  hint: { fontSize: 12, color: theme.colors.textSecondary },
+  dashed: {
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: theme.colors.divider,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+    backgroundColor: theme.colors.surface,
+  },
+  dashedText: { fontSize: 14, color: theme.colors.ink, fontWeight: '500' },
+  dim: { opacity: 0.7 },
+  error: { fontSize: 14, color: theme.colors.danger },
+  submitGroup: { gap: theme.spacing.sm },
+  fineprint: { fontSize: 12, color: theme.colors.textTertiary, textAlign: 'center' },
+  guest: { gap: theme.spacing.sm, marginTop: theme.spacing.md },
+  back: { paddingVertical: theme.spacing.sm },
+  backText: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center' },
+  specWrap: { gap: theme.spacing.sm },
+  specLabel: { fontSize: 14, fontWeight: '500', color: theme.colors.textSecondary },
+  specChips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
+  specChip: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.pill,
+    borderCurve: 'continuous',
+  },
+  specChipOn: { backgroundColor: theme.colors.ink },
+  specChipOff: { backgroundColor: theme.colors.surface },
+  specChipText: { fontSize: 14, fontWeight: '500' },
+  specChipTextOff: { color: theme.colors.textSecondary },
+  docEmpty: {
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: theme.colors.accent,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    backgroundColor: theme.colors.surface,
+  },
+  docEmptyLabel: { fontSize: 14, fontWeight: '500', color: theme.colors.ink },
+  required: { color: theme.colors.danger },
+  docEmptyHint: { fontSize: 12, color: theme.colors.textTertiary },
+  docFilled: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    padding: theme.spacing.sm,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    backgroundColor: theme.colors.surface,
+  },
+  docThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surfaceSunken,
+  },
+  docMeta: { flex: 1, gap: 2 },
+  docName: { fontSize: 14, fontWeight: '500', color: theme.colors.textPrimary },
+  docStatus: { fontSize: 12 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  dividerLine: { flex: 1, height: 1, backgroundColor: theme.colors.divider },
+  dividerLabel: { fontSize: 12, color: theme.colors.textTertiary },
+}));
