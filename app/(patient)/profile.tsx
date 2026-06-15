@@ -10,12 +10,13 @@ import {
 } from 'react-native';
 import { useQuery, useMutation } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
-import { spacing, typography, radius } from '@/constants/theme';
 import { useTheme, type ThemeMode } from '@/lib/theme';
+import { fonts } from '@/lib/fonts';
 
 const AGE_RANGES = ['<18', '18-25', '26-35', '36-45', '46-55', '>55'];
 const PREGNANCY_OPTIONS: { value: string; label: string }[] = [
@@ -34,7 +35,7 @@ export default function Profile() {
   const { signOut } = useAuthActions();
   const user = useQuery(api.users.currentUser);
   const updateProfile = useMutation(api.users.updateProfile);
-  const { colors } = useTheme();
+  const { theme } = useUnistyles();
 
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState('');
@@ -75,10 +76,8 @@ export default function Profile() {
 
   if (user === undefined) {
     return (
-      <View
-        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-      >
-        <ActivityIndicator color={colors.primary} />
+      <View style={styles.loading}>
+        <ActivityIndicator color={theme.colors.ink} />
       </View>
     );
   }
@@ -120,37 +119,16 @@ export default function Profile() {
 
   return (
     <ScrollView
-      contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Text
-          style={{
-            ...typography['2xl'],
-            fontWeight: '700',
-            color: colors.text.primary,
-          }}
-        >
-          O meu perfil
-        </Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>O meu perfil</Text>
         {!editing && (
           <Pressable testID="profile-edit-button" onPress={() => setEditing(true)} hitSlop={8}>
-            <Text
-              style={{
-                ...typography.sm,
-                color: colors.primary,
-                fontWeight: '600',
-              }}
-            >
-              Editar
-            </Text>
+            <Text style={styles.editLink}>Editar</Text>
           </Pressable>
         )}
       </View>
@@ -160,7 +138,7 @@ export default function Profile() {
       </Card>
 
       {editing ? (
-        <View style={{ gap: spacing.lg }}>
+        <View style={styles.group}>
           <Card>
             <Input
               testID="profile-name-input"
@@ -181,13 +159,7 @@ export default function Profile() {
           </Card>
 
           <Card title="Faixa etária">
-            <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: spacing.sm,
-              }}
-            >
+            <View style={styles.pillRow}>
               {AGE_RANGES.map((age) => (
                 <SelectPill
                   key={age}
@@ -201,7 +173,7 @@ export default function Profile() {
           </Card>
 
           <Card title="Estado de gravidez">
-            <View style={{ gap: spacing.sm }}>
+            <View style={styles.optionList}>
               {PREGNANCY_OPTIONS.map((opt) => (
                 <SelectRow
                   key={opt.value}
@@ -209,9 +181,7 @@ export default function Profile() {
                   label={opt.label}
                   active={pregnancyStatus === opt.value}
                   onPress={() =>
-                    setPregnancyStatus(
-                      pregnancyStatus === opt.value ? '' : opt.value
-                    )
+                    setPregnancyStatus(pregnancyStatus === opt.value ? '' : opt.value)
                   }
                 />
               ))}
@@ -246,7 +216,7 @@ export default function Profile() {
             />
           </Card>
 
-          <View style={{ gap: spacing.sm }}>
+          <View style={styles.actions}>
             <Button testID="profile-save-button" label="Guardar" onPress={save} loading={saving} />
             <Button
               testID="profile-cancel-button"
@@ -257,21 +227,13 @@ export default function Profile() {
           </View>
         </View>
       ) : (
-        <View style={{ gap: spacing.md }}>
+        <View style={styles.group}>
           <Card title="Dados de saúde">
-            <Row
-              label="Nome"
-              value={user?.profile?.displayName ?? '—'}
-            />
-            <Row
-              label="Faixa etária"
-              value={user?.profile?.ageRange ?? '—'}
-            />
+            <Row label="Nome" value={user?.profile?.displayName ?? '—'} />
+            <Row label="Faixa etária" value={user?.profile?.ageRange ?? '—'} />
             <Row
               label="Estado de gravidez"
-              value={
-                PREGNANCY_LABELS[user?.profile?.pregnancyStatus ?? ''] ?? '—'
-              }
+              value={PREGNANCY_LABELS[user?.profile?.pregnancyStatus ?? ''] ?? '—'}
             />
             <Row label="Localidade" value={user?.profile?.location ?? '—'} />
           </Card>
@@ -292,53 +254,19 @@ export default function Profile() {
 
       <ThemeCard />
 
-      <View
-        style={{
-          backgroundColor: colors.primaryLight,
-          borderRadius: radius.md,
-          padding: spacing.md,
-          gap: spacing.xs,
-          flexDirection: 'row',
-        }}
-      >
-        <Icon
-          name={{ sf: 'lock.shield.fill', ion: 'lock-closed' }}
-          size={20}
-          color={colors.primary}
-        />
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text
-            style={{
-              ...typography.sm,
-              fontWeight: '700',
-              color: colors.primary,
-            }}
-          >
-            Privacidade dos dados
-          </Text>
-          <Text style={{ ...typography.xs, color: colors.text.secondary }}>
-            A tua informação é tratada com confidencialidade. Apenas profissionais envolvidos no acompanhamento têm acesso aos dados clínicos.
+      <View style={styles.privacy}>
+        <Icon name={{ sf: 'lock.shield.fill', ion: 'lock-closed' }} size={20} color={theme.colors.ink} />
+        <View style={styles.privacyBody}>
+          <Text style={styles.privacyTitle}>Privacidade dos dados</Text>
+          <Text style={styles.privacyText}>
+            A tua informação é tratada com confidencialidade. Apenas profissionais
+            envolvidos no acompanhamento têm acesso aos dados clínicos.
           </Text>
         </View>
       </View>
 
-      <View
-        style={{
-          backgroundColor: colors.background.secondary,
-          borderRadius: radius.lg,
-          padding: spacing.md,
-          gap: spacing.md,
-        }}
-      >
-        <Text
-          style={{
-            ...typography.sm,
-            fontWeight: '600',
-            color: colors.text.primary,
-          }}
-        >
-          Gestão de conta
-        </Text>
+      <View style={styles.manageCard}>
+        <Text style={styles.manageTitle}>Gestão de conta</Text>
         <Pressable
           onPress={() =>
             Alert.alert(
@@ -346,16 +274,10 @@ export default function Profile() {
               'Em breve poderás exportar uma cópia dos teus dados. Por agora contacta o suporte.'
             )
           }
-          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+          style={styles.manageRow}
         >
-          <Icon
-            name={{ sf: 'square.and.arrow.up', ion: 'cloud-download-outline' }}
-            size={18}
-            color={colors.primary}
-          />
-          <Text style={{ ...typography.sm, color: colors.primary, fontWeight: '600' }}>
-            Exportar os meus dados
-          </Text>
+          <Icon name={{ sf: 'square.and.arrow.up', ion: 'cloud-download-outline' }} size={18} color={theme.colors.ink} />
+          <Text style={styles.manageLink}>Exportar os meus dados</Text>
         </Pressable>
         <Pressable
           onPress={() =>
@@ -364,16 +286,10 @@ export default function Profile() {
               'A eliminação de conta requer confirmação manual. Contacta o suporte para procedermos.'
             )
           }
-          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+          style={styles.manageRow}
         >
-          <Icon
-            name={{ sf: 'trash', ion: 'trash-outline' }}
-            size={18}
-            color={colors.danger}
-          />
-          <Text style={{ ...typography.sm, color: colors.danger, fontWeight: '600' }}>
-            Apagar conta
-          </Text>
+          <Icon name={{ sf: 'trash', ion: 'trash-outline' }} size={18} color={theme.colors.danger} />
+          <Text style={styles.manageDanger}>Apagar conta</Text>
         </Pressable>
       </View>
 
@@ -381,14 +297,7 @@ export default function Profile() {
 
       <Button testID="profile-logout-button" label="Terminar sessão" variant="secondary" onPress={confirmSignOut} />
 
-      <Text
-        style={{
-          ...typography.xs,
-          color: colors.text.tertiary,
-          textAlign: 'center',
-          paddingHorizontal: spacing.md,
-        }}
-      >
+      <Text style={styles.emergency}>
         Em emergência liga 112 ou SNS 24 (808 24 24 24). A Wysta não substitui uma
         urgência médica.
       </Text>
@@ -397,36 +306,16 @@ export default function Profile() {
 }
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; description: string }[] = [
-  {
-    value: 'system',
-    label: 'Sistema',
-    description: 'Segue o tema do dispositivo',
-  },
+  { value: 'system', label: 'Sistema', description: 'Segue o tema do dispositivo' },
   { value: 'light', label: 'Claro', description: 'Forçar tema claro' },
   { value: 'dark', label: 'Escuro', description: 'Forçar tema escuro' },
 ];
 
 function ThemeCard() {
-  const { colors, mode, setMode } = useTheme();
+  const { mode, setMode } = useTheme();
   return (
-    <View
-      style={{
-        backgroundColor: colors.background.secondary,
-        borderRadius: radius.lg,
-        padding: spacing.md,
-        gap: spacing.sm,
-      }}
-    >
-      <Text
-        style={{
-          ...typography.sm,
-          fontWeight: '600',
-          color: colors.text.primary,
-        }}
-      >
-        Tema
-      </Text>
-      <View style={{ gap: spacing.xs }}>
+    <Card title="Tema">
+      <View style={styles.optionList}>
         {THEME_OPTIONS.map((opt) => {
           const active = mode === opt.value;
           return (
@@ -434,36 +323,19 @@ function ThemeCard() {
               key={opt.value}
               testID={`theme-mode-${opt.value}`}
               onPress={() => setMode(opt.value)}
-              style={{
-                padding: spacing.md,
-                borderRadius: radius.md,
-                borderWidth: 1.5,
-                borderColor: active ? colors.primary : colors.border,
-                backgroundColor: active
-                  ? colors.primaryLight
-                  : colors.background.primary,
-                gap: 2,
-              }}
+              style={[styles.themeOption, active ? styles.selOn : styles.selOff]}
             >
-              <Text
-                style={{
-                  ...typography.base,
-                  fontWeight: '600',
-                  color: active ? colors.primary : colors.text.primary,
-                }}
-              >
+              <Text style={[styles.themeLabel, active ? styles.selTextOn : styles.selTextOff]}>
                 {opt.label}
               </Text>
-              <Text
-                style={{ ...typography.xs, color: colors.text.secondary }}
-              >
+              <Text style={[styles.themeDesc, active ? styles.themeDescOn : styles.themeDescOff]}>
                 {opt.description}
               </Text>
             </Pressable>
           );
         })}
       </View>
-    </View>
+    </Card>
   );
 }
 
@@ -472,11 +344,7 @@ function BootstrapAdminCard() {
   const bootstrap = useMutation(api.users.bootstrapAdmin);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { colors } = useTheme();
 
-  // Hidden once an admin exists. Surfaces a one-shot promotion path on
-  // fresh deployments so seed/admin features can be unlocked from the
-  // app instead of going through the Convex dashboard.
   if (hasAdmin !== false) return null;
 
   async function promote() {
@@ -492,31 +360,13 @@ function BootstrapAdminCard() {
   }
 
   return (
-    <View
-      style={{
-        backgroundColor: colors.background.secondary,
-        borderRadius: radius.lg,
-        padding: spacing.md,
-        gap: spacing.sm,
-        borderWidth: 1,
-        borderColor: colors.warning,
-      }}
-    >
-      <Text
-        style={{
-          ...typography.sm,
-          fontWeight: '700',
-          color: colors.warning,
-        }}
-      >
-        Bootstrap (sem admin)
+    <View style={styles.bootstrap}>
+      <Text style={styles.bootstrapTitle}>Bootstrap (sem admin)</Text>
+      <Text style={styles.bootstrapText}>
+        Ainda não existe administrador nesta plataforma. Podes promover esta conta
+        para teres acesso ao painel de administração e ao seed de conteúdos.
       </Text>
-      <Text style={{ ...typography.xs, color: colors.text.secondary }}>
-        Ainda não existe administrador nesta plataforma. Podes promover esta conta para teres acesso ao painel de administração e ao seed de conteúdos.
-      </Text>
-      {error ? (
-        <Text style={{ ...typography.xs, color: colors.danger }}>{error}</Text>
-      ) : null}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <Button
         testID="profile-bootstrap-admin-button"
         label="Tornar-me administrador"
@@ -529,105 +379,37 @@ function BootstrapAdminCard() {
 }
 
 function Card({ title, children }: { title?: string; children: React.ReactNode }) {
-  const { colors } = useTheme();
   return (
-    <View
-      style={{
-        backgroundColor: colors.background.secondary,
-        borderRadius: radius.lg,
-        padding: spacing.md,
-        gap: spacing.sm,
-      }}
-    >
-      {title && (
-        <Text
-          style={{
-            ...typography.sm,
-            fontWeight: '600',
-            color: colors.text.primary,
-          }}
-        >
-          {title}
-        </Text>
-      )}
+    <View style={styles.card}>
+      {title && <Text style={styles.cardTitle}>{title}</Text>}
       {children}
     </View>
   );
 }
 
 function Row({ label, value, selectable }: { label: string; value: string; selectable?: boolean }) {
-  const { colors } = useTheme();
   return (
-    <View style={{ gap: 2 }}>
-      <Text style={{ ...typography.xs, color: colors.text.secondary }}>
-        {label}
-      </Text>
-      <Text
-        style={{ ...typography.base, color: colors.text.primary }}
-        selectable={selectable}
-      >
-        {value}
-      </Text>
+    <View style={styles.rowItem}>
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={styles.rowValue} selectable={selectable}>{value}</Text>
     </View>
   );
 }
 
 type SelectPillProps = { label: string; active: boolean; onPress: () => void; testID?: string };
 function SelectPill({ label, active, onPress, testID }: SelectPillProps) {
-  const { colors } = useTheme();
   return (
-    <Pressable
-      testID={testID}
-      onPress={onPress}
-      style={{
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-        borderRadius: radius.full,
-        borderWidth: 1.5,
-        borderColor: active ? colors.primary : colors.border,
-        backgroundColor: active
-          ? colors.primaryLight
-          : colors.background.primary,
-      }}
-    >
-      <Text
-        style={{
-          ...typography.sm,
-          fontWeight: '500',
-          color: active ? colors.primary : colors.text.secondary,
-        }}
-      >
-        {label}
-      </Text>
+    <Pressable testID={testID} onPress={onPress} style={[styles.selPill, active ? styles.selOn : styles.selOffSunken]}>
+      <Text style={[styles.selPillText, active ? styles.selTextOn : styles.selTextOff]}>{label}</Text>
     </Pressable>
   );
 }
 
 type SelectRowProps = { label: string; active: boolean; onPress: () => void; testID?: string };
 function SelectRow({ label, active, onPress, testID }: SelectRowProps) {
-  const { colors } = useTheme();
   return (
-    <Pressable
-      testID={testID}
-      onPress={onPress}
-      style={{
-        padding: spacing.md,
-        borderRadius: radius.md,
-        borderWidth: 1.5,
-        borderColor: active ? colors.primary : colors.border,
-        backgroundColor: active
-          ? colors.primaryLight
-          : colors.background.primary,
-      }}
-    >
-      <Text
-        style={{
-          ...typography.base,
-          color: active ? colors.primary : colors.text.primary,
-        }}
-      >
-        {label}
-      </Text>
+    <Pressable testID={testID} onPress={onPress} style={[styles.selRow, active ? styles.selOn : styles.selOffSunken]}>
+      <Text style={[styles.selRowText, active ? styles.selTextOn : styles.selRowTextOff]}>{label}</Text>
     </Pressable>
   );
 }
@@ -641,86 +423,34 @@ type TagEditorProps = {
   placeholder: string;
 };
 
-function TagEditor({
-  value,
-  onChangeText,
-  tags,
-  onAdd,
-  onRemove,
-  placeholder,
-}: TagEditorProps) {
-  const { colors } = useTheme();
+function TagEditor({ value, onChangeText, tags, onAdd, onRemove, placeholder }: TagEditorProps) {
+  const { theme } = useUnistyles();
   return (
-    <View style={{ gap: spacing.sm }}>
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+    <View style={styles.tagEditor}>
+      <View style={styles.tagInputRow}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={colors.text.tertiary as any}
+          placeholderTextColor={theme.colors.textTertiary as any}
           onSubmitEditing={onAdd}
           returnKeyType="done"
-          style={{
-            flex: 1,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: radius.md,
-            padding: spacing.sm,
-            ...typography.base,
-            color: colors.text.primary,
-            backgroundColor: colors.background.primary,
-          }}
+          style={styles.tagInput}
         />
         <Pressable
           onPress={onAdd}
           disabled={!value.trim()}
-          style={{
-            paddingVertical: spacing.sm,
-            paddingHorizontal: spacing.md,
-            borderRadius: radius.md,
-            backgroundColor: value.trim() ? colors.primary : colors.border,
-            justifyContent: 'center',
-          }}
+          style={[styles.tagAdd, value.trim() ? styles.tagAddOn : styles.tagAddOff]}
         >
-          <Text style={{ color: '#fff', fontWeight: '600' }}>＋</Text>
+          <Text style={styles.tagAddText}>＋</Text>
         </Pressable>
       </View>
       {tags.length > 0 && (
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: spacing.xs,
-          }}
-        >
+        <View style={styles.tagWrap}>
           {tags.map((tag) => (
-            <Pressable
-              key={tag}
-              onPress={() => onRemove(tag)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                backgroundColor: colors.primaryLight,
-                paddingVertical: 4,
-                paddingHorizontal: spacing.sm,
-                borderRadius: radius.full,
-              }}
-            >
-              <Text
-                style={{
-                  ...typography.xs,
-                  fontWeight: '600',
-                  color: colors.primary,
-                }}
-              >
-                {tag}
-              </Text>
-              <Icon
-                name={{ sf: 'xmark', ion: 'close' }}
-                size={10}
-                color={colors.primary}
-              />
+            <Pressable key={tag} onPress={() => onRemove(tag)} style={styles.tagChip}>
+              <Text style={styles.tagChipText}>{tag}</Text>
+              <Icon name={{ sf: 'xmark', ion: 'close' }} size={10} color={theme.topic.contraception.on} />
             </Pressable>
           ))}
         </View>
@@ -730,30 +460,127 @@ function TagEditor({
 }
 
 function TagList({ tags }: { tags: string[] }) {
-  const { colors } = useTheme();
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+    <View style={styles.tagWrap}>
       {tags.map((tag) => (
-        <View
-          key={tag}
-          style={{
-            backgroundColor: colors.primaryLight,
-            paddingVertical: 4,
-            paddingHorizontal: spacing.sm,
-            borderRadius: radius.full,
-          }}
-        >
-          <Text
-            style={{
-              ...typography.xs,
-              fontWeight: '600',
-              color: colors.primary,
-            }}
-          >
-            {tag}
-          </Text>
+        <View key={tag} style={styles.tagChip}>
+          <Text style={styles.tagChipText}>{tag}</Text>
         </View>
       ))}
     </View>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background },
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.lg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.ink },
+  editLink: { fontSize: 14, color: theme.colors.accent, fontWeight: '500' },
+  group: { gap: theme.spacing.lg },
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 16, color: theme.colors.textPrimary },
+  rowItem: { gap: 2 },
+  rowLabel: { fontSize: 12, color: theme.colors.textSecondary },
+  rowValue: { fontSize: 16, color: theme.colors.textPrimary },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  optionList: { gap: theme.spacing.sm },
+  actions: { gap: theme.spacing.sm },
+  selOn: { backgroundColor: theme.colors.ink },
+  selOff: { backgroundColor: theme.colors.surface },
+  selOffSunken: { backgroundColor: theme.colors.surfaceSunken },
+  selTextOn: { color: theme.colors.onInk },
+  selTextOff: { color: theme.colors.textSecondary },
+  selPill: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.pill,
+    borderCurve: 'continuous',
+  },
+  selPillText: { fontSize: 14, fontWeight: '500' },
+  selRow: { padding: theme.spacing.md, borderRadius: theme.radius.md, borderCurve: 'continuous' },
+  selRowText: { fontSize: 16 },
+  selRowTextOff: { color: theme.colors.textPrimary },
+  themeOption: { padding: theme.spacing.md, borderRadius: theme.radius.md, borderCurve: 'continuous', gap: 2 },
+  themeLabel: { fontSize: 16, fontWeight: '500' },
+  themeDesc: { fontSize: 12 },
+  themeDescOn: { color: theme.colors.onInk, opacity: 0.85 },
+  themeDescOff: { color: theme.colors.textSecondary },
+  privacy: {
+    backgroundColor: theme.colors.surfaceSunken,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+    flexDirection: 'row',
+  },
+  privacyBody: { flex: 1, gap: 2 },
+  privacyTitle: { fontSize: 14, fontWeight: '500', color: theme.colors.ink },
+  privacyText: { fontSize: 12, color: theme.colors.textSecondary },
+  manageCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    gap: theme.spacing.md,
+  },
+  manageTitle: { fontFamily: fonts.displayBold, fontSize: 14, color: theme.colors.textPrimary },
+  manageRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  manageLink: { fontSize: 14, color: theme.colors.ink, fontWeight: '500' },
+  manageDanger: { fontSize: 14, color: theme.colors.danger, fontWeight: '500' },
+  bootstrap: {
+    backgroundColor: theme.colors.warningSurface,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  bootstrapTitle: { fontFamily: fonts.displayBold, fontSize: 14, color: theme.colors.warning },
+  bootstrapText: { fontSize: 12, color: theme.colors.textSecondary },
+  errorText: { fontSize: 12, color: theme.colors.danger },
+  emergency: {
+    fontSize: 12,
+    color: theme.colors.textTertiary,
+    textAlign: 'center',
+    paddingHorizontal: theme.spacing.md,
+  },
+  tagEditor: { gap: theme.spacing.sm },
+  tagInputRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  tagInput: {
+    flex: 1,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.sm,
+    fontSize: 16,
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surfaceSunken,
+  },
+  tagAdd: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    justifyContent: 'center',
+  },
+  tagAddOn: { backgroundColor: theme.colors.ink },
+  tagAddOff: { backgroundColor: theme.colors.surfaceSunken },
+  tagAddText: { color: theme.colors.onInk, fontWeight: '500' },
+  tagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: theme.topic.contraception.fill,
+    paddingVertical: 4,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+  },
+  tagChipText: { fontSize: 12, fontWeight: '500', color: theme.topic.contraception.on },
+}));
