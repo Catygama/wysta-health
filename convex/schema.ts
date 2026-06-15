@@ -2,14 +2,7 @@ import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 import { authTables } from '@convex-dev/auth/server';
 import { aiPurposeValidator as aiPurpose, aiProviderValidator as aiProvider } from './ai/registry';
-
-const topic = v.union(
-  v.literal('contraception'),
-  v.literal('pregnancy'),
-  v.literal('sti'),
-  v.literal('menstrual-cycle'),
-  v.literal('general')
-);
+import { topicValidator as topic } from './lib/topics';
 
 const priority = v.union(
   v.literal('low'),

@@ -2,12 +2,7 @@
 // Used by convex/seed.ts (admin-gated public seeder) and convex/testing.ts
 // (E2E unrestricted re-seed).
 
-type Topic =
-  | 'contraception'
-  | 'pregnancy'
-  | 'sti'
-  | 'menstrual-cycle'
-  | 'general';
+import type { TopicId as Topic } from './topics';
 
 type RiskBucket = { criteria: string[]; guidance: string };
 

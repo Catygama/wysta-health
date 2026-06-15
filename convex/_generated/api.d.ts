@@ -32,6 +32,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_authProbe from "../lib/authProbe.js";
 import type * as lib_risk from "../lib/risk.js";
 import type * as lib_seedData from "../lib/seedData.js";
+import type * as lib_topics from "../lib/topics.js";
 import type * as messages from "../messages.js";
 import type * as notifications from "../notifications.js";
 import type * as seed from "../seed.js";
@@ -70,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   "lib/authProbe": typeof lib_authProbe;
   "lib/risk": typeof lib_risk;
   "lib/seedData": typeof lib_seedData;
+  "lib/topics": typeof lib_topics;
   messages: typeof messages;
   notifications: typeof notifications;
   seed: typeof seed;

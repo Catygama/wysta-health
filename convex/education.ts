@@ -1,6 +1,7 @@
 import { query, mutation } from './_generated/server';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
+import { topicValidator } from './lib/topics';
 
 export const listByTopic = query({
   args: {
@@ -30,13 +31,7 @@ export const upsert = mutation({
   args: {
     id: v.optional(v.id('educationalContent')),
     title: v.string(),
-    topic: v.union(
-      v.literal('contraception'),
-      v.literal('pregnancy'),
-      v.literal('sti'),
-      v.literal('menstrual-cycle'),
-      v.literal('general')
-    ),
+    topic: topicValidator,
     content: v.string(),
     summary: v.string(),
     tags: v.array(v.string()),

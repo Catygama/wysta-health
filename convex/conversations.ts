@@ -7,14 +7,7 @@ import {
   priorityFromRisk,
   type RiskAssessment,
 } from './lib/risk';
-
-const topic = v.union(
-  v.literal('contraception'),
-  v.literal('pregnancy'),
-  v.literal('sti'),
-  v.literal('menstrual-cycle'),
-  v.literal('general')
-);
+import { topicValidator as topic } from './lib/topics';
 
 const status = v.union(
   v.literal('waiting'),
