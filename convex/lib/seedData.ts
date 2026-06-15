@@ -359,4 +359,121 @@ Pontos-chave:
 - Se sentir ansiosa ou em baixo por longos períodos.
 - Tiver dúvidas que não consegue esclarecer com informação geral.`,
   },
+  {
+    title: 'Desejo sexual: o que é normal',
+    topic: 'sexual-wellbeing',
+    summary: 'O desejo varia ao longo da vida — fatores que o influenciam e quando falar com alguém.',
+    tags: ['desejo', 'libido', 'bem-estar'],
+    readingTimeMinutes: 5,
+    content: `O desejo sexual é diferente de pessoa para pessoa e muda ao longo da vida. Não existe um número "certo" de vezes nem um nível "normal".
+
+Pontos-chave:
+- O desejo é influenciado por sono, stress, hormonas, relação, medicação e fase da vida.
+- Desejo espontâneo e desejo responsivo (que surge com o estímulo) são ambos normais.
+- Variações temporárias são comuns; o que importa é se te causa mal-estar.
+
+Se a falta de desejo te incomoda de forma persistente, vale a pena conversar — com o par e, se quiseres, com um profissional.`,
+    whenToSeekHelp: `Considera falar com um profissional se:
+- A ausência de desejo dura há meses e causa sofrimento.
+- Surgiu de forma súbita após começar uma medicação.
+- Vem acompanhada de dor, tristeza persistente ou problemas na relação.`,
+  },
+  {
+    title: 'Prazer e orgasmo: anatomia e mitos',
+    topic: 'sexual-wellbeing',
+    summary: 'Como funciona o prazer feminino, o papel do clítoris e os mitos mais comuns.',
+    tags: ['prazer', 'orgasmo', 'anatomia'],
+    readingTimeMinutes: 6,
+    content: `O prazer feminino é normal, saudável e merece espaço. A maioria das pessoas com vulva atinge o orgasmo sobretudo por estimulação do clítoris.
+
+Pontos-chave:
+- O clítoris é um órgão dedicado ao prazer, com muito mais estrutura do que a parte visível.
+- Não há um único tipo de orgasmo "certo"; a variabilidade é a norma.
+- Lubrificação e tempo de excitação variam — pressa é inimiga do prazer.
+- A masturbação é uma forma segura de te conheceres e descobrires o que gostas.
+
+Conhecer o teu corpo torna mais fácil comunicar o que te dá prazer.`,
+    whenToSeekHelp: `Procura ajuda se:
+- Sentes dor durante a estimulação ou as relações.
+- Houve uma mudança marcada na capacidade de sentir prazer.
+- A dificuldade em chegar ao orgasmo te causa sofrimento persistente.`,
+  },
+  {
+    title: 'Dor nas relações: quando procurar ajuda',
+    topic: 'sexual-wellbeing',
+    summary: 'A dor sexual (dispareunia) é comum e tratável — não a normalizes em silêncio.',
+    tags: ['dor', 'dispareunia', 'saúde'],
+    readingTimeMinutes: 5,
+    content: `Sentir dor nas relações (dispareunia) é frequente, mas NÃO é algo que tenhas de aceitar como normal. Tem causas tratáveis.
+
+Pontos-chave:
+- Causas comuns: falta de lubrificação, tensão muscular, infeções, alterações hormonais, endometriose.
+- Lubrificante e mais tempo de excitação ajudam em muitos casos de desconforto ligeiro.
+- Dor persistente, intensa ou com sangramento merece avaliação clínica.
+
+Falar sobre isto não é exagero — é cuidar de ti.`,
+    whenToSeekHelp: `Procura ajuda se:
+- A dor é persistente, intensa ou impede as relações.
+- Há sangramento associado às relações.
+- Surge com febre, corrimento anormal ou outros sintomas.`,
+  },
+  {
+    title: 'Comunicar desejos com o par',
+    topic: 'sexual-wellbeing',
+    summary: 'Falar sobre o que gostas (e o que não) aumenta a satisfação e a segurança.',
+    tags: ['comunicação', 'relação', 'consentimento'],
+    readingTimeMinutes: 4,
+    content: `A comunicação é uma das maiores aliadas do prazer e da intimidade. Pedir o que gostas não é exigente — é cuidar da relação.
+
+Pontos-chave:
+- Escolhe um momento calmo, fora da cama, para conversas mais sensíveis.
+- Fala na primeira pessoa ("eu gosto de...", "apetece-me...") em vez de críticas.
+- O consentimento é contínuo e pode ser retirado a qualquer momento.
+- Pequenos "sim" e "assim" durante o momento também são comunicação.
+
+Uma relação onde podes dizer "não" é também onde o "sim" tem mais valor.`,
+    whenToSeekHelp: `Considera apoio se:
+- Sentes que não consegues dizer não ou que não és ouvida.
+- Há pressão, medo ou coação — isso nunca é aceitável.
+- A falta de comunicação está a causar sofrimento na relação.`,
+  },
+  {
+    title: 'Autoconhecimento e exploração do corpo',
+    topic: 'sexual-wellbeing',
+    summary: 'Conhecer o teu corpo é a base de uma vida sexual saudável e satisfatória.',
+    tags: ['autoconhecimento', 'masturbação', 'corpo'],
+    readingTimeMinutes: 4,
+    content: `Explorar o próprio corpo é saudável e ajuda-te a perceber o que te dá prazer, o que depois é mais fácil de comunicar.
+
+Pontos-chave:
+- A masturbação é segura e comum; não tem qualquer impacto negativo na saúde.
+- Explora sem pressa e sem objetivo de "desempenho" — o foco é o que sentes.
+- Lubrificante pode tornar a experiência mais confortável.
+- Conhecer o teu corpo também te ajuda a notar alterações que mereçam atenção.
+
+Não há forma "certa" — há a que te faz sentir bem.`,
+    whenToSeekHelp: `Procura ajuda se:
+- Notas alterações (caroços, feridas, dor) que te preocupam.
+- Sentes culpa ou ansiedade persistentes ligadas à sexualidade.`,
+  },
+  {
+    title: 'Sexualidade no pós-parto e na menopausa',
+    topic: 'sexual-wellbeing',
+    summary: 'Transições da vida mudam a sexualidade — o que esperar e como cuidar de ti.',
+    tags: ['pós-parto', 'menopausa', 'hormonas'],
+    readingTimeMinutes: 5,
+    content: `A sexualidade muda em fases como o pós-parto e a menopausa. São mudanças normais e há formas de as gerir com conforto.
+
+Pontos-chave:
+- No pós-parto, o cansaço, as hormonas e a recuperação afetam o desejo — dá tempo ao teu corpo.
+- Na menopausa, a secura vaginal é comum; lubrificantes e hidratantes vaginais ajudam.
+- O desejo pode mudar de espontâneo para responsivo — normal, não um problema.
+- Há opções clínicas (incluindo hormonais locais) que um profissional pode avaliar.
+
+Estas fases não são o fim da tua vida sexual — são um novo capítulo.`,
+    whenToSeekHelp: `Procura ajuda se:
+- A secura ou a dor tornam as relações desconfortáveis apesar de lubrificante.
+- O impacto no bem-estar ou na relação é significativo.
+- Há sangramento após a menopausa — isto merece sempre avaliação.`,
+  },
 ];
