@@ -47,6 +47,10 @@ export default function PatientHome() {
 
   function startTopic(topicId: string) {
     setPickerOpen(false);
+    if (topicId === 'sexual-wellbeing') {
+      router.push('/wellbeing');
+      return;
+    }
     router.push({ pathname: '/triage', params: { topic: topicId } });
   }
 
