@@ -79,6 +79,53 @@ export type PurposeMeta = {
   producesJson: boolean;
 };
 
+// --- Orchestration topology (drives the admin pipeline diagram) -----------
+//
+// Declarative description of how purposes wire together at runtime. This is the
+// single source the admin "Como os agentes se ligam" diagram reads. Keep it in
+// lockstep with the actual orchestration in assistant.ts (draft → safety +
+// clinical validators in parallel → judge).
+
+export type PipelineStep = {
+  purpose: AiPurpose;
+  /** Purposes whose output feeds this step. Empty = entry node. */
+  dependsOn: readonly AiPurpose[];
+};
+
+export type Pipeline = {
+  id: string;
+  label: string;
+  description: string;
+  steps: readonly PipelineStep[];
+};
+
+export const AI_PIPELINES: readonly Pipeline[] = [
+  {
+    id: 'assistant',
+    label: 'Assistente — resposta ao utente',
+    description:
+      'O rascunho passa por dois validadores em paralelo; o juiz decide enviar ou bloquear.',
+    steps: [
+      { purpose: 'chat', dependsOn: [] },
+      { purpose: 'chat-validator-safety', dependsOn: ['chat'] },
+      { purpose: 'chat-validator-clinical', dependsOn: ['chat'] },
+      {
+        purpose: 'chat-judge',
+        dependsOn: ['chat-validator-safety', 'chat-validator-clinical'],
+      },
+    ],
+  },
+  {
+    id: 'summaries',
+    label: 'Resumos — agentes independentes',
+    description: 'Uso único, sem cadeia: corrido ao fechar conversa / ao construir perfil.',
+    steps: [
+      { purpose: 'chat-summary', dependsOn: [] },
+      { purpose: 'user-summary', dependsOn: [] },
+    ],
+  },
+];
+
 export const AI_PURPOSE_META: Record<AiPurpose, PurposeMeta> = {
   'chat-summary': {
     label: 'Resumo de conversa',

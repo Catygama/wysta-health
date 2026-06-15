@@ -3,6 +3,9 @@
 //   2. safety + clinical validators      — run in parallel, return JSON.
 //   3. judge                             — decides send|block based on validators.
 //
+// This topology is mirrored declaratively in registry.ts (AI_PIPELINES) so the
+// admin diagram can render it. Keep the two in sync when changing the chain.
+//
 // Each step is a separate runAgent call linked via parentInvocationId so the
 // audit tree reconstructs the chain. The assistant message is persisted in
 // `messages` with messageType='ai-response' and aiInvocationId pointing to
