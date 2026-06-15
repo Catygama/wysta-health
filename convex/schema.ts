@@ -82,6 +82,7 @@ export default defineSchema({
     priority,
     status,
     title: v.string(),
+    wellbeingGoal: v.optional(v.string()),
     lastMessageAt: v.number(),
     riskLevel: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
     // Legacy escalation fields kept for old records. New flow uses
@@ -182,6 +183,15 @@ export default defineSchema({
   })
     .index('by_topic', ['topic'])
     .index('by_published', ['isPublished']),
+
+  wellbeingCheckins: defineTable({
+    userId: v.id('users'),
+    desire: v.number(), // 1–5
+    satisfaction: v.number(), // 1–5
+    pain: v.number(), // 0–5 (0 = sem dor)
+    distress: v.number(), // 1–5 (mal-estar / sofrimento)
+    note: v.optional(v.string()),
+  }).index('by_user', ['userId']),
 
   auditLog: defineTable({
     conversationId: v.id('conversations'),
