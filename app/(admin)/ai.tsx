@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ScrollView, View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import { useQuery, useAction, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import type { FunctionReturnType } from 'convex/server';
 import { api } from '@/convex/_generated/api';
 import { fonts } from '@/lib/fonts';
 
@@ -12,14 +13,16 @@ const STATUS_COLOR: Record<string, string> = {
   blocked: '#C77B16',
 };
 
+type Overview = FunctionReturnType<typeof api.ai.admin.overview>;
+type PurposeRow = Overview['purposes'][number];
+
 export default function AdminAi() {
   const { theme } = useUnistyles();
-  const configs = useQuery(api.ai.configs.listConfigsMasked);
+  const overview = useQuery(api.ai.admin.overview);
   const invocations = useQuery(api.ai.invocations.listLatest);
-  const adminTest = useAction(api.ai.chatSummary.adminTest);
-  const applyDefaults = useMutation(api.ai.configs.applyDefaults);
   const settings = useQuery(api.ai.settings.currentSettings);
   const updateCap = useMutation(api.ai.settings.updateDailyCostCap);
+
   const [capInput, setCapInput] = useState('');
   const [savingCap, setSavingCap] = useState(false);
   const [capMsg, setCapMsg] = useState<string | null>(null);
@@ -42,51 +45,15 @@ export default function AdminAi() {
       setSavingCap(false);
     }
   }
-  const [input, setInput] = useState(
-    'Utente: Tenho dores menstruais fortes há 3 meses.\nProfissional: Recomendo ibuprofeno 400mg de 8/8h e consulta presencial.'
-  );
-  const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [keyInput, setKeyInput] = useState('');
-  const [applying, setApplying] = useState(false);
-  const [applyMsg, setApplyMsg] = useState<string | null>(null);
-
-  async function applySetup() {
-    setApplyMsg(null);
-    if (keyInput.trim().length < 10) {
-      setApplyMsg('Cola uma API key válida.');
-      return;
-    }
-    setApplying(true);
-    try {
-      await applyDefaults({ purpose: 'chat-summary', apiKey: keyInput.trim() });
-      setKeyInput('');
-      setApplyMsg('Setup aplicado. Config + prompt default em vigor.');
-    } catch (e: any) {
-      setApplyMsg(e?.message ?? 'Falha ao aplicar setup');
-    } finally {
-      setApplying(false);
-    }
-  }
-
-  async function runTest() {
-    setError(null);
-    setResult(null);
-    setRunning(true);
-    try {
-      const r = await adminTest({ conversationText: input });
-      setResult(r.summary);
-    } catch (e: any) {
-      setError(e?.message ?? 'Falha');
-    } finally {
-      setRunning(false);
-    }
-  }
 
   const capDisabled = savingCap || capInput.trim().length === 0;
-  const applyDisabled = applying || keyInput.trim().length === 0;
-  const testDisabled = running || input.trim().length === 0;
+
+  const groups = overview
+    ? {
+        resumos: overview.purposes.filter((p) => p.meta.group === 'resumos'),
+        assistente: overview.purposes.filter((p) => p.meta.group === 'assistente'),
+      }
+    : null;
 
   return (
     <ScrollView
@@ -137,80 +104,31 @@ export default function AdminAi() {
         )}
       </Card>
 
-      <Card title="Setup default — chat-summary">
-        <Text style={styles.hint}>
-          Cola uma API key OpenAI. Insere config (gpt-4o-mini) + prompt clínico
-          default. Append-only — corre várias vezes para rotação de key.
-        </Text>
-        <TextInput
-          testID="admin-ai-key-input"
-          value={keyInput}
-          onChangeText={setKeyInput}
-          placeholder="sk-proj-..."
-          placeholderTextColor={theme.colors.textTertiary as any}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={styles.field}
-        />
-        <Pressable
-          testID="admin-ai-apply-defaults"
-          disabled={applyDisabled}
-          onPress={applySetup}
-          style={[styles.btnBlock, applyDisabled ? styles.btnOff : styles.btnOn]}
-        >
-          {applying && <ActivityIndicator color={theme.colors.onInk} size="small" />}
-          <Text style={[styles.btnText, applyDisabled && styles.btnTextOff]}>
-            {applying ? 'A aplicar...' : 'Aplicar setup default'}
-          </Text>
-        </Pressable>
-        {applyMsg && (
-          <Text style={applyMsg.startsWith('Setup') ? styles.ok : styles.error}>{applyMsg}</Text>
-        )}
-      </Card>
+      {overview === undefined ? (
+        <ActivityIndicator color={theme.colors.ink} style={{ marginTop: 24 }} />
+      ) : (
+        <>
+          <SectionLabel>Resumos</SectionLabel>
+          {groups!.resumos.map((row) => (
+            <PurposeCard
+              key={row.purpose}
+              row={row}
+              providers={overview.providers}
+              wired={overview.wiredProviders}
+            />
+          ))}
 
-      <Card title="Teste rápido — chat-summary">
-        <TextInput
-          testID="admin-ai-test-input"
-          multiline
-          value={input}
-          onChangeText={setInput}
-          placeholder="Texto da conversa para sumarizar..."
-          placeholderTextColor={theme.colors.textTertiary as any}
-          style={styles.fieldMultiline}
-        />
-        <Pressable
-          testID="admin-ai-test-run"
-          disabled={testDisabled}
-          onPress={runTest}
-          style={[styles.btnBlock, testDisabled ? styles.btnOff : styles.btnOn]}
-        >
-          {running && <ActivityIndicator color={theme.colors.onInk} size="small" />}
-          <Text style={[styles.btnText, testDisabled && styles.btnTextOff]}>
-            {running ? 'A correr...' : 'Correr'}
-          </Text>
-        </Pressable>
-        {error && <Text style={styles.error}>{error}</Text>}
-        {result && (
-          <View style={styles.resultBox}>
-            <Text style={styles.resultText}>{result}</Text>
-          </View>
-        )}
-      </Card>
-
-      <Card title="Configs (latest por purpose)">
-        {configs === undefined ? (
-          <ActivityIndicator color={theme.colors.ink} />
-        ) : configs.length === 0 ? (
-          <Text style={styles.muted}>
-            Sem configs. Seed via `bunx convex run ai/setup:seedConfig` ou painel.
-          </Text>
-        ) : (
-          configs.slice(0, 20).map((c) => (
-            <Row key={c._id} left={`${c.purpose}`} center={`${c.provider} / ${c.modelId}`} right={c.apiKey} />
-          ))
-        )}
-      </Card>
+          <SectionLabel>Assistente (cadeia de segurança)</SectionLabel>
+          {groups!.assistente.map((row) => (
+            <PurposeCard
+              key={row.purpose}
+              row={row}
+              providers={overview.providers}
+              wired={overview.wiredProviders}
+            />
+          ))}
+        </>
+      )}
 
       <Card title="Invocações recentes (50)">
         {invocations === undefined ? (
@@ -222,7 +140,12 @@ export default function AdminAi() {
             <View key={inv._id} style={styles.invRow}>
               <View style={styles.invTop}>
                 <Text style={styles.invPurpose}>{inv.purpose}</Text>
-                <Text style={[styles.invStatus, { color: STATUS_COLOR[inv.status] ?? theme.colors.textSecondary }]}>
+                <Text
+                  style={[
+                    styles.invStatus,
+                    { color: STATUS_COLOR[inv.status] ?? theme.colors.textSecondary },
+                  ]}
+                >
                   {inv.status.toUpperCase()}
                 </Text>
               </View>
@@ -241,6 +164,420 @@ export default function AdminAi() {
   );
 }
 
+// --- Per-purpose editor ---------------------------------------------------
+
+function PurposeCard({
+  row,
+  providers,
+  wired,
+}: {
+  row: PurposeRow;
+  providers: readonly string[];
+  wired: readonly string[];
+}) {
+  const { theme } = useUnistyles();
+  const [open, setOpen] = useState(false);
+
+  const configured = !!row.config && !!row.prompt;
+
+  return (
+    <View style={styles.card}>
+      <Pressable
+        testID={`admin-ai-purpose-${row.purpose}`}
+        onPress={() => setOpen((o) => !o)}
+        style={styles.purposeHeader}
+      >
+        <View style={styles.purposeHeaderText}>
+          <Text style={styles.cardTitle}>{row.meta.label}</Text>
+          <Text style={styles.muted}>
+            {row.config ? `${row.config.provider} / ${row.config.modelId}` : 'sem config'}
+          </Text>
+        </View>
+        <View style={styles.purposeHeaderRight}>
+          <View
+            style={[
+              styles.dot,
+              { backgroundColor: configured ? theme.colors.success : theme.colors.warning },
+            ]}
+          />
+          <Text style={styles.chevron}>{open ? '▲' : '▼'}</Text>
+        </View>
+      </Pressable>
+
+      {open && (
+        <View style={styles.purposeBody}>
+          <Text style={styles.hint}>{row.meta.description}</Text>
+          <ConfigEditor row={row} providers={providers} wired={wired} />
+          <PromptEditor row={row} />
+          <TestRunner row={row} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+function ConfigEditor({
+  row,
+  providers,
+  wired,
+}: {
+  row: PurposeRow;
+  providers: readonly string[];
+  wired: readonly string[];
+}) {
+  const { theme } = useUnistyles();
+  const saveConfig = useMutation(api.ai.admin.saveConfig);
+
+  const [provider, setProvider] = useState(row.config?.provider ?? 'openai');
+  const [modelId, setModelId] = useState(row.config?.modelId ?? '');
+  const [endpoint, setEndpoint] = useState(row.config?.endpoint ?? '');
+  const [keyEdit, setKeyEdit] = useState('');
+  const [reveal, setReveal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const revealed = useQuery(
+    api.ai.admin.revealKey,
+    reveal ? { purpose: row.purpose } : 'skip'
+  );
+
+  async function save() {
+    setMsg(null);
+    if (modelId.trim().length === 0) {
+      setMsg('Indica o modelo.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveConfig({
+        purpose: row.purpose,
+        provider: provider as any,
+        modelId: modelId.trim(),
+        endpoint: endpoint.trim() || undefined,
+        apiKey: keyEdit.trim() || undefined,
+      });
+      setKeyEdit('');
+      setMsg('Config guardada.');
+    } catch (e: any) {
+      setMsg(e?.message ?? 'Falha');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <View style={styles.block}>
+      <Text style={styles.blockTitle}>Modelo & key</Text>
+
+      <Text style={styles.fieldLabel}>Provider</Text>
+      <View style={styles.chipRow}>
+        {providers.map((p) => {
+          const active = p === provider;
+          const isWired = wired.includes(p);
+          return (
+            <Pressable
+              key={p}
+              onPress={() => setProvider(p as any)}
+              style={[styles.chip, active && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {p}
+                {!isWired ? ' ·' : ''}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {!wired.includes(provider) && (
+        <Text style={styles.warn}>
+          Provider ainda não ligado em llm.ts — vai falhar em runtime até ser adicionado.
+        </Text>
+      )}
+
+      <Text style={styles.fieldLabel}>Modelo</Text>
+      <TextInput
+        testID={`admin-ai-model-${row.purpose}`}
+        value={modelId}
+        onChangeText={setModelId}
+        placeholder="gpt-4o-mini"
+        placeholderTextColor={theme.colors.textTertiary as any}
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={styles.field}
+      />
+
+      <Text style={styles.fieldLabel}>Endpoint (opcional)</Text>
+      <TextInput
+        value={endpoint}
+        onChangeText={setEndpoint}
+        placeholder="https://… (deixa vazio para o default do provider)"
+        placeholderTextColor={theme.colors.textTertiary as any}
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={styles.field}
+      />
+
+      <View style={styles.keyHeaderRow}>
+        <Text style={styles.fieldLabel}>API key</Text>
+        <Pressable onPress={() => setReveal((r) => !r)}>
+          <Text style={styles.link}>{reveal ? 'Esconder' : 'Mostrar'}</Text>
+        </Pressable>
+      </View>
+      {reveal ? (
+        <Text testID={`admin-ai-key-reveal-${row.purpose}`} style={styles.keyReveal}>
+          {revealed === undefined ? 'a carregar…' : revealed ?? '(sem key)'}
+        </Text>
+      ) : (
+        <Text style={styles.muted}>{row.config?.apiKeyMasked ?? '(sem key)'}</Text>
+      )}
+      <TextInput
+        testID={`admin-ai-key-${row.purpose}`}
+        value={keyEdit}
+        onChangeText={setKeyEdit}
+        placeholder="Nova key (deixa vazio para manter a atual)"
+        placeholderTextColor={theme.colors.textTertiary as any}
+        secureTextEntry
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={styles.field}
+      />
+
+      <Pressable
+        testID={`admin-ai-save-config-${row.purpose}`}
+        disabled={saving}
+        onPress={save}
+        style={[styles.btnBlock, saving ? styles.btnOff : styles.btnOn]}
+      >
+        {saving && <ActivityIndicator color={theme.colors.onInk} size="small" />}
+        <Text style={[styles.btnText, saving && styles.btnTextOff]}>Guardar config</Text>
+      </Pressable>
+      {row.defaultModel && (
+        <Text style={styles.muted}>Default: {row.defaultModel}</Text>
+      )}
+      {msg && <Text style={msg === 'Config guardada.' ? styles.ok : styles.error}>{msg}</Text>}
+    </View>
+  );
+}
+
+function PromptEditor({ row }: { row: PurposeRow }) {
+  const { theme } = useUnistyles();
+  const savePrompt = useMutation(api.ai.admin.savePrompt);
+  const resetPrompt = useMutation(api.ai.admin.resetPromptToDefault);
+
+  const [systemPrompt, setSystemPrompt] = useState(row.prompt?.systemPrompt ?? '');
+  const [userTemplate, setUserTemplate] = useState(row.prompt?.userTemplate ?? '');
+  const [temperature, setTemperature] = useState(
+    row.prompt?.temperature != null ? String(row.prompt.temperature) : ''
+  );
+  const [maxTokens, setMaxTokens] = useState(
+    row.prompt?.maxTokens != null ? String(row.prompt.maxTokens) : ''
+  );
+  const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function save() {
+    setMsg(null);
+    if (systemPrompt.trim().length === 0) {
+      setMsg('O prompt de sistema não pode estar vazio.');
+      return;
+    }
+    const temp = temperature.trim() === '' ? undefined : Number(temperature);
+    const tok = maxTokens.trim() === '' ? undefined : Number(maxTokens);
+    if (temp !== undefined && (!isFinite(temp) || temp < 0 || temp > 2)) {
+      setMsg('Temperatura entre 0 e 2.');
+      return;
+    }
+    if (tok !== undefined && (!Number.isInteger(tok) || tok <= 0)) {
+      setMsg('Max tokens deve ser inteiro positivo.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await savePrompt({
+        purpose: row.purpose,
+        systemPrompt,
+        userTemplate: userTemplate.trim() || undefined,
+        temperature: temp,
+        maxTokens: tok,
+      });
+      setMsg('Prompt guardado.');
+    } catch (e: any) {
+      setMsg(e?.message ?? 'Falha');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function reset() {
+    setMsg(null);
+    setResetting(true);
+    try {
+      await resetPrompt({ purpose: row.purpose });
+      setMsg('Reposto ao default — reabre o cartão para ver.');
+    } catch (e: any) {
+      setMsg(e?.message ?? 'Falha');
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  return (
+    <View style={styles.block}>
+      <Text style={styles.blockTitle}>Prompt</Text>
+
+      <Text style={styles.fieldLabel}>System prompt</Text>
+      <TextInput
+        testID={`admin-ai-system-${row.purpose}`}
+        multiline
+        value={systemPrompt}
+        onChangeText={setSystemPrompt}
+        placeholder="Instruções de sistema…"
+        placeholderTextColor={theme.colors.textTertiary as any}
+        style={styles.fieldTall}
+      />
+
+      <View style={styles.keyHeaderRow}>
+        <Text style={styles.fieldLabel}>User template</Text>
+      </View>
+      {row.meta.variables.length > 0 && (
+        <View style={styles.chipRow}>
+          {row.meta.variables.map((varName) => (
+            <View key={varName} style={styles.varChip}>
+              <Text style={styles.varChipText}>{`{{${varName}}}`}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+      <TextInput
+        testID={`admin-ai-template-${row.purpose}`}
+        multiline
+        value={userTemplate}
+        onChangeText={setUserTemplate}
+        placeholder="Template com {{variáveis}}…"
+        placeholderTextColor={theme.colors.textTertiary as any}
+        style={styles.fieldTall}
+      />
+
+      <View style={styles.inputRow}>
+        <View style={styles.half}>
+          <Text style={styles.fieldLabel}>Temperatura</Text>
+          <TextInput
+            value={temperature}
+            onChangeText={setTemperature}
+            placeholder="0.2"
+            placeholderTextColor={theme.colors.textTertiary as any}
+            keyboardType="decimal-pad"
+            style={styles.field}
+          />
+        </View>
+        <View style={styles.half}>
+          <Text style={styles.fieldLabel}>Max tokens</Text>
+          <TextInput
+            value={maxTokens}
+            onChangeText={setMaxTokens}
+            placeholder="350"
+            placeholderTextColor={theme.colors.textTertiary as any}
+            keyboardType="number-pad"
+            style={styles.field}
+          />
+        </View>
+      </View>
+
+      <View style={styles.inputRow}>
+        <Pressable
+          testID={`admin-ai-save-prompt-${row.purpose}`}
+          disabled={saving}
+          onPress={save}
+          style={[styles.btnFlex, saving ? styles.btnOff : styles.btnOn]}
+        >
+          {saving && <ActivityIndicator color={theme.colors.onInk} size="small" />}
+          <Text style={[styles.btnText, saving && styles.btnTextOff]}>Guardar prompt</Text>
+        </Pressable>
+        {row.hasDefaultPrompt && (
+          <Pressable
+            disabled={resetting}
+            onPress={reset}
+            style={[styles.btnFlex, styles.btnGhost]}
+          >
+            {resetting && <ActivityIndicator color={theme.colors.ink} size="small" />}
+            <Text style={styles.btnGhostText}>Repor default</Text>
+          </Pressable>
+        )}
+      </View>
+      {msg && (
+        <Text style={msg.endsWith('guardado.') || msg.includes('Reposto') ? styles.ok : styles.error}>
+          {msg}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function TestRunner({ row }: { row: PurposeRow }) {
+  const { theme } = useUnistyles();
+  const testPurpose = useAction(api.ai.admin.testPurpose);
+
+  const [vars, setVars] = useState<Record<string, string>>({});
+  const [running, setRunning] = useState(false);
+  const [output, setOutput] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setError(null);
+    setOutput(null);
+    // Fill any unset variables with empty strings so the template renderer
+    // doesn't throw on a missing key the admin left blank.
+    const full: Record<string, string> = {};
+    for (const varName of row.meta.variables) full[varName] = vars[varName] ?? '';
+    setRunning(true);
+    try {
+      const r = await testPurpose({ purpose: row.purpose, vars: full });
+      setOutput(r.output);
+    } catch (e: any) {
+      setError(e?.message ?? 'Falha');
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <View style={styles.block}>
+      <Text style={styles.blockTitle}>Teste rápido</Text>
+      {row.meta.variables.map((varName) => (
+        <View key={varName}>
+          <Text style={styles.fieldLabel}>{`{{${varName}}}`}</Text>
+          <TextInput
+            multiline
+            value={vars[varName] ?? ''}
+            onChangeText={(t) => setVars((prev) => ({ ...prev, [varName]: t }))}
+            placeholder={`valor para ${varName}…`}
+            placeholderTextColor={theme.colors.textTertiary as any}
+            style={styles.fieldMid}
+          />
+        </View>
+      ))}
+      <Pressable
+        testID={`admin-ai-test-${row.purpose}`}
+        disabled={running}
+        onPress={run}
+        style={[styles.btnBlock, running ? styles.btnOff : styles.btnOn]}
+      >
+        {running && <ActivityIndicator color={theme.colors.onInk} size="small" />}
+        <Text style={[styles.btnText, running && styles.btnTextOff]}>
+          {running ? 'A correr…' : 'Correr'}
+        </Text>
+      </Pressable>
+      {error && <Text style={styles.error}>{error}</Text>}
+      {output && (
+        <View style={styles.resultBox}>
+          <Text style={styles.resultText}>{output}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.card}>
@@ -250,14 +587,8 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function Row({ left, center, right }: { left: string; center: string; right: string }) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.rowLeft}>{left}</Text>
-      <Text style={styles.rowCenter}>{center}</Text>
-      <Text style={styles.rowRight}>{right}</Text>
-    </View>
-  );
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <Text style={styles.sectionLabel}>{children}</Text>;
 }
 
 const styles = StyleSheet.create((theme) => ({
@@ -271,11 +602,39 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.sm,
   },
   cardTitle: { fontFamily: fonts.displayBold, fontSize: 16, color: theme.colors.textPrimary },
+  sectionLabel: {
+    fontFamily: fonts.displayBold,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: theme.colors.textTertiary,
+    marginTop: theme.spacing.sm,
+  },
   hint: { fontSize: 12, color: theme.colors.textSecondary },
+  warn: { fontSize: 12, color: theme.colors.warning },
   muted: { fontSize: 12, color: theme.colors.textTertiary },
+  link: { fontSize: 13, fontWeight: '600', color: theme.colors.ink },
   inlineRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, flexWrap: 'wrap' },
   capValue: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.ink },
   inputRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  half: { flex: 1 },
+
+  purposeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  purposeHeaderText: { flex: 1, gap: 2 },
+  purposeHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  chevron: { fontSize: 12, color: theme.colors.textTertiary },
+  purposeBody: { gap: theme.spacing.md, marginTop: theme.spacing.sm },
+
+  block: {
+    gap: theme.spacing.xs,
+    paddingTop: theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.divider,
+  },
+  blockTitle: { fontSize: 13, fontWeight: '700', color: theme.colors.textPrimary },
+  fieldLabel: { fontSize: 12, color: theme.colors.textSecondary, marginTop: theme.spacing.xs },
+
   field: {
     fontSize: 14,
     color: theme.colors.textPrimary,
@@ -293,16 +652,58 @@ const styles = StyleSheet.create((theme) => ({
     borderCurve: 'continuous',
     padding: theme.spacing.sm,
   },
-  fieldMultiline: {
+  fieldMid: {
     fontSize: 14,
     color: theme.colors.textPrimary,
     backgroundColor: theme.colors.surfaceSunken,
     borderRadius: theme.radius.md,
     borderCurve: 'continuous',
     padding: theme.spacing.sm,
-    minHeight: 100,
+    minHeight: 70,
     textAlignVertical: 'top',
   },
+  fieldTall: {
+    fontSize: 13,
+    fontFamily: 'monospace',
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surfaceSunken,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.sm,
+    minHeight: 140,
+    textAlignVertical: 'top',
+  },
+  keyHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  keyReveal: {
+    fontSize: 13,
+    fontFamily: 'monospace',
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surfaceSunken,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.sm,
+  },
+
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
+  chip: {
+    paddingVertical: 6,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+    borderCurve: 'continuous',
+    backgroundColor: theme.colors.surfaceSunken,
+  },
+  chipActive: { backgroundColor: theme.colors.ink },
+  chipText: { fontSize: 12, color: theme.colors.textSecondary },
+  chipTextActive: { color: theme.colors.onInk, fontWeight: '600' },
+  varChip: {
+    paddingVertical: 4,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+    borderCurve: 'continuous',
+    backgroundColor: theme.colors.surfaceSunken,
+  },
+  varChipText: { fontSize: 11, fontFamily: 'monospace', color: theme.colors.textSecondary },
+
   btn: {
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
@@ -321,11 +722,25 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: theme.spacing.xs,
+    marginTop: theme.spacing.xs,
+  },
+  btnFlex: {
+    flex: 1,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: theme.spacing.xs,
+    marginTop: theme.spacing.xs,
   },
   btnOn: { backgroundColor: theme.colors.ink },
   btnOff: { backgroundColor: theme.colors.surfaceSunken },
+  btnGhost: { backgroundColor: theme.colors.surfaceSunken },
   btnText: { fontSize: 14, fontWeight: '500', color: theme.colors.onInk },
   btnTextOff: { color: theme.colors.textTertiary },
+  btnGhostText: { fontSize: 14, fontWeight: '500', color: theme.colors.ink },
   ok: { fontSize: 14, color: theme.colors.success },
   error: { fontSize: 14, color: theme.colors.danger },
   resultBox: {
@@ -333,19 +748,9 @@ const styles = StyleSheet.create((theme) => ({
     padding: theme.spacing.md,
     borderRadius: theme.radius.md,
     borderCurve: 'continuous',
+    marginTop: theme.spacing.xs,
   },
   resultText: { fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.divider,
-    gap: theme.spacing.sm,
-  },
-  rowLeft: { fontSize: 14, fontWeight: '500', color: theme.colors.textPrimary, flex: 1 },
-  rowCenter: { fontSize: 14, color: theme.colors.textSecondary, flex: 1 },
-  rowRight: { fontSize: 12, color: theme.colors.textSecondary, fontFamily: 'monospace' },
   invRow: {
     paddingVertical: theme.spacing.xs,
     borderBottomWidth: 1,

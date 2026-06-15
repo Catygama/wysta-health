@@ -7,24 +7,7 @@ import { v } from 'convex/values';
 import { runAgent } from './runAgent';
 import { DEFAULT_PROMPTS, DEFAULT_CONFIGS } from './defaults';
 import type { AiPurpose } from './types';
-
-const aiPurpose = v.union(
-  v.literal('chat-summary'),
-  v.literal('user-summary'),
-  v.literal('chat'),
-  v.literal('chat-validator-safety'),
-  v.literal('chat-validator-clinical'),
-  v.literal('chat-judge')
-);
-
-const aiProvider = v.union(
-  v.literal('openai'),
-  v.literal('anthropic'),
-  v.literal('mistral'),
-  v.literal('google'),
-  v.literal('azure-openai'),
-  v.literal('custom')
-);
+import { aiPurposeValidator as aiPurpose, aiProviderValidator as aiProvider } from './registry';
 
 // Returns the first user in the table, or throws. Used to attribute
 // `createdBy` on seeded rows when no admin auth context exists.

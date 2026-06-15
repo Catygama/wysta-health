@@ -1,18 +1,6 @@
-// TS-side mirrors of schema validators. Keep in lockstep with convex/schema.ts.
-export type AiPurpose =
-  | 'chat-summary'
-  | 'user-summary'
-  | 'chat'
-  | 'chat-validator-safety'
-  | 'chat-validator-clinical'
-  | 'chat-judge';
-
-export type AiProvider =
-  | 'openai'
-  | 'anthropic'
-  | 'mistral'
-  | 'google'
-  | 'azure-openai'
-  | 'custom';
+// TS-side types for the AI subsystem. The purpose/provider unions are derived
+// from the single registry in ./registry — re-exported here so existing
+// imports (`./types`) keep working.
+export type { AiPurpose, AiProvider } from './registry';
 
 export type AiInvocationStatus = 'pending' | 'success' | 'error' | 'blocked';
