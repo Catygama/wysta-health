@@ -157,6 +157,53 @@ describe('ai.admin.revealKey', () => {
   });
 });
 
+describe('ai.admin per-topic prompts', () => {
+  it('savePrompt with topic creates a variant; overview lists it', async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await seedAdmin(t);
+    await asAdmin.mutation(api.ai.admin.savePrompt, {
+      purpose: 'chat',
+      systemPrompt: 'global',
+    });
+    await asAdmin.mutation(api.ai.admin.savePrompt, {
+      purpose: 'chat',
+      topic: 'sexual-wellbeing',
+      systemPrompt: 'wellbeing variant',
+    });
+    const ov = await asAdmin.query(api.ai.admin.overview, {});
+    const chat = ov.purposes.find((p) => p.purpose === 'chat');
+    expect(chat?.prompt?.systemPrompt).toBe('global');
+    expect(chat?.topicVariants).toEqual([
+      expect.objectContaining({
+        topic: 'sexual-wellbeing',
+        prompt: expect.objectContaining({ systemPrompt: 'wellbeing variant' }),
+      }),
+    ]);
+  });
+
+  it('resetPromptToDefault with topic restores the canonical variant', async () => {
+    const t = convexTest(schema, modules);
+    const asAdmin = await seedAdmin(t);
+    await asAdmin.mutation(api.ai.admin.savePrompt, {
+      purpose: 'chat',
+      topic: 'sexual-wellbeing',
+      systemPrompt: 'garbage',
+    });
+    await asAdmin.mutation(api.ai.admin.resetPromptToDefault, {
+      purpose: 'chat',
+      topic: 'sexual-wellbeing',
+    });
+    const active = await t.run((ctx) =>
+      ctx.runQuery(internal.ai.prompts.getActivePrompt, {
+        purpose: 'chat',
+        topic: 'sexual-wellbeing',
+      })
+    );
+    expect(active.topic).toBe('sexual-wellbeing');
+    expect(active.systemPrompt).toContain('sex-positive');
+  });
+});
+
 describe('ai.admin.savePrompt + resetPromptToDefault', () => {
   it('savePrompt versions the prompt; latest wins', async () => {
     const t = convexTest(schema, modules);

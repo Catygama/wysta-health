@@ -10,7 +10,7 @@ import { getAuthUserId } from '@convex-dev/auth/server';
 import { requireAdmin } from '../lib/auth';
 import { runAgent } from './runAgent';
 import { maskApiKey } from './configs';
-import { DEFAULT_PROMPTS, DEFAULT_CONFIGS } from './defaults';
+import { DEFAULT_PROMPTS, DEFAULT_CONFIGS, DEFAULT_TOPIC_PROMPTS } from './defaults';
 import {
   AI_PURPOSES,
   AI_PROVIDERS,
@@ -20,6 +20,7 @@ import {
   aiPurposeValidator as aiPurpose,
   aiProviderValidator as aiProvider,
 } from './registry';
+import { topicValidator, TOPIC_IDS } from '../lib/topics';
 import type { Doc } from '../_generated/dataModel';
 
 // Latest config + latest prompt for a purpose (or null). Helper shared by the
@@ -35,7 +36,7 @@ async function latestFor(
     .first();
   const prompt = await ctx.db
     .query('aiPrompts')
-    .withIndex('by_purpose', (q: any) => q.eq('purpose', purpose))
+    .withIndex('by_purpose_and_topic', (q: any) => q.eq('purpose', purpose).eq('topic', undefined))
     .order('desc')
     .first();
   return { config, prompt };
@@ -52,6 +53,32 @@ export const overview = query({
     for (const purpose of AI_PURPOSES) {
       const { config, prompt } = await latestFor(ctx, purpose);
       const meta = AI_PURPOSE_META[purpose];
+
+      // Latest prompt per topic (variants only — topic set).
+      const recentPrompts = await ctx.db
+        .query('aiPrompts')
+        .withIndex('by_purpose', (q) => q.eq('purpose', purpose))
+        .order('desc')
+        .take(200);
+      const seenTopics = new Set<string>();
+      const topicVariants: Array<{ topic: string; prompt: any }> = [];
+      for (const p of recentPrompts) {
+        if (!p.topic || seenTopics.has(p.topic)) continue;
+        seenTopics.add(p.topic);
+        topicVariants.push({
+          topic: p.topic,
+          prompt: {
+            _id: p._id,
+            _creationTime: p._creationTime,
+            systemPrompt: p.systemPrompt,
+            userTemplate: p.userTemplate ?? '',
+            temperature: p.temperature ?? null,
+            maxTokens: p.maxTokens ?? null,
+            notes: p.notes ?? null,
+          },
+        });
+      }
+
       purposes.push({
         purpose,
         meta,
@@ -81,6 +108,7 @@ export const overview = query({
               notes: prompt.notes ?? null,
             }
           : null,
+        topicVariants,
       });
     }
 
@@ -89,6 +117,7 @@ export const overview = query({
       providers: AI_PROVIDERS,
       wiredProviders: WIRED_PROVIDERS,
       pipelines: AI_PIPELINES,
+      availableTopics: TOPIC_IDS,
     };
   },
 });
@@ -150,6 +179,7 @@ export const saveConfig = mutation({
 export const savePrompt = mutation({
   args: {
     purpose: aiPurpose,
+    topic: v.optional(topicValidator),
     systemPrompt: v.string(),
     userTemplate: v.optional(v.string()),
     temperature: v.optional(v.number()),
@@ -163,6 +193,7 @@ export const savePrompt = mutation({
     }
     return ctx.db.insert('aiPrompts', {
       purpose: args.purpose,
+      topic: args.topic,
       systemPrompt: args.systemPrompt,
       userTemplate: args.userTemplate?.trim() || undefined,
       temperature: args.temperature,
@@ -177,15 +208,20 @@ export const savePrompt = mutation({
 // key needed — only touches aiPrompts. Inserts a new version, so the edit
 // history is kept.
 export const resetPromptToDefault = mutation({
-  args: { purpose: aiPurpose },
-  handler: async (ctx, { purpose }) => {
+  args: { purpose: aiPurpose, topic: v.optional(topicValidator) },
+  handler: async (ctx, { purpose, topic }) => {
     const { userId } = await requireAdmin(ctx);
-    const def = DEFAULT_PROMPTS[purpose];
+    const def = topic
+      ? DEFAULT_TOPIC_PROMPTS[purpose]?.[topic]
+      : DEFAULT_PROMPTS[purpose];
     if (!def) {
-      throw new Error(`Sem prompt default registado para: ${purpose}`);
+      throw new Error(
+        `Sem prompt default registado para: ${purpose}${topic ? ` / ${topic}` : ''}`
+      );
     }
     return ctx.db.insert('aiPrompts', {
       purpose,
+      topic,
       systemPrompt: def.systemPrompt,
       userTemplate: def.userTemplate,
       temperature: def.temperature,
