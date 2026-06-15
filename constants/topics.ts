@@ -1,11 +1,6 @@
 import type { IconName } from '@/components/ui/Icon';
-
-export type TopicId =
-  | 'contraception'
-  | 'pregnancy'
-  | 'sti'
-  | 'menstrual-cycle'
-  | 'general';
+import type { TopicId } from '@/convex/lib/topics';
+export type { TopicId };
 
 // `color` maps a topic to a pastel key in the unistyles theme (theme.topic.*),
 // used for icon chips and accents across the redesigned UI.
@@ -14,7 +9,8 @@ export type TopicColor =
   | 'cycle'
   | 'intimate'
   | 'pregnancy'
-  | 'general';
+  | 'general'
+  | 'wellbeing';
 
 export type Topic = {
   id: TopicId;
@@ -59,6 +55,13 @@ export const TOPICS: Topic[] = [
     icon: { sf: 'heart.text.square.fill', ion: 'heart' },
     description: 'Outras questões de saúde',
     color: 'general',
+  },
+  {
+    id: 'sexual-wellbeing',
+    label: 'Bem-estar sexual',
+    icon: { sf: 'sparkles', ion: 'sparkles' },
+    description: 'Desejo, prazer, intimidade e autoconhecimento',
+    color: 'wellbeing',
   },
 ];
 

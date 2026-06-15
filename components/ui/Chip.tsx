@@ -1,7 +1,7 @@
 import { Pressable, Text } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-type TopicKey = 'contraception' | 'cycle' | 'intimate' | 'pregnancy' | 'general';
+type TopicKey = 'contraception' | 'cycle' | 'intimate' | 'pregnancy' | 'general' | 'wellbeing';
 
 type Props = {
   label: string;
@@ -51,6 +51,7 @@ const styles = StyleSheet.create((theme) => ({
         intimate: {},
         pregnancy: {},
         general: {},
+        wellbeing: {},
       },
     },
     compoundVariants: [
@@ -59,6 +60,7 @@ const styles = StyleSheet.create((theme) => ({
       { mode: 'topic', topic: 'intimate', styles: { backgroundColor: theme.topic.intimate.fill } },
       { mode: 'topic', topic: 'pregnancy', styles: { backgroundColor: theme.topic.pregnancy.fill } },
       { mode: 'topic', topic: 'general', styles: { backgroundColor: theme.topic.general.fill } },
+      { mode: 'topic', topic: 'wellbeing', styles: { backgroundColor: theme.topic.wellbeing.fill } },
     ],
   },
   pressed: { opacity: 0.9 },
@@ -77,6 +79,7 @@ const styles = StyleSheet.create((theme) => ({
         intimate: {},
         pregnancy: {},
         general: {},
+        wellbeing: {},
       },
     },
     compoundVariants: [
@@ -85,6 +88,7 @@ const styles = StyleSheet.create((theme) => ({
       { mode: 'topic', topic: 'intimate', styles: { color: theme.topic.intimate.on } },
       { mode: 'topic', topic: 'pregnancy', styles: { color: theme.topic.pregnancy.on } },
       { mode: 'topic', topic: 'general', styles: { color: theme.topic.general.on } },
+      { mode: 'topic', topic: 'wellbeing', styles: { color: theme.topic.wellbeing.on } },
     ],
   },
 }));
