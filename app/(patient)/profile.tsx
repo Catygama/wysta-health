@@ -15,6 +15,7 @@ import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
+import { WellbeingTrend } from '@/components/WellbeingTrend';
 import { useTheme, type ThemeMode } from '@/lib/theme';
 import { fonts } from '@/lib/fonts';
 
@@ -136,6 +137,8 @@ export default function Profile() {
       <Card>
         <Row label="Email" value={user?.email ?? '—'} selectable />
       </Card>
+
+      <WellbeingTrend />
 
       {editing ? (
         <View style={styles.group}>
