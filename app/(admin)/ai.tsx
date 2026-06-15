@@ -129,6 +129,7 @@ export default function AdminAi() {
               wired={overview.wiredProviders}
               open={!!openMap[row.purpose]}
               onToggle={() => toggle(row.purpose)}
+              availableTopics={overview.availableTopics}
             />
           ))}
 
@@ -141,6 +142,7 @@ export default function AdminAi() {
               wired={overview.wiredProviders}
               open={!!openMap[row.purpose]}
               onToggle={() => toggle(row.purpose)}
+              availableTopics={overview.availableTopics}
             />
           ))}
         </>
@@ -289,12 +291,14 @@ function PurposeCard({
   wired,
   open,
   onToggle,
+  availableTopics,
 }: {
   row: PurposeRow;
   providers: readonly string[];
   wired: readonly string[];
   open: boolean;
   onToggle: () => void;
+  availableTopics: readonly string[];
 }) {
   const { theme } = useUnistyles();
 
@@ -328,7 +332,7 @@ function PurposeCard({
         <View style={styles.purposeBody}>
           <Text style={styles.hint}>{row.meta.description}</Text>
           <ConfigEditor row={row} providers={providers} wired={wired} />
-          <PromptEditor row={row} />
+          <PromptEditor row={row} availableTopics={availableTopics} />
           <TestRunner row={row} />
         </View>
       )}
@@ -479,22 +483,51 @@ function ConfigEditor({
   );
 }
 
-function PromptEditor({ row }: { row: PurposeRow }) {
+function PromptEditor({
+  row,
+  availableTopics,
+}: {
+  row: PurposeRow;
+  availableTopics: readonly string[];
+}) {
   const { theme } = useUnistyles();
   const savePrompt = useMutation(api.ai.admin.savePrompt);
   const resetPrompt = useMutation(api.ai.admin.resetPromptToDefault);
 
-  const [systemPrompt, setSystemPrompt] = useState(row.prompt?.systemPrompt ?? '');
-  const [userTemplate, setUserTemplate] = useState(row.prompt?.userTemplate ?? '');
+  // 'default' = global prompt; otherwise a topic id.
+  const [scope, setScope] = useState<string>('default');
+  const variant =
+    scope === 'default'
+      ? row.prompt
+      : row.topicVariants.find((tv) => tv.topic === scope)?.prompt ?? null;
+
+  const [systemPrompt, setSystemPrompt] = useState(variant?.systemPrompt ?? '');
+  const [userTemplate, setUserTemplate] = useState(variant?.userTemplate ?? '');
   const [temperature, setTemperature] = useState(
-    row.prompt?.temperature != null ? String(row.prompt.temperature) : ''
+    variant?.temperature != null ? String(variant.temperature) : ''
   );
   const [maxTokens, setMaxTokens] = useState(
-    row.prompt?.maxTokens != null ? String(row.prompt.maxTokens) : ''
+    variant?.maxTokens != null ? String(variant.maxTokens) : ''
   );
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  // Re-load fields when the admin switches scope (default ↔ a topic).
+  function selectScope(next: string) {
+    setScope(next);
+    setMsg(null);
+    const v =
+      next === 'default'
+        ? row.prompt
+        : row.topicVariants.find((tv) => tv.topic === next)?.prompt ?? null;
+    setSystemPrompt(v?.systemPrompt ?? '');
+    setUserTemplate(v?.userTemplate ?? '');
+    setTemperature(v?.temperature != null ? String(v.temperature) : '');
+    setMaxTokens(v?.maxTokens != null ? String(v.maxTokens) : '');
+  }
+
+  const topicArg = scope === 'default' ? undefined : (scope as any);
 
   async function save() {
     setMsg(null);
@@ -516,6 +549,7 @@ function PromptEditor({ row }: { row: PurposeRow }) {
     try {
       await savePrompt({
         purpose: row.purpose,
+        topic: topicArg,
         systemPrompt,
         userTemplate: userTemplate.trim() || undefined,
         temperature: temp,
@@ -533,7 +567,7 @@ function PromptEditor({ row }: { row: PurposeRow }) {
     setMsg(null);
     setResetting(true);
     try {
-      await resetPrompt({ purpose: row.purpose });
+      await resetPrompt({ purpose: row.purpose, topic: topicArg });
       setMsg('Reposto ao default — reabre o cartão para ver.');
     } catch (e: any) {
       setMsg(e?.message ?? 'Falha');
@@ -542,9 +576,46 @@ function PromptEditor({ row }: { row: PurposeRow }) {
     }
   }
 
+  const hasDefault =
+    scope === 'default'
+      ? row.hasDefaultPrompt
+      : true; // topic variants reset from DEFAULT_TOPIC_PROMPTS (may not exist → backend throws, surfaced as msg)
+
   return (
     <View style={styles.block}>
       <Text style={styles.blockTitle}>Prompt</Text>
+
+      <View style={styles.chipRow}>
+        <Pressable
+          onPress={() => selectScope('default')}
+          style={[styles.chip, scope === 'default' && styles.chipActive]}
+        >
+          <Text style={[styles.chipText, scope === 'default' && styles.chipTextActive]}>
+            Default
+          </Text>
+        </Pressable>
+        {availableTopics.map((tp) => {
+          const active = scope === tp;
+          const has = row.topicVariants.some((tv) => tv.topic === tp);
+          return (
+            <Pressable
+              key={tp}
+              onPress={() => selectScope(tp)}
+              style={[styles.chip, active && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {tp}
+                {has ? '' : ' +'}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {scope !== 'default' && !variant && (
+        <Text style={styles.muted}>
+          Sem variante para este tópico — guarda para criar (senão usa o default global).
+        </Text>
+      )}
 
       <Text style={styles.fieldLabel}>System prompt</Text>
       <TextInput
@@ -557,9 +628,7 @@ function PromptEditor({ row }: { row: PurposeRow }) {
         style={styles.fieldTall}
       />
 
-      <View style={styles.keyHeaderRow}>
-        <Text style={styles.fieldLabel}>User template</Text>
-      </View>
+      <Text style={styles.fieldLabel}>User template</Text>
       {row.meta.variables.length > 0 && (
         <View style={styles.chipRow}>
           {row.meta.variables.map((varName) => (
@@ -614,7 +683,7 @@ function PromptEditor({ row }: { row: PurposeRow }) {
           {saving && <ActivityIndicator color={theme.colors.onInk} size="small" />}
           <Text style={[styles.btnText, saving && styles.btnTextOff]}>Guardar prompt</Text>
         </Pressable>
-        {row.hasDefaultPrompt && (
+        {hasDefault && (
           <Pressable
             disabled={resetting}
             onPress={reset}
