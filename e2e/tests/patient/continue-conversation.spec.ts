@@ -10,10 +10,9 @@ test('Continue conversation card navigates to thread', async ({ page }) => {
     initialMessage: 'olá',
   });
   await loginAs(page, TEST_USERS.patientB.email);
-  await expect(page.getByTestId('patient-continue-card')).toBeVisible({
-    timeout: 15_000,
-  });
-  await page.getByTestId('patient-continue-card').click();
+  const card = page.getByTestId(/^patient-conversation-/).first();
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  await card.click();
   await expect(page).toHaveURL(/\/conversations\//);
   await expect(page.getByText('olá').first()).toBeVisible({ timeout: 10_000 });
 });

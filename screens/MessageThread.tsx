@@ -17,7 +17,7 @@ import Animated, { useAnimatedStyle, FadeIn } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { useQuery, useMutation, useAction } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
@@ -46,7 +46,6 @@ type Props = {
   canSend?: boolean;
   forceInternal?: boolean;
   closed?: boolean;
-  hideInlineAi?: boolean;
 };
 
 const RISK_COLORS: Record<string, string> = {
@@ -63,7 +62,6 @@ export function MessageThread({
   canSend = true,
   forceInternal = false,
   closed = false,
-  hideInlineAi = false,
 }: Props) {
   const messages =
     useQuery(api.messages.list, { conversationId: conversationId as any }) ??
@@ -230,12 +228,6 @@ export function MessageThread({
             return <AiResponseMessage content={item.content} />;
           }
           const isOwn = item.senderId === currentUserId;
-          const showAskAi =
-            !isProfessional &&
-            !closed &&
-            !hideInlineAi &&
-            isOwn &&
-            item.messageType === 'text';
           return (
             <Animated.View entering={FadeIn.duration(200)}>
               <ChatMessage
@@ -249,14 +241,6 @@ export function MessageThread({
                 attachmentName={item.attachmentName}
                 attachmentSize={item.attachmentSize}
                 messageType={item.messageType}
-                footer={
-                  showAskAi ? (
-                    <AskAiInline
-                      conversationId={conversationId}
-                      query={item.content}
-                    />
-                  ) : undefined
-                }
               />
             </Animated.View>
           );
@@ -478,47 +462,6 @@ function AiResponseMessage({ content }: { content: string }) {
   );
 }
 
-function AskAiInline({
-  conversationId,
-  query,
-}: {
-  conversationId: string;
-  query: string;
-}) {
-  const respond = useAction(api.ai.assistant.respond);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { theme } = useUnistyles();
-
-  async function ask() {
-    setError(null);
-    setBusy(true);
-    try {
-      await respond({ conversationId: conversationId as any, query });
-    } catch (e: any) {
-      setError(e?.message ?? 'Falha');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <View style={styles.askWrap}>
-      <Pressable
-        testID="ask-ai-inline"
-        disabled={busy}
-        onPress={ask}
-        style={[styles.askPill, busy && styles.askPillBusy]}
-      >
-        {busy && <ActivityIndicator size="small" color={theme.colors.accent} />}
-        <Text style={styles.askSparkle}>✨</Text>
-        <Text style={styles.askLabel}>{busy ? 'A pensar...' : 'Resposta AI'}</Text>
-      </Pressable>
-      {error && <Text style={styles.error}>{error}</Text>}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create((theme) => ({
   flex: { flex: 1 },
   list: { flex: 1, backgroundColor: theme.colors.background },
@@ -660,17 +603,4 @@ const styles = StyleSheet.create((theme) => ({
     letterSpacing: 0.3,
   },
   aiBody: { fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 },
-  askWrap: { alignItems: 'flex-end', marginTop: 4, gap: 2 },
-  askPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.topic.contraception.fill,
-  },
-  askPillBusy: { opacity: 0.7 },
-  askSparkle: { fontSize: 12 },
-  askLabel: { fontSize: 12, fontWeight: '500', color: theme.topic.contraception.on },
 }));

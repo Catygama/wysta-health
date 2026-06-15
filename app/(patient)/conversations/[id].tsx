@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
+import { Icon } from '@/components/ui/Icon';
 import { MessageThread } from '@/screens/MessageThread';
 import { useTabBar } from '@/contexts/TabBarContext';
 import { TOPICS } from '@/constants/topics';
@@ -12,7 +13,13 @@ export default function PatientConversation() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useQuery(api.users.currentUser);
   const conversation = useQuery(api.conversations.get, id ? { id: id as any } : 'skip');
+  const messages = useQuery(api.messages.list, id ? { conversationId: id as any } : 'skip') ?? [];
   const { setIsTabBarHidden } = useTabBar();
+  const respond = useAction(api.ai.assistant.respond);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const [askError, setAskError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -26,18 +33,124 @@ export default function PatientConversation() {
   const closed = conversation?.status === 'closed';
   const isAiOnly = conversation?.kind === 'ai-only';
 
+  // The assistant answers the patient's most recent text message. AI-only
+  // conversations already auto-respond to every message, so the manual
+  // trigger is offered only on professional conversations.
+  const lastPatientQuery = [...messages]
+    .reverse()
+    .find((m) => m.senderId === user._id && m.messageType === 'text')?.content;
+  const canAskAi = !isAiOnly && !closed && !!lastPatientQuery;
+
+  async function askAssistant() {
+    if (!lastPatientQuery) return;
+    setMenuOpen(false);
+    setAskError(null);
+    setAsking(true);
+    try {
+      await respond({ conversationId: id as any, query: lastPatientQuery });
+    } catch (e: any) {
+      setAskError(e?.message ?? 'Não foi possível obter resposta da assistente.');
+    } finally {
+      setAsking(false);
+    }
+  }
+
   return (
     <>
-      <Stack.Screen options={{ title: topic?.label ?? 'Conversa' }} />
+      <Stack.Screen
+        options={{
+          title: topic?.label ?? 'Conversa',
+          headerRight:
+            canAskAi && !asking
+              ? () => <KebabButton onPress={() => setMenuOpen((o) => !o)} />
+              : undefined,
+        }}
+      />
       {isAiOnly && !closed && <AiOnlyBanner conversationId={id} />}
+      {asking && <AskingBanner />}
+      {askError && <AskErrorBanner text={askError} onDismiss={() => setAskError(null)} />}
       <MessageThread
         conversationId={id}
         currentUserId={user._id}
         isProfessional={false}
         closed={closed}
-        hideInlineAi={isAiOnly}
       />
+      {menuOpen && canAskAi && (
+        <ConversationMenu onAsk={askAssistant} onClose={() => setMenuOpen(false)} />
+      )}
     </>
+  );
+}
+
+function KebabButton({ onPress }: { onPress: () => void }) {
+  const { theme } = useUnistyles();
+  return (
+    <Pressable
+      testID="conversation-menu-button"
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityLabel="Mais opções"
+      style={({ pressed }) => [styles.kebab, pressed && styles.kebabPressed]}
+    >
+      <Icon
+        name={{ sf: 'ellipsis', ion: 'ellipsis-vertical' }}
+        size={20}
+        color={theme.colors.ink}
+      />
+    </Pressable>
+  );
+}
+
+function ConversationMenu({
+  onAsk,
+  onClose,
+}: {
+  onAsk: () => void;
+  onClose: () => void;
+}) {
+  const { theme } = useUnistyles();
+  return (
+    <View style={styles.overlay} pointerEvents="box-none">
+      <Pressable style={styles.backdrop} onPress={onClose} />
+      <View style={styles.menu}>
+        <Pressable
+          testID="conversation-ask-ai"
+          onPress={onAsk}
+          style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+        >
+          <Icon
+            name={{ sf: 'sparkles', ion: 'sparkles' }}
+            size={18}
+            color={theme.topic.contraception.on}
+          />
+          <Text style={styles.menuLabel}>Pedir resposta da assistente</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function AskingBanner() {
+  const { theme } = useUnistyles();
+  return (
+    <View style={[styles.banner, styles.askingBanner]}>
+      <ActivityIndicator size="small" color={theme.topic.contraception.on} />
+      <Text style={styles.askingText}>A assistente está a pensar…</Text>
+    </View>
+  );
+}
+
+function AskErrorBanner({ text, onDismiss }: { text: string; onDismiss: () => void }) {
+  const { theme } = useUnistyles();
+  return (
+    <Pressable style={[styles.banner, styles.errorBanner]} onPress={onDismiss}>
+      <Icon
+        name={{ sf: 'exclamationmark.triangle', ion: 'warning-outline' }}
+        size={16}
+        color={theme.colors.danger}
+      />
+      <Text style={styles.errorText}>{text}</Text>
+    </Pressable>
   );
 }
 
@@ -86,6 +199,42 @@ function AiOnlyBanner({ conversationId }: { conversationId: string }) {
 }
 
 const styles = StyleSheet.create((theme) => ({
+  kebab: {
+    width: 36,
+    height: 36,
+    borderRadius: theme.radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kebabPressed: { backgroundColor: theme.colors.surfaceSunken },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+  },
+  backdrop: { ...StyleSheet.absoluteFillObject },
+  menu: {
+    position: 'absolute',
+    top: theme.spacing.xs,
+    right: theme.spacing.sm,
+    minWidth: 240,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    borderColor: theme.colors.divider,
+    padding: theme.spacing.xs,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+  },
+  menuItemPressed: { backgroundColor: theme.colors.surfaceSunken },
+  menuLabel: { fontSize: 15, fontWeight: '500', color: theme.colors.ink },
   banner: {
     marginHorizontal: theme.spacing.sm,
     marginTop: theme.spacing.sm,
@@ -97,6 +246,14 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
+  askingBanner: { backgroundColor: theme.topic.contraception.fill },
+  askingText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: theme.topic.contraception.on,
+  },
+  errorBanner: { backgroundColor: theme.colors.dangerLight },
+  errorText: { flex: 1, fontSize: 13, color: theme.colors.danger },
   avatar: {
     width: 34,
     height: 34,
