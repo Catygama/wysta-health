@@ -1,5 +1,5 @@
 // Patient-facing AI assistant. Composed of:
-//   1. planner (purpose 'chat')         — drafts a response.
+//   1. planner (purpose 'chat')         — drafts a response (streamed live).
 //   2. safety + clinical validators      — run in parallel, return JSON.
 //   3. judge                             — decides send|block based on validators.
 //
@@ -7,22 +7,24 @@
 // admin diagram can render it. Keep the two in sync when changing the chain.
 //
 // Each step is a separate runAgent call linked via parentInvocationId so the
-// audit tree reconstructs the chain. The assistant message is persisted in
-// `messages` with messageType='ai-response' and aiInvocationId pointing to
-// the judge's invocation. If the judge blocks, a system message is posted
-// indicating the question was forwarded to a professional.
+// audit tree reconstructs the chain. A placeholder ai-response message is
+// created immediately (streaming: true) and patched live as tokens arrive;
+// it is finalized (streaming: false) with the draft+disclaimer on approval,
+// the fixed forwarding text on block, or a fallback on error.
 
 import {
   action,
   internalAction,
   internalMutation,
   internalQuery,
+  type ActionCtx,
 } from '../_generated/server';
 import { v } from 'convex/values';
 import { z } from 'zod';
 import { internal } from '../_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { runAgent } from './runAgent';
+import type { Id } from '../_generated/dataModel';
 
 const validatorSchema = z.object({
   decision: z.enum(['approve', 'block']),
@@ -32,6 +34,153 @@ const validatorSchema = z.object({
 const judgeSchema = z.object({
   action: z.enum(['send', 'block']),
   finalAnswer: z.string(),
+});
+
+const DISCLAIMER =
+  '\n\n— Assistente AI. Esta resposta é informativa, não substitui consulta clínica.';
+const FALLBACK_MESSAGE =
+  'Não consegui responder agora. Tenta novamente daqui a pouco ou fala com um profissional.';
+const BLOCKED_AUTO =
+  'Esta pergunta merece resposta de um profissional. Toca em "Falar com profissional" para entrar na fila.';
+const BLOCKED_RESPOND =
+  'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um profissional.';
+
+type StreamVars = {
+  query: string;
+  conversationHistory: string;
+  patientProfile: string;
+  recentSummary: string;
+  topicAndRisk: string;
+};
+
+// Shared: create a placeholder ai-response message, stream the draft into it,
+// run the safety chain, then finalize (draft+disclaimer / blocked / fallback).
+async function streamAndValidate(
+  ctx: ActionCtx,
+  args: {
+    conversationId: Id<'conversations'>;
+    patientId: Id<'users'>;
+    baseVars: StreamVars;
+    topic?: string;
+    blockedMessage: string;
+  }
+): Promise<{ sent: boolean }> {
+  const messageId = await ctx.runMutation(
+    internal.ai.assistant.createAssistantPlaceholder,
+    { conversationId: args.conversationId, patientId: args.patientId }
+  );
+  try {
+    let lastWriteAt = 0;
+    let lastLen = 0;
+    const draft = await runAgent(ctx, {
+      purpose: 'chat',
+      topic: args.topic as any,
+      vars: args.baseVars,
+      userId: args.patientId,
+      conversationId: args.conversationId,
+      onDelta: async (textSoFar) => {
+        const now = Date.now();
+        if (now - lastWriteAt >= 150 || textSoFar.length - lastLen >= 24) {
+          lastWriteAt = now;
+          lastLen = textSoFar.length;
+          await ctx.runMutation(internal.ai.assistant.patchStreamingMessage, {
+            messageId,
+            content: textSoFar,
+          });
+        }
+      },
+    });
+
+    const [safety, clinical] = await Promise.all([
+      runAgent(ctx, {
+        purpose: 'chat-validator-safety',
+        topic: args.topic as any,
+        vars: { ...args.baseVars, draft: draft.output },
+        userId: args.patientId,
+        conversationId: args.conversationId,
+        parentInvocationId: draft.invocationId,
+        outputSchema: validatorSchema,
+      }),
+      runAgent(ctx, {
+        purpose: 'chat-validator-clinical',
+        topic: args.topic as any,
+        vars: { ...args.baseVars, draft: draft.output },
+        userId: args.patientId,
+        conversationId: args.conversationId,
+        parentInvocationId: draft.invocationId,
+        outputSchema: validatorSchema,
+      }),
+    ]);
+
+    const judged = await runAgent(ctx, {
+      purpose: 'chat-judge',
+      topic: args.topic as any,
+      vars: {
+        ...args.baseVars,
+        draft: draft.output,
+        safety: JSON.stringify(safety.output),
+        clinical: JSON.stringify(clinical.output),
+      },
+      userId: args.patientId,
+      conversationId: args.conversationId,
+      parentInvocationId: draft.invocationId,
+      outputSchema: judgeSchema,
+    });
+
+    const sent = judged.output.action === 'send';
+    await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
+      messageId,
+      content: sent ? draft.output + DISCLAIMER : args.blockedMessage,
+      invocationId: judged.invocationId,
+    });
+    return { sent };
+  } catch (e) {
+    console.warn(
+      `[assistant.streamAndValidate] failed: ${e instanceof Error ? e.message : String(e)}`
+    );
+    await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
+      messageId,
+      content: FALLBACK_MESSAGE,
+    });
+    return { sent: false };
+  }
+}
+
+export const createAssistantPlaceholder = internalMutation({
+  args: { conversationId: v.id('conversations'), patientId: v.id('users') },
+  handler: async (ctx, { conversationId, patientId }) => {
+    const messageId = await ctx.db.insert('messages', {
+      conversationId,
+      senderId: patientId,
+      content: '',
+      messageType: 'ai-response',
+      streaming: true,
+    });
+    await ctx.db.patch(conversationId, { lastMessageAt: Date.now() });
+    return messageId;
+  },
+});
+
+export const patchStreamingMessage = internalMutation({
+  args: { messageId: v.id('messages'), content: v.string() },
+  handler: async (ctx, { messageId, content }) => {
+    await ctx.db.patch(messageId, { content });
+  },
+});
+
+export const finalizeAssistantMessage = internalMutation({
+  args: {
+    messageId: v.id('messages'),
+    content: v.string(),
+    invocationId: v.optional(v.id('aiInvocations')),
+  },
+  handler: async (ctx, { messageId, content, invocationId }) => {
+    await ctx.db.patch(messageId, {
+      content,
+      streaming: false,
+      ...(invocationId ? { aiInvocationId: invocationId } : {}),
+    });
+  },
 });
 
 // Anonymous variant: no conversationId, no message rows are persisted.
@@ -115,86 +264,28 @@ export const respondAuto = internalAction({
     query: v.string(),
   },
   handler: async (ctx, { conversationId, query }) => {
-    try {
-      const owner = await ctx.runQuery(internal.ai.assistant.getConversationPatient, {
-        conversationId,
-      });
-      if (!owner) return;
-
-      const ctxData = await ctx.runQuery(internal.ai.assistant.gatherContext, {
-        conversationId,
-        userId: owner,
-      });
-      if (!ctxData.allowed) return;
-
-      const baseVars = {
+    const owner = await ctx.runQuery(internal.ai.assistant.getConversationPatient, {
+      conversationId,
+    });
+    if (!owner) return;
+    const ctxData = await ctx.runQuery(internal.ai.assistant.gatherContext, {
+      conversationId,
+      userId: owner,
+    });
+    if (!ctxData.allowed) return;
+    await streamAndValidate(ctx, {
+      conversationId,
+      patientId: owner,
+      baseVars: {
         query,
         conversationHistory: ctxData.conversationHistory,
         patientProfile: ctxData.patientProfile,
         recentSummary: ctxData.recentSummary,
         topicAndRisk: ctxData.topicAndRisk,
-      };
-
-      const draft = await runAgent(ctx, {
-        purpose: 'chat',
-        topic: ctxData.topic,
-        vars: baseVars,
-        userId: owner,
-        conversationId,
-      });
-      const [safety, clinical] = await Promise.all([
-        runAgent(ctx, {
-          purpose: 'chat-validator-safety',
-          topic: ctxData.topic,
-          vars: { ...baseVars, draft: draft.output },
-          userId: owner,
-          conversationId,
-          parentInvocationId: draft.invocationId,
-          outputSchema: validatorSchema,
-        }),
-        runAgent(ctx, {
-          purpose: 'chat-validator-clinical',
-          topic: ctxData.topic,
-          vars: { ...baseVars, draft: draft.output },
-          userId: owner,
-          conversationId,
-          parentInvocationId: draft.invocationId,
-          outputSchema: validatorSchema,
-        }),
-      ]);
-      const judged = await runAgent(ctx, {
-        purpose: 'chat-judge',
-        topic: ctxData.topic,
-        vars: {
-          ...baseVars,
-          draft: draft.output,
-          safety: JSON.stringify(safety.output),
-          clinical: JSON.stringify(clinical.output),
-        },
-        userId: owner,
-        conversationId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: judgeSchema,
-      });
-
-      const sent = judged.output.action === 'send';
-      const answer = sent
-        ? judged.output.finalAnswer
-        : 'Esta pergunta merece resposta de um profissional. Toca em "Falar com profissional" para entrar na fila.';
-      await ctx.runMutation(internal.ai.assistant.recordAssistantMessage, {
-        conversationId,
-        patientId: owner,
-        content: answer,
-        sent,
-        invocationId: judged.invocationId,
-      });
-    } catch (e) {
-      console.warn(
-        `[assistant.respondAuto] failed for ${conversationId}: ${
-          e instanceof Error ? e.message : String(e)
-        }`
-      );
-    }
+      },
+      topic: ctxData.topic,
+      blockedMessage: BLOCKED_AUTO,
+    });
   },
 });
 
@@ -231,14 +322,9 @@ export const respond = action({
     conversationId: v.id('conversations'),
     query: v.string(),
   },
-  handler: async (ctx, { conversationId, query }): Promise<{
-    sent: boolean;
-    answer: string;
-    invocationId: string;
-  }> => {
+  handler: async (ctx, { conversationId, query }): Promise<{ sent: boolean }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
-
     const ctxData = await ctx.runQuery(internal.ai.assistant.gatherContext, {
       conversationId,
       userId,
@@ -246,78 +332,19 @@ export const respond = action({
     if (!ctxData.allowed) {
       throw new Error('Only the patient on this conversation can ask the AI');
     }
-
-    // Common context vars passed through every step of the chain. Same
-    // shape so each prompt can reference whichever vars it cares about.
-    const baseVars = {
-      query,
-      conversationHistory: ctxData.conversationHistory,
-      patientProfile: ctxData.patientProfile,
-      recentSummary: ctxData.recentSummary,
-      topicAndRisk: ctxData.topicAndRisk,
-    };
-
-    // Step 1: draft
-    const draft = await runAgent(ctx, {
-      purpose: 'chat',
-      topic: ctxData.topic,
-      vars: baseVars,
-      userId,
-      conversationId,
-    });
-
-    // Step 2: parallel validators
-    const [safety, clinical] = await Promise.all([
-      runAgent(ctx, {
-        purpose: 'chat-validator-safety',
-        topic: ctxData.topic,
-        vars: { ...baseVars, draft: draft.output },
-        userId,
-        conversationId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-      runAgent(ctx, {
-        purpose: 'chat-validator-clinical',
-        topic: ctxData.topic,
-        vars: { ...baseVars, draft: draft.output },
-        userId,
-        conversationId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-    ]);
-
-    // Step 3: judge
-    const judged = await runAgent(ctx, {
-      purpose: 'chat-judge',
-      topic: ctxData.topic,
-      vars: {
-        ...baseVars,
-        draft: draft.output,
-        safety: JSON.stringify(safety.output),
-        clinical: JSON.stringify(clinical.output),
-      },
-      userId,
-      conversationId,
-      parentInvocationId: draft.invocationId,
-      outputSchema: judgeSchema,
-    });
-
-    const sent = judged.output.action === 'send';
-    const answer = sent
-      ? judged.output.finalAnswer
-      : 'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um profissional.';
-
-    await ctx.runMutation(internal.ai.assistant.recordAssistantMessage, {
+    return streamAndValidate(ctx, {
       conversationId,
       patientId: userId,
-      content: answer,
-      sent,
-      invocationId: judged.invocationId,
+      baseVars: {
+        query,
+        conversationHistory: ctxData.conversationHistory,
+        patientProfile: ctxData.patientProfile,
+        recentSummary: ctxData.recentSummary,
+        topicAndRisk: ctxData.topicAndRisk,
+      },
+      topic: ctxData.topic,
+      blockedMessage: BLOCKED_RESPOND,
     });
-
-    return { sent, answer, invocationId: judged.invocationId };
   },
 });
 
@@ -397,28 +424,5 @@ export const gatherContext = internalQuery({
       recentSummary,
       topicAndRisk,
     };
-  },
-});
-
-export const recordAssistantMessage = internalMutation({
-  args: {
-    conversationId: v.id('conversations'),
-    patientId: v.id('users'),
-    content: v.string(),
-    sent: v.boolean(),
-    invocationId: v.id('aiInvocations'),
-  },
-  handler: async (ctx, args) => {
-    const disclaimer = args.sent
-      ? '\n\n— Assistente AI. Esta resposta é informativa, não substitui consulta clínica.'
-      : '';
-    await ctx.db.insert('messages', {
-      conversationId: args.conversationId,
-      senderId: args.patientId,
-      content: args.content + disclaimer,
-      messageType: 'ai-response',
-      aiInvocationId: args.invocationId,
-    });
-    await ctx.db.patch(args.conversationId, { lastMessageAt: Date.now() });
   },
 });
