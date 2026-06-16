@@ -1,4 +1,4 @@
-import { generateText, generateObject } from 'ai';
+import { generateText, generateObject, streamText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import type { ZodTypeAny, z } from 'zod';
@@ -84,5 +84,30 @@ export async function callLlmObject<T extends ZodTypeAny>(
     // and usage.completionTokens → usage.outputTokens
     inputTokens: result.usage.inputTokens ?? 0,
     outputTokens: result.usage.outputTokens ?? 0,
+  };
+}
+
+// Streaming variant of callLlmText. Invokes onDelta with the accumulated text
+// after each chunk; resolves with the full text + token usage at the end.
+export async function callLlmStream(
+  args: LlmCallArgs & { onDelta?: (textSoFar: string) => void | Promise<void> }
+): Promise<LlmCallResult<string>> {
+  const result = streamText({
+    model: buildModel(args),
+    system: args.systemPrompt,
+    prompt: args.userPrompt,
+    temperature: args.temperature,
+    maxOutputTokens: args.maxTokens,
+  });
+  let acc = '';
+  for await (const delta of result.textStream) {
+    acc += delta;
+    if (args.onDelta) await args.onDelta(acc);
+  }
+  const usage = await result.usage;
+  return {
+    output: acc,
+    inputTokens: usage.inputTokens ?? 0,
+    outputTokens: usage.outputTokens ?? 0,
   };
 }
