@@ -28,16 +28,18 @@ app/                            # Expo Router
   (patient)/
     _layout.tsx                 # NativeTabs (iOS/Android)
     _layout.web.tsx             # Tabs web (Ionicons)
-    index, conversations/, education/, profile, triage
+    index, conversations/, education/, profile, triage, wellbeing (intake do pilar Bem-estar sexual)
   (professional)/
     _layout.tsx + _layout.web.tsx
     queue, conversations/, education/
   (admin)/                      # Painel de gestão de utilizadores
 
 convex/                         # Backend
-  schema.ts                     # userProfiles, conversations, messages, triageQuestions, educationalContent, auditLog
+  schema.ts                     # userProfiles, conversations, messages, triageQuestions, educationalContent, auditLog, wellbeingCheckins, aiConfigs/aiPrompts/aiInvocations/aiSettings
   auth.ts, auth.config.ts, http.ts
-  users.ts, conversations.ts, messages.ts, triage.ts, education.ts
+  users.ts, conversations.ts, messages.ts, triage.ts, education.ts, wellbeing.ts
+  lib/topics.ts                 # fonte única de tópicos (ids + validator); app adiciona metadata de UI em constants/topics.ts
+  ai/                           # registry (purposes/providers/topic-meta/pipelines), prompts, runAgent, assistant, admin, defaults, llm, pricing
 
 components/ui/                  # Button, Input, Icon (SF Symbols + Ionicons)
 contexts/TabBarContext.tsx      # Esconder tab bar em ecrãs específicos
@@ -60,6 +62,8 @@ docs/                           # ENGINEERING.md, TASKS.md, plans/
 - **Tema**: `constants/theme.ts` usa `PlatformColor` em iOS e fallbacks hex noutras plataformas
 - **Lógica de negócio no backend Convex**, não no frontend
 - **Notas internas de profissionais**: campo `isInternal: true` em `messages`, filtradas no backend
+- **Tópicos**: centralizados em `convex/lib/topics.ts` (id + `topicValidator`); adicionar um tópico = lá + `constants/topics.ts` (label/ícone/cor) + cor em `lib/unistyles.ts`. Atuais: contraception, pregnancy, sti, menstrual-cycle, general, sexual-wellbeing
+- **AI por tópico**: `aiPrompts` tem `topic` opcional; `getActivePrompt(purpose, topic?)` usa a variante do tópico senão o prompt global. Configs (modelo/key) ficam globais por agente. Defaults em `convex/ai/defaults.ts` (`DEFAULT_PROMPTS` + `DEFAULT_TOPIC_PROMPTS`); editáveis no painel admin `(admin)/ai.tsx`
 
 ## Auth flows
 
