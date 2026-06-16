@@ -5,7 +5,7 @@ import { internalAction } from '../_generated/server';
 import { v } from 'convex/values';
 import type { GenericMutationCtx, GenericActionCtx } from 'convex/server';
 import type { DataModel } from '../_generated/dataModel';
-import { callLlmText, callLlmObject } from './llm';
+import { callLlmText, callLlmObject, callLlmStream } from './llm';
 import { renderTemplate } from './template';
 import { computeCostUsd } from './pricing';
 import type { AiPurpose } from './types';
@@ -25,6 +25,7 @@ export type RunAgentArgs<T extends ZodTypeAny | undefined = undefined> = {
   conversationId?: Id<'conversations'>;
   parentInvocationId?: Id<'aiInvocations'>;
   outputSchema?: T;
+  onDelta?: (textSoFar: string) => void | Promise<void>;
 };
 
 export type RunAgentResult<T> = {
@@ -80,28 +81,21 @@ export async function runAgent<T extends ZodTypeAny | undefined = undefined>(
 
   const startedAt = Date.now();
   try {
+    const llmArgs = {
+      provider: config.provider,
+      modelId: config.modelId,
+      endpoint: config.endpoint,
+      apiKey: config.apiKey,
+      systemPrompt: prompt.systemPrompt,
+      userPrompt,
+      temperature: prompt.temperature,
+      maxTokens: prompt.maxTokens,
+    };
     const result = args.outputSchema
-      ? await callLlmObject({
-          provider: config.provider,
-          modelId: config.modelId,
-          endpoint: config.endpoint,
-          apiKey: config.apiKey,
-          systemPrompt: prompt.systemPrompt,
-          userPrompt,
-          temperature: prompt.temperature,
-          maxTokens: prompt.maxTokens,
-          schema: args.outputSchema,
-        })
-      : await callLlmText({
-          provider: config.provider,
-          modelId: config.modelId,
-          endpoint: config.endpoint,
-          apiKey: config.apiKey,
-          systemPrompt: prompt.systemPrompt,
-          userPrompt,
-          temperature: prompt.temperature,
-          maxTokens: prompt.maxTokens,
-        });
+      ? await callLlmObject({ ...llmArgs, schema: args.outputSchema })
+      : args.onDelta
+        ? await callLlmStream({ ...llmArgs, onDelta: args.onDelta })
+        : await callLlmText(llmArgs);
 
     const latencyMs = Date.now() - startedAt;
     const costUsd = computeCostUsd(

@@ -8,8 +8,9 @@ import type { Id } from '../_generated/dataModel';
 vi.mock('./llm', () => ({
   callLlmText: vi.fn(),
   callLlmObject: vi.fn(),
+  callLlmStream: vi.fn(),
 }));
-import { callLlmText, callLlmObject } from './llm';
+import { callLlmText, callLlmObject, callLlmStream } from './llm';
 import { runAgent } from './runAgent';
 
 // Vite resolves glob paths relative to the test file's own directory.
@@ -64,6 +65,7 @@ async function seed(t: ReturnType<typeof convexTest>) {
 beforeEach(() => {
   vi.mocked(callLlmText).mockReset();
   vi.mocked(callLlmObject).mockReset();
+  vi.mocked(callLlmStream).mockReset();
 });
 
 describe('runAgent', () => {
@@ -190,6 +192,34 @@ describe('runAgent', () => {
     );
     const callArgs = vi.mocked(callLlmText).mock.calls[0][0];
     expect(callArgs.systemPrompt).toBe('Wellbeing summary.');
+  });
+
+  it('streams via callLlmStream when onDelta is provided', async () => {
+    const t = convexTest(schema, modules);
+    const { userId } = await seed(t);
+    vi.mocked(callLlmStream).mockImplementation(async (a: any) => {
+      await a.onDelta?.('Hel');
+      await a.onDelta?.('Hello');
+      return { output: 'Hello', inputTokens: 12, outputTokens: 4 };
+    });
+    const deltas: string[] = [];
+    const result = await t.run(async (ctx) =>
+      runAgent(ctx, {
+        purpose: 'chat-summary',
+        vars: { conversationText: 'x' },
+        userId,
+        onDelta: (s) => {
+          deltas.push(s);
+        },
+      })
+    );
+    expect(result.output).toBe('Hello');
+    expect(deltas).toEqual(['Hel', 'Hello']);
+    expect(callLlmStream).toHaveBeenCalledTimes(1);
+    expect(callLlmText).not.toHaveBeenCalled();
+    const row = await t.run(async (ctx) => ctx.db.get(result.invocationId));
+    expect(row?.status).toBe('success');
+    expect(row?.outputTokens).toBe(4);
   });
 
   it('throws clearly when template variable missing', async () => {
