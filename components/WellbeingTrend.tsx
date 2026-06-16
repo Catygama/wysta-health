@@ -4,11 +4,13 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { fonts } from '@/lib/fonts';
 
+// `invert: true` metrics are negative — a high value is worse. They use a
+// warning colour so a full bar reads as "vigiar" rather than "bom".
 const METRICS = [
-  { key: 'desire', label: 'Desejo', max: 5 },
-  { key: 'satisfaction', label: 'Satisfação', max: 5 },
-  { key: 'pain', label: 'Dor', max: 5 },
-  { key: 'distress', label: 'Mal-estar', max: 5 },
+  { key: 'desire', label: 'Desejo', max: 5, invert: false },
+  { key: 'satisfaction', label: 'Satisfação', max: 5, invert: false },
+  { key: 'pain', label: 'Dor', max: 5, invert: true },
+  { key: 'distress', label: 'Mal-estar', max: 5, invert: true },
 ] as const;
 
 export function WellbeingTrend() {
@@ -38,18 +40,14 @@ export function WellbeingTrend() {
       {METRICS.map((m) => {
         const value = (latest as unknown as Record<string, number>)[m.key];
         const pct = Math.max(0, Math.min(100, Math.round((value / m.max) * 100)));
+        const accent = m.invert ? theme.colors.warning : theme.topic.wellbeing.on;
         return (
           <View key={m.key} style={styles.metricRow}>
             <Text style={styles.metricLabel}>{m.label}</Text>
             <View style={styles.barTrack}>
-              <View
-                style={[
-                  styles.barFill,
-                  { width: `${pct}%`, backgroundColor: theme.topic.wellbeing.on },
-                ]}
-              />
+              <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: accent }]} />
             </View>
-            <Text style={styles.metricVal}>{value}</Text>
+            <Text style={[styles.metricVal, m.invert && { color: accent }]}>{value}</Text>
           </View>
         );
       })}
