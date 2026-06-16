@@ -126,6 +126,7 @@ export default defineSchema({
       v.literal('ai-response')
     ),
     aiInvocationId: v.optional(v.id('aiInvocations')),
+    streaming: v.optional(v.boolean()),
     imageId: v.optional(v.id('_storage')),
     attachmentId: v.optional(v.id('_storage')),
     attachmentName: v.optional(v.string()),

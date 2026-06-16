@@ -225,7 +225,7 @@ export function MessageThread({
             return <SystemMessage content={item.content} />;
           }
           if (item.messageType === 'ai-response') {
-            return <AiResponseMessage content={item.content} />;
+            return <AiResponseMessage content={item.content} streaming={item.streaming} />;
           }
           const isOwn = item.senderId === currentUserId;
           return (
@@ -448,7 +448,13 @@ function SystemMessage({ content }: { content: string }) {
   );
 }
 
-function AiResponseMessage({ content }: { content: string }) {
+function AiResponseMessage({
+  content,
+  streaming,
+}: {
+  content: string;
+  streaming?: boolean;
+}) {
   return (
     <View style={styles.ai}>
       <View style={styles.aiHeader}>
@@ -457,6 +463,7 @@ function AiResponseMessage({ content }: { content: string }) {
       </View>
       <Text style={styles.aiBody} selectable>
         {content}
+        {streaming ? <Text style={styles.aiCursor}>{content ? ' ▍' : 'a escrever…'}</Text> : null}
       </Text>
     </View>
   );
@@ -603,4 +610,5 @@ const styles = StyleSheet.create((theme) => ({
     letterSpacing: 0.3,
   },
   aiBody: { fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 },
+  aiCursor: { color: theme.colors.textTertiary },
 }));
