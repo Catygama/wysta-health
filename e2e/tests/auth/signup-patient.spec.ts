@@ -30,7 +30,7 @@ test.describe('Patient signup + onboarding', () => {
     await page.getByTestId('onboarding-continue-button').click();
 
     // Should land on patient home with topic cards visible
-    await expect(page.getByTestId('patient-topic-contraception')).toBeVisible({
+    await expect(page.getByTestId('patient-new-conversation')).toBeVisible({
       timeout: 15_000,
     });
   });

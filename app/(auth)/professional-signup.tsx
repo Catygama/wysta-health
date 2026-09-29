@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { useMutation } from 'convex/react';
+import { useConvexAuth, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Input } from '@/components/ui/Input';
@@ -26,6 +26,7 @@ type Doc = { picked: PickedImage; storageId?: string; uploading: boolean };
 
 export default function ProfessionalSignup() {
   const { signIn } = useAuthActions();
+  const { isAuthenticated } = useConvexAuth();
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
   const submit = useMutation(api.users.submitProfessionalVerification);
   const router = useRouter();
@@ -108,7 +109,6 @@ export default function ProfessionalSignup() {
           professionalVerificationNotes: notes.trim() || undefined,
         })
       );
-      router.replace('/');
     } catch (e: any) {
       setError(e?.message ?? strings.errors.generic);
     } finally {
@@ -121,7 +121,6 @@ export default function ProfessionalSignup() {
     setGuestLoading(true);
     try {
       await signIn('anonymous-professional');
-      router.replace('/');
     } catch (e: any) {
       const message = e?.message ?? String(e);
       setError(`Guest professional falhou: ${message}`);
@@ -130,6 +129,10 @@ export default function ProfessionalSignup() {
     }
   }
 
+
+  // Navigate once the session is actually active: redirecting right after
+  // signIn() resolves races the auth state and bounces back to login.
+  if (isAuthenticated && !loading && !guestLoading) return <Redirect href="/" />;
   return (
     <ScrollView
       style={styles.screen}

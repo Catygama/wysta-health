@@ -34,9 +34,20 @@ bun run test:e2e:ui
 ```
 
 The Playwright config auto-starts `bun run web --port 8091` (Expo for web)
-with `EXPO_PUBLIC_E2E=true`. Convex is the dev cloud deployment from
-`.env.local` (`fiery-toucan-646` by default). Override with
-`EXPO_PUBLIC_CONVEX_URL=...` to point at a different backend.
+with `EXPO_PUBLIC_E2E=true`. Convex defaults to a **local** backend at
+`http://127.0.0.1:3210`, because global setup wipes the database. Override with
+`EXPO_PUBLIC_CONVEX_URL=...` only for a disposable deployment.
+
+### Local backend
+
+```bash
+CONVEX_AGENT_MODE=anonymous bunx convex dev
+```
+
+The first time, set the auth keys and test flag on the local deployment
+(`JWT_PRIVATE_KEY`, `JWKS` — generated as in the Convex Auth manual setup —
+`SITE_URL=http://localhost:8081` and `CONVEX_E2E_ENABLED=true`) with
+`bunx convex env set` (keep `CONVEX_AGENT_MODE=anonymous` in the environment).
 
 ## Layout
 

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
+import { useConvexAuth } from 'convex/react';
 import { StyleSheet } from 'react-native-unistyles';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +13,7 @@ import { fonts } from '@/lib/fonts';
 
 export default function Login() {
   const { signIn } = useAuthActions();
+  const { isAuthenticated } = useConvexAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +26,6 @@ export default function Login() {
     setLoading(true);
     try {
       await signIn('password', { email, password, flow: 'signIn' });
-      router.replace('/');
     } catch {
       setError('Email ou palavra-passe incorretos.');
     } finally {
@@ -37,7 +38,6 @@ export default function Login() {
     setGuestLoading(true);
     try {
       await signIn('anonymous');
-      router.replace('/');
     } catch (e: any) {
       const message = e?.message ?? String(e);
       setError(`Guest falhou: ${message}`);
@@ -46,6 +46,10 @@ export default function Login() {
     }
   }
 
+
+  // Navigate once the session is actually active: redirecting right after
+  // signIn() resolves races the auth state and bounces back to login.
+  if (isAuthenticated) return <Redirect href="/" />;
   return (
     <ScrollView
       style={styles.screen}
