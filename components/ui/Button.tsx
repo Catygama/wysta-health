@@ -15,6 +15,8 @@ type Props = {
   /** Back-compat alias for `kind`. */
   variant?: Kind;
   size?: 'md' | 'sm';
+  /** Screen-reader description of the result, when the label alone is ambiguous. */
+  accessibilityHint?: string;
   testID?: string;
 };
 
@@ -26,6 +28,7 @@ export function Button({
   kind,
   variant,
   size = 'md',
+  accessibilityHint,
   testID,
 }: Props) {
   const resolvedKind: Kind = kind ?? variant ?? 'primary';
@@ -44,6 +47,9 @@ export function Button({
     <Pressable
       testID={testID}
       accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: !!loading }}
       onPress={handlePress}
       disabled={isDisabled}
       style={({ pressed }) => [
@@ -79,8 +85,9 @@ const styles = StyleSheet.create((theme) => ({
         },
       },
       size: {
-        md: { paddingVertical: theme.spacing.md, paddingHorizontal: theme.spacing.lg },
-        sm: { paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md },
+        // minHeight keeps the touch target at or above the 44pt platform minimum.
+        md: { minHeight: 48, paddingVertical: theme.spacing.md, paddingHorizontal: theme.spacing.lg },
+        sm: { minHeight: 44, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md },
       },
     },
   },

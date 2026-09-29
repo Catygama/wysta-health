@@ -79,7 +79,7 @@ export default function Login() {
           secureTextEntry
         />
         {error ? (
-          <Text testID="auth-error" style={styles.error}>
+          <Text testID="auth-error" accessibilityRole="alert" style={styles.error}>
             {error}
           </Text>
         ) : null}
@@ -105,6 +105,7 @@ export default function Login() {
       )}
 
       <Pressable
+        accessibilityRole="link"
         testID="auth-register-link"
         onPress={() => router.push('/(auth)/register')}
         hitSlop={8}
@@ -116,6 +117,7 @@ export default function Login() {
       </Pressable>
 
       <Pressable
+        accessibilityRole="link"
         testID="auth-professional-link"
         onPress={() => router.push('/(auth)/professional-login')}
         style={({ pressed }) => [styles.proLink, pressed && styles.dim]}

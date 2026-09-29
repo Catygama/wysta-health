@@ -166,6 +166,7 @@ export default function ProfessionalSignup() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          autoComplete="new-password"
         />
         <Input
           testID="prof-signup-password-confirm-input"
@@ -173,6 +174,7 @@ export default function ProfessionalSignup() {
           value={confirm}
           onChangeText={setConfirm}
           secureTextEntry
+          autoComplete="new-password"
         />
       </Section>
 

@@ -80,7 +80,7 @@ export default function ProfessionalLogin() {
           secureTextEntry
         />
         {error ? (
-          <Text testID="auth-error" style={styles.error}>
+          <Text testID="auth-error" accessibilityRole="alert" style={styles.error}>
             {error}
           </Text>
         ) : null}
@@ -107,6 +107,7 @@ export default function ProfessionalLogin() {
       )}
 
       <Pressable
+        accessibilityRole="link"
         testID="auth-professional-signup-link"
         onPress={() => router.push('/(auth)/professional-signup')}
         hitSlop={8}
@@ -115,6 +116,7 @@ export default function ProfessionalLogin() {
       </Pressable>
 
       <Pressable
+        accessibilityRole="link"
         testID="auth-back-to-patient-link"
         onPress={() => router.replace('/(auth)/login')}
         style={styles.back}

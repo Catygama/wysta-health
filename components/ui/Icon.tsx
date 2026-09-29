@@ -13,12 +13,22 @@ type Props = {
   size?: number;
   color?: ColorValue;
   style?: ComponentProps<typeof Ionicons>['style'];
+  /**
+   * Spoken name. Omit for decorative icons (the default): they are hidden from
+   * screen readers, so the surrounding control must carry the label instead.
+   */
+  accessibilityLabel?: string;
 };
 
-export function Icon({ name, size = 24, color, style }: Props) {
+export function Icon({ name, size = 24, color, style, accessibilityLabel }: Props) {
+  const a11y = accessibilityLabel
+    ? { accessible: true, accessibilityRole: 'image' as const, accessibilityLabel }
+    : { accessible: false, 'aria-hidden': true };
+
   if (Platform.OS === 'ios') {
     return (
       <SymbolView
+        {...a11y}
         name={name.sf}
         size={size}
         tintColor={color}
@@ -27,5 +37,7 @@ export function Icon({ name, size = 24, color, style }: Props) {
       />
     );
   }
-  return <Ionicons name={name.ion} size={size} color={color as string} style={style} />;
+  return (
+    <Ionicons {...a11y} name={name.ion} size={size} color={color as string} style={style} />
+  );
 }

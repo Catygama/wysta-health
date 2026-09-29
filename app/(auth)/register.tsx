@@ -59,6 +59,7 @@ export default function Register() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          autoComplete="new-password"
         />
         <Input
           testID="auth-password-confirm-input"
@@ -66,9 +67,10 @@ export default function Register() {
           value={confirm}
           onChangeText={setConfirm}
           secureTextEntry
+          autoComplete="new-password"
         />
         {error ? (
-          <Text testID="auth-error" style={styles.error}>
+          <Text testID="auth-error" accessibilityRole="alert" style={styles.error}>
             {error}
           </Text>
         ) : null}
@@ -80,7 +82,12 @@ export default function Register() {
         />
       </View>
 
-      <Pressable testID="auth-back-link" onPress={() => router.back()} hitSlop={8}>
+      <Pressable
+        accessibilityRole="link"
+        testID="auth-back-link"
+        onPress={() => router.back()}
+        hitSlop={8}
+      >
         <Text style={styles.backLink}>
           {strings.auth.hasAccount}{' '}
           <Text style={styles.backLinkStrong}>{strings.auth.login}</Text>
@@ -88,6 +95,7 @@ export default function Register() {
       </Pressable>
 
       <Pressable
+        accessibilityRole="link"
         onPress={() => router.push('/(auth)/professional-signup')}
         style={({ pressed }) => [styles.proLink, pressed && styles.dim]}
         hitSlop={8}
