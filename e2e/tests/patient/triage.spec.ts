@@ -53,4 +53,29 @@ test.describe('Triage flow (dynamic answers)', () => {
       timeout: 5_000,
     });
   });
+
+  // Regression: a red flag on the *last* question used to submit immediately,
+  // navigating away before the alert was seen and dropping that answer, so the
+  // conversation wasn't marked urgent.
+  test('red flag on the last question shows the alert and marks urgent', async ({
+    page,
+  }) => {
+    await loginAs(page, TEST_USERS.patientA.email);
+    await page.goto(`/triage?topic=pregnancy`);
+    await page.getByTestId('triage-option-0').click(); // weeks
+    await page.getByTestId('triage-option-no').click(); // bleeding
+    await page.getByTestId('triage-option-no').click(); // abdominal-pain
+    await page.getByTestId('triage-option-yes').click(); // reduced-movement (last)
+
+    await expect(page.getByTestId('urgency-alert')).toBeVisible({ timeout: 5_000 });
+    await expect(page).toHaveURL(/\/triage/);
+
+    await page.getByTestId('urgency-dismiss').click();
+    await expect(page).toHaveURL(/\/conversations\//, { timeout: 15_000 });
+    const convs = await listConversationsForPatient(TEST_USERS.patientA.email);
+    // Newest first; an earlier test also creates an urgent pregnancy conversation.
+    const latest = convs[0];
+    expect(latest.topic).toBe('pregnancy');
+    expect(latest.priority).toBe('urgent');
+  });
 });

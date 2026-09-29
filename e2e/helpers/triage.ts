@@ -53,6 +53,12 @@ async function waitForMeta(
   return last!;
 }
 
+// A red-flag answer halts the triage on the urgency alert until it's dismissed.
+async function dismissUrgencyAlert(page: Page) {
+  await expect(page.getByTestId('urgency-alert')).toBeVisible({ timeout: 5_000 });
+  await page.getByTestId('urgency-dismiss').click();
+}
+
 async function answerSingle(
   page: Page,
   meta: CurrentMeta,
@@ -61,6 +67,7 @@ async function answerSingle(
   if (meta.type === 'yes-no') {
     const value = target === 'urgent' && meta.isRedFlag ? 'yes' : 'no';
     await page.getByTestId(`triage-option-${value}`).click();
+    if (value === 'yes') await dismissUrgencyAlert(page);
     return;
   }
   if (meta.type === 'multiple-choice') {
@@ -71,6 +78,7 @@ async function answerSingle(
   if (meta.type === 'scale') {
     const value = target === 'urgent' ? '10' : '1';
     await page.getByTestId(`triage-scale-${value}`).click();
+    if (value === '10' && meta.isRedFlag) await dismissUrgencyAlert(page);
     return;
   }
   if (meta.type === 'text') {

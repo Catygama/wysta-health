@@ -27,6 +27,11 @@ type Question = {
   required: boolean;
 };
 
+// A 'yes' on a yes/no red flag, or 9+ on a 0–10 scale red flag.
+function isRedFlagAnswer(value: string | number | undefined): boolean {
+  return value === 'yes' || (typeof value === 'number' && value >= 9);
+}
+
 export default function Triage() {
   const { topic } = useLocalSearchParams<{ topic: TopicId }>();
   const router = useRouter();
@@ -38,6 +43,10 @@ export default function Triage() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | number>>({});
   const [showUrgency, setShowUrgency] = useState(false);
+  // Answers held back while the urgency alert is showing; applied on dismiss.
+  const [pendingAdvance, setPendingAdvance] = useState<Record<string, string | number> | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
 
   const topicInfo = TOPICS.find((t) => t.id === topic);
@@ -48,23 +57,19 @@ export default function Triage() {
   const isLast = step === total - 1;
 
   const redFlagTriggered = useMemo(() => {
-    return questions.some((q) => {
-      if (!q.isRedFlag) return false;
-      const a = answers[q.id];
-      if (a === 'yes') return true;
-      if (typeof a === 'number' && a >= 9) return true;
-      return false;
-    });
+    return questions.some((q) => q.isRedFlag && isRedFlagAnswer(answers[q.id]));
   }, [questions, answers]);
 
-  async function submit() {
+  // Takes the responses explicitly: callers pass the just-updated answers, which
+  // aren't in `answers` state until the next render.
+  async function submit(responses: Record<string, string | number>) {
     if (!topic) return;
     setLoading(true);
     try {
       const id = await createConversation({
         topic,
         title: `${topicInfo?.label} — nova conversa`,
-        triageData: { responses: answers },
+        triageData: { responses },
       });
       router.replace({ pathname: '/(patient)/conversations/[id]', params: { id } });
     } finally {
@@ -72,17 +77,35 @@ export default function Triage() {
     }
   }
 
+  function advance(responses: Record<string, string | number>) {
+    if (isLast) {
+      submit(responses);
+    } else {
+      setStep((s) => s + 1);
+    }
+  }
+
   function handleAnswer(value: string | number) {
     if (!current) return;
     const next = { ...answers, [current.id]: value };
     setAnswers(next);
-    if (current.isRedFlag && value === 'yes') {
+    if (current.isRedFlag && isRedFlagAnswer(value)) {
+      // Stop here so the alert is actually seen: advancing (or submitting, on
+      // the last question) would navigate away from it. The patient moves on
+      // only by dismissing it.
+      setPendingAdvance(next);
       setShowUrgency(true);
+      return;
     }
-    if (isLast) {
-      submit();
-    } else {
-      setStep((s) => s + 1);
+    advance(next);
+  }
+
+  function dismissUrgency() {
+    setShowUrgency(false);
+    if (pendingAdvance) {
+      const responses = pendingAdvance;
+      setPendingAdvance(null);
+      advance(responses);
     }
   }
 
@@ -154,7 +177,8 @@ export default function Triage() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.head}>
-        <Text testID="triage-current-meta" style={styles.srOnly}>
+        {/* Test hook for e2e; hidden from screen readers, which would read the JSON. */}
+        <Text testID="triage-current-meta" style={styles.srOnly} aria-hidden>
           {JSON.stringify({
             id: current.id,
             type: current.type,
@@ -184,7 +208,7 @@ export default function Triage() {
         </View>
       </View>
 
-      {showUrgency && <UrgencyAlert onDismiss={() => setShowUrgency(false)} />}
+      {showUrgency && <UrgencyAlert onDismiss={dismissUrgency} />}
 
       <View style={styles.card}>
         <Text style={styles.question}>
