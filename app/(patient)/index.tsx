@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { useQuery, useAction, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
-import { TOPICS, type TopicColor } from '@/constants/topics';
+import { TOPICS, TOPIC_CHOICES, OTHER_TOPIC, type TopicColor } from '@/constants/topics';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
@@ -92,7 +92,7 @@ export default function PatientHome() {
           onPress={() => setPickerOpen(true)}
         />
         <View style={styles.chipRow}>
-          {TOPICS.map((t) => (
+          {TOPIC_CHOICES.map((t) => (
             <Chip
               key={t.id}
               testID={`patient-topic-chip-${t.id}`}
@@ -102,6 +102,18 @@ export default function PatientHome() {
             />
           ))}
         </View>
+        <Pressable
+          testID="patient-other-question"
+          accessibilityRole="button"
+          onPress={() => startTopic(OTHER_TOPIC.id)}
+          hitSlop={8}
+          style={({ pressed }) => [styles.otherLink, pressed && styles.dim]}
+        >
+          <Text style={styles.otherLinkText}>
+            A tua pergunta não encaixa em nenhum tema?{' '}
+            <Text style={styles.otherLinkStrong}>Pergunta na mesma</Text>
+          </Text>
+        </Pressable>
       </View>
 
       <View style={styles.section}>
@@ -196,7 +208,7 @@ function TopicPickerSheet({
             Escolhe o tema para começares. As respostas chegam normalmente em 24h.
           </Text>
           <ScrollView style={styles.pickerScroll} contentContainerStyle={styles.topicList}>
-            {TOPICS.map((t) => (
+            {TOPIC_CHOICES.map((t) => (
               <Card
                 key={t.id}
                 testID={`topic-picker-${t.id}`}
@@ -216,6 +228,26 @@ function TopicPickerSheet({
                 />
               </Card>
             ))}
+            <Text style={styles.otherCaption}>Não encontras o tema?</Text>
+            <Card
+              testID={`topic-picker-${OTHER_TOPIC.id}`}
+              onPress={() => onSelect(OTHER_TOPIC.id)}
+              tone="sunken"
+              style={styles.topicCard}
+            >
+              <TopicIcon color={OTHER_TOPIC.color} icon={OTHER_TOPIC.icon} />
+              <View style={styles.topicMeta}>
+                <Text style={styles.topicLabel}>Outra questão</Text>
+                <Text style={styles.topicDesc}>
+                  Pergunta sobre o que precisares. Encaminhamos para a pessoa certa.
+                </Text>
+              </View>
+              <Icon
+                name={{ sf: 'chevron.right', ion: 'chevron-forward' }}
+                size={18}
+                color={styles.chevron.color}
+              />
+            </Card>
           </ScrollView>
         </View>
       </View>
@@ -368,6 +400,15 @@ const styles = StyleSheet.create((theme) => ({
   section: { gap: theme.spacing.md },
   sectionTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.textPrimary },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  otherLink: { paddingVertical: theme.spacing.xs },
+  dim: { opacity: 0.6 },
+  otherLinkText: { fontSize: 14, color: theme.colors.textSecondary },
+  otherLinkStrong: { color: theme.colors.accent, fontWeight: '600' },
+  otherCaption: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
+  },
   // Care feed
   feed: { gap: theme.spacing.sm },
   feedCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
