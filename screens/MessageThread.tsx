@@ -307,6 +307,8 @@ export function MessageThread({
                   </Text>
                 </View>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Remover imagem"
                   onPress={() => setPendingImage(null)}
                   hitSlop={8}
                   disabled={uploading}
@@ -340,6 +342,8 @@ export function MessageThread({
                   </Text>
                 </View>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Remover documento"
                   onPress={() => setPendingDocument(null)}
                   hitSlop={8}
                   disabled={uploading}

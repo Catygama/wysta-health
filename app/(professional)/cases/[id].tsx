@@ -264,7 +264,13 @@ type TabButtonProps = { label: string; active: boolean; onPress: () => void; tes
 function TabButton({ label, active, onPress, testID }: TabButtonProps) {
   styles.useVariants({ active });
   return (
-    <Pressable testID={testID} onPress={onPress} style={styles.tab}>
+    <Pressable
+      testID={testID}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={styles.tab}
+    >
       <Text style={styles.tabText}>{label}</Text>
     </Pressable>
   );

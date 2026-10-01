@@ -245,7 +245,13 @@ function AnonymousAiButton() {
           <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Pergunta anónima</Text>
-              <Pressable testID="anonymous-ai-close" onPress={close} hitSlop={8}>
+              <Pressable
+                testID="anonymous-ai-close"
+                accessibilityRole="button"
+                accessibilityLabel="Fechar"
+                onPress={close}
+                hitSlop={8}
+              >
                 <Icon name={{ sf: 'xmark', ion: 'close' }} size={22} color={theme.colors.textSecondary} />
               </Pressable>
             </View>
