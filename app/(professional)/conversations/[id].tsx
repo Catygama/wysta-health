@@ -55,7 +55,7 @@ export default function ProfessionalConversation() {
   if (!user || conversation === undefined || !id) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color={theme.colors.ink} />
+        <ActivityIndicator color={theme.colors.inkText} />
       </View>
     );
   }
@@ -562,7 +562,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.ink, flex: 1 },
+  title: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText, flex: 1 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
   badge: { paddingVertical: 2, paddingHorizontal: theme.spacing.sm, borderRadius: theme.radius.pill },
   badgeText: { fontSize: 12, fontWeight: '500' },
@@ -589,7 +589,7 @@ const styles = StyleSheet.create((theme) => ({
     borderBottomWidth: 2,
     variants: {
       active: {
-        true: { borderBottomColor: theme.colors.ink },
+        true: { borderBottomColor: theme.colors.inkText },
         false: { borderBottomColor: 'transparent' },
       },
     },
@@ -598,7 +598,7 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: 14,
     variants: {
       active: {
-        true: { color: theme.colors.ink, fontWeight: '500' },
+        true: { color: theme.colors.inkText, fontWeight: '500' },
         false: { color: theme.colors.textSecondary, fontWeight: '500' },
       },
     },

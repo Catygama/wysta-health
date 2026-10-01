@@ -1,13 +1,8 @@
 import { View, Text } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Icon } from '@/components/ui/Icon';
-import { RISK_LABELS } from '@/constants/conversation';
+import { RISK_LABELS, riskColor } from '@/constants/conversation';
 
-const RISK_COLORS: Record<string, string> = {
-  high: '#D7264C',
-  medium: '#C77B16',
-  low: '#1E6B56',
-};
 
 type Props = {
   riskLevel?: string;
@@ -17,14 +12,14 @@ type Props = {
 
 export function TriageSummary({ riskLevel, responses, questionLabels }: Props) {
   const { theme } = useUnistyles();
-  const color = RISK_COLORS[riskLevel ?? 'low'] ?? theme.colors.textSecondary;
+  const color = riskColor(theme, riskLevel ?? 'low') ?? theme.colors.textSecondary;
   const entries = Object.entries(responses);
   if (entries.length === 0) return null;
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Icon name={{ sf: 'doc.text.fill', ion: 'document-text' }} size={16} color={theme.colors.ink} />
+        <Icon name={{ sf: 'doc.text.fill', ion: 'document-text' }} size={16} color={theme.colors.inkText} />
         <Text style={styles.title}>Resumo de triagem</Text>
         {riskLevel && (
           <View style={[styles.riskBadge, { backgroundColor: color + '20' }]}>
@@ -64,7 +59,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.sm,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  title: { fontSize: 14, fontWeight: '500', color: theme.colors.ink, flex: 1 },
+  title: { fontSize: 14, fontWeight: '500', color: theme.colors.inkText, flex: 1 },
   riskBadge: {
     paddingVertical: 2,
     paddingHorizontal: theme.spacing.sm,

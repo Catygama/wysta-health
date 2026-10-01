@@ -175,7 +175,7 @@ const styles = StyleSheet.create((theme) => ({
   appName: {
     fontFamily: fonts.displayExtraBold,
     fontSize: 30,
-    color: theme.colors.ink,
+    color: theme.colors.inkText,
   },
   tagline: {
     fontSize: 16,

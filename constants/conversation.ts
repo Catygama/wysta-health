@@ -38,3 +38,16 @@ export const ESCALATION_LEVEL_LABELS: Record<string, string> = {
   'same-day': 'Urgência no próprio dia',
   emergency: 'Emergência imediata',
 };
+
+// Risk colors come from the theme so they stay legible in dark mode.
+export function riskColor(
+  theme: { colors: { danger: string; warning: string; success: string } },
+  level: string,
+): string | undefined {
+  const map: Record<string, string> = {
+    high: theme.colors.danger,
+    medium: theme.colors.warning,
+    low: theme.colors.success,
+  };
+  return map[level];
+}

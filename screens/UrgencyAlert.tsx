@@ -67,7 +67,6 @@ const styles = StyleSheet.create((theme) => ({
     padding: theme.spacing.lg,
     gap: theme.spacing.md,
   },
-  // 20pt bold counts as large text, so danger-on-dangerLight (3.8:1) passes WCAG AA.
   title: { fontFamily: fonts.displayBold, fontSize: 20, color: theme.colors.danger },
   message: { fontSize: 16, color: theme.colors.textPrimary, lineHeight: 24 },
   contacts: {

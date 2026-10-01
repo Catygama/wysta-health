@@ -138,7 +138,7 @@ const styles = StyleSheet.create((theme) => ({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.lg, gap: theme.spacing.xl },
   hero: { gap: theme.spacing.sm },
-  title: { fontFamily: fonts.displayExtraBold, fontSize: 28, color: theme.colors.ink },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 28, color: theme.colors.inkText },
   sub: { fontSize: 16, color: theme.colors.textSecondary },
   section: { gap: theme.spacing.md },
   label: { fontFamily: fonts.displayBold, fontSize: 16, color: theme.colors.textPrimary },

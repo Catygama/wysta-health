@@ -99,7 +99,7 @@ const styles = StyleSheet.create((theme) => ({
       kind: {
         primary: { color: theme.colors.onInk },
         secondary: { color: theme.colors.textPrimary },
-        danger: { color: theme.colors.onInk },
+        danger: { color: theme.colors.onDanger },
         ghost: { color: theme.colors.textPrimary },
       },
       size: {

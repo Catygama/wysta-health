@@ -94,7 +94,7 @@ export default function Showcase() {
 const styles = StyleSheet.create((theme) => ({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.lg, gap: theme.spacing.sm },
-  h1: { fontFamily: fonts.displayExtraBold, fontSize: 30, color: theme.colors.ink },
+  h1: { fontFamily: fonts.displayExtraBold, fontSize: 30, color: theme.colors.inkText },
   h2: {
     fontFamily: fonts.displayBold,
     fontSize: 18,

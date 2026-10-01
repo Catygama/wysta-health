@@ -39,6 +39,9 @@ const lightTheme = {
   name: 'light',
   colors: {
     ink: '#2E1065',
+    // Brand color for text/icons. `ink` is a fill (buttons, avatars) and is
+    // near-invisible as text on the dark background, so text uses this.
+    inkText: '#2E1065',
     inkPressed: '#231055',
     onInk: '#FFFFFF',
     accent: '#7C3AED',
@@ -48,10 +51,15 @@ const lightTheme = {
     surfaceSunken: '#F3EDE0',
     textPrimary: '#2B2438',
     textSecondary: '#6E6880',
-    textTertiary: '#B7B0C6',
-    danger: '#D7264C',
+    // Darkened to meet WCAG AA (4.5:1) on background/sunken; it's used for
+    // placeholders and timestamps, which are text too.
+    textTertiary: '#6E677C',
+    danger: '#C22144',
+    // Text on a danger fill: white in light mode; dark in dark mode, where
+    // danger is a light pink (white on it is 2.4:1).
+    onDanger: '#FFFFFF',
     dangerLight: '#F8DBE2',
-    warning: '#C77B16',
+    warning: '#9B5F0F',
     warningSurface: '#FBEFD9',
     success: '#1E6B56',
     divider: 'rgba(43,36,56,0.08)',
@@ -64,6 +72,7 @@ const darkTheme = {
   name: 'dark',
   colors: {
     ink: '#3B2380',
+    inkText: '#E4DBFB',
     inkPressed: '#321E6E',
     onInk: '#FFFFFF',
     accent: '#A78BFA',
@@ -73,8 +82,9 @@ const darkTheme = {
     surfaceSunken: '#1D1631',
     textPrimary: '#EFEAFB',
     textSecondary: '#A79FC0',
-    textTertiary: '#6E6688',
+    textTertiary: '#8982A0',
     danger: '#F2879E',
+    onDanger: '#17112B',
     dangerLight: '#3A1822',
     warning: '#E0AE5C',
     warningSurface: '#3A2E16',

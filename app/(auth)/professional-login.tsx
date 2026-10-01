@@ -161,7 +161,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: 'center',
     marginBottom: theme.spacing.xs,
   },
-  title: { fontFamily: fonts.displayExtraBold, fontSize: 30, color: theme.colors.ink },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 30, color: theme.colors.inkText },
   tagline: { fontSize: 16, color: theme.colors.textSecondary, textAlign: 'center' },
   form: { gap: theme.spacing.md },
   error: { fontSize: 14, color: theme.colors.danger },

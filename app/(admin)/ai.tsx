@@ -112,7 +112,7 @@ export default function AdminAi() {
       </Card>
 
       {overview === undefined ? (
-        <ActivityIndicator color={theme.colors.ink} style={{ marginTop: 24 }} />
+        <ActivityIndicator color={theme.colors.inkText} style={{ marginTop: 24 }} />
       ) : (
         <>
           <PipelineDiagram
@@ -151,7 +151,7 @@ export default function AdminAi() {
 
       <Card title="Invocações recentes (50)">
         {invocations === undefined ? (
-          <ActivityIndicator color={theme.colors.ink} />
+          <ActivityIndicator color={theme.colors.inkText} />
         ) : invocations.length === 0 ? (
           <Text style={styles.muted}>Ainda sem invocações.</Text>
         ) : (
@@ -690,7 +690,7 @@ function PromptEditor({
             onPress={reset}
             style={[styles.btnFlex, styles.btnGhost]}
           >
-            {resetting && <ActivityIndicator color={theme.colors.ink} size="small" />}
+            {resetting && <ActivityIndicator color={theme.colors.inkText} size="small" />}
             <Text style={styles.btnGhostText}>Repor default</Text>
           </Pressable>
         )}
@@ -803,9 +803,9 @@ const styles = StyleSheet.create((theme) => ({
   hint: { fontSize: 12, color: theme.colors.textSecondary },
   warn: { fontSize: 12, color: theme.colors.warning },
   muted: { fontSize: 12, color: theme.colors.textTertiary },
-  link: { fontSize: 13, fontWeight: '600', color: theme.colors.ink },
+  link: { fontSize: 13, fontWeight: '600', color: theme.colors.inkText },
   inlineRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, flexWrap: 'wrap' },
-  capValue: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.ink },
+  capValue: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText },
   inputRow: { flexDirection: 'row', gap: theme.spacing.sm },
   half: { flex: 1 },
 
@@ -967,7 +967,7 @@ const styles = StyleSheet.create((theme) => ({
   btnGhost: { backgroundColor: theme.colors.surfaceSunken },
   btnText: { fontSize: 14, fontWeight: '500', color: theme.colors.onInk },
   btnTextOff: { color: theme.colors.textTertiary },
-  btnGhostText: { fontSize: 14, fontWeight: '500', color: theme.colors.ink },
+  btnGhostText: { fontSize: 14, fontWeight: '500', color: theme.colors.inkText },
   ok: { fontSize: 14, color: theme.colors.success },
   error: { fontSize: 14, color: theme.colors.danger },
   resultBox: {

@@ -19,7 +19,7 @@ export function ArticleScreen() {
   if (article === undefined) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color={theme.colors.ink} />
+        <ActivityIndicator color={theme.colors.inkText} />
       </View>
     );
   }
@@ -115,7 +115,7 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.pill,
   },
   topicPillText: { fontSize: 12, fontWeight: '500' },
-  title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.ink, lineHeight: 30 },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.inkText, lineHeight: 30 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
   metaText: { fontSize: 14, color: theme.colors.textSecondary },
   summary: { fontSize: 16, color: theme.colors.textSecondary, fontStyle: 'italic' },

@@ -54,7 +54,7 @@ export default function Queue() {
             label="Minhas"
             value={stats?.mine ?? 0}
             icon={{ sf: 'person.fill', ion: 'person' }}
-            color={theme.colors.ink}
+            color={theme.colors.inkText}
           />
           <StatCard
             testID="queue-stat-unassigned"

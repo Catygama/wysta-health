@@ -95,7 +95,7 @@ function KebabButton({ onPress }: { onPress: () => void }) {
       <Icon
         name={{ sf: 'ellipsis', ion: 'ellipsis-vertical' }}
         size={20}
-        color={theme.colors.ink}
+        color={theme.colors.inkText}
       />
     </Pressable>
   );
@@ -234,7 +234,7 @@ const styles = StyleSheet.create((theme) => ({
     borderCurve: 'continuous',
   },
   menuItemPressed: { backgroundColor: theme.colors.surfaceSunken },
-  menuLabel: { fontSize: 15, fontWeight: '500', color: theme.colors.ink },
+  menuLabel: { fontSize: 15, fontWeight: '500', color: theme.colors.inkText },
   banner: {
     marginHorizontal: theme.spacing.sm,
     marginTop: theme.spacing.sm,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   emoji: { fontSize: 16 },
   body: { flex: 1, gap: 2 },
-  title: { fontSize: 13, fontWeight: '500', color: theme.colors.ink },
+  title: { fontSize: 13, fontWeight: '500', color: theme.colors.inkText },
   sub: { fontSize: 12, color: theme.colors.textSecondary },
   cta: {
     paddingHorizontal: theme.spacing.md,
