@@ -16,7 +16,7 @@ export function EducationScreen() {
   const segments = useSegments();
   const { theme } = useUnistyles();
   const isPatient = segments[0] === '(patient)';
-  const basePath = isPatient ? '/(patient)/education' : '/(professional)/education';
+  const basePath = isPatient ? '/(patient)/education' : '/(professional)/library';
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

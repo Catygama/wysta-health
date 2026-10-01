@@ -15,7 +15,7 @@ test('Close conversation sets status closed', async ({ page }) => {
     status: 'active',
   });
   await loginAs(page, TEST_USERS.professionalA.email);
-  await page.goto(`/(professional)/conversations/${seeded.conversationId}`);
+  await page.goto(`/(professional)/cases/${seeded.conversationId}`);
   await expect(page.getByTestId('conversation-close-button')).toBeVisible({
     timeout: 15_000,
   });

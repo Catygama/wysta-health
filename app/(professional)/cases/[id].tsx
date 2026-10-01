@@ -25,6 +25,7 @@ import {
   PRIORITY_COLORS,
 } from '@/constants/conversation';
 import { useTabBar } from '@/contexts/TabBarContext';
+import { pregnancyClinicalLabel } from '@/constants/profile';
 
 type Tab = 'chat' | 'internal' | 'summary';
 
@@ -77,7 +78,13 @@ export default function ProfessionalConversation() {
 
   return (
     <View style={styles.root}>
-      <Stack.Screen options={{ title: topic?.label ?? 'Conversa' }} />
+      {/* The topic is already the body heading; the header names the patient. */}
+      <Stack.Screen
+        options={{
+          title:
+            conversation.patient?.displayName ?? conversation.patient?.email ?? topic?.label ?? 'Conversa',
+        }}
+      />
       <ScrollView style={styles.headScroll} contentContainerStyle={styles.head}>
         <View style={styles.topicRow}>
           {topic && (
@@ -109,7 +116,9 @@ export default function ProfessionalConversation() {
               {conversation.patient.displayName ?? conversation.patient.email}
               {conversation.patient.ageRange ? ` • ${conversation.patient.ageRange}` : ''}
               {conversation.patient.location ? ` • ${conversation.patient.location}` : ''}
-              {conversation.patient.pregnancyStatus ? ` • ${conversation.patient.pregnancyStatus}` : ''}
+              {conversation.patient.pregnancyStatus
+                ? ` • ${pregnancyClinicalLabel(conversation.patient.pregnancyStatus)}`
+                : ''}
             </Text>
             {(conversation.patient.conditions?.length ?? 0) > 0 && (
               <Text style={styles.patientMeta}>
