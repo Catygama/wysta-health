@@ -22,7 +22,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
 import { ChatMessage } from '@/components/chat/ChatMessage';
-import { RISK_LABELS } from '@/constants/conversation';
+import { RISK_LABELS, riskColor } from '@/constants/conversation';
 import {
   pickImage,
   pickDocument,
@@ -48,11 +48,6 @@ type Props = {
   closed?: boolean;
 };
 
-const RISK_COLORS: Record<string, string> = {
-  high: '#D7264C',
-  medium: '#C77B16',
-  low: '#1E6B56',
-};
 
 export function MessageThread({
   conversationId,
@@ -90,6 +85,15 @@ export function MessageThread({
     if (scope === 'internal') return m.isInternal;
     return !m.isInternal;
   });
+
+  // Right after triage the thread holds only the triage card; tell the patient
+  // what to do next instead of leaving a bare composer.
+  const awaitingFirstQuestion =
+    !isProfessional &&
+    canSend &&
+    !closed &&
+    filteredMessages.length > 0 &&
+    !filteredMessages.some((m) => m.senderId === currentUserId && m.messageType === 'text');
 
   const animatedFooterPadding = useAnimatedStyle(() => ({
     paddingBottom: theme.spacing.md + insets.bottom * (1 - progress.value),
@@ -177,8 +181,11 @@ export function MessageThread({
     (!!text.trim() || !!pendingImage || !!pendingDocument) && !sending;
 
   return (
+    // Plain styles on third-party wrappers: on web, Unistyles styles passed to
+    // non-RN components (keyboard-controller, Reanimated) are partly dropped,
+    // which collapsed this view and let the composer float mid-screen.
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={layout.flex}
       behavior="padding"
       keyboardVerticalOffset={headerHeight}
     >
@@ -191,6 +198,16 @@ export function MessageThread({
         contentContainerStyle={styles.listContent}
         contentInsetAdjustmentBehavior="automatic"
         onContentSizeChange={() => listRef.current?.scrollToEnd()}
+        ListFooterComponent={
+          awaitingFirstQuestion ? (
+            <View testID="thread-next-step" style={styles.nextStep}>
+              <Text style={styles.nextStepTitle}>Agora, conta-nos o que se passa</Text>
+              <Text style={styles.nextStepText}>
+                Escreve a tua dúvida em baixo. Uma profissional responde normalmente em 24h.
+              </Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.empty}>
             <Icon
@@ -262,7 +279,9 @@ export function MessageThread({
       )}
 
       {canSend && !closed && (
-        <Animated.View style={[styles.composer, animatedFooterPadding]}>
+        <Animated.View
+          style={[{ backgroundColor: theme.colors.background }, animatedFooterPadding]}
+        >
           {Platform.OS === 'ios' ? (
             <BlurView
               tint={theme.name === 'dark' ? 'dark' : 'light'}
@@ -270,142 +289,144 @@ export function MessageThread({
               style={StyleSheet.absoluteFillObject}
             />
           ) : null}
+          <View style={styles.composer}>
 
-          {pendingImage && (
-            <View style={styles.pendingRow}>
-              <Image
-                source={{ uri: pendingImage.uri }}
-                style={styles.pendingThumb}
-                resizeMode="cover"
-              />
-              <View style={styles.pendingMeta}>
-                <Text style={styles.pendingName} numberOfLines={1}>
-                  {pendingImage.fileName ?? 'Imagem selecionada'}
-                </Text>
-                <Text style={styles.pendingSub}>
-                  {uploading ? 'A enviar...' : 'Pronta a enviar'}
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => setPendingImage(null)}
-                hitSlop={8}
-                disabled={uploading}
-              >
-                <Icon
-                  name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }}
-                  size={22}
-                  color={theme.colors.textTertiary}
+            {pendingImage && (
+              <View style={styles.pendingRow}>
+                <Image
+                  source={{ uri: pendingImage.uri }}
+                  style={styles.pendingThumb}
+                  resizeMode="cover"
                 />
-              </Pressable>
-            </View>
-          )}
-
-          {pendingDocument && (
-            <View style={styles.pendingRow}>
-              <View style={styles.pendingDocIcon}>
-                <Icon
-                  name={{ sf: 'doc', ion: 'document-outline' }}
-                  size={20}
-                  color={theme.colors.textSecondary}
-                />
-              </View>
-              <View style={styles.pendingMeta}>
-                <Text style={styles.pendingName} numberOfLines={1}>
-                  {pendingDocument.fileName ?? 'Documento selecionado'}
-                </Text>
-                <Text style={styles.pendingSub}>
-                  {uploading
-                    ? 'A enviar...'
-                    : (formatBytes(pendingDocument.size) ?? 'Pronto a enviar')}
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => setPendingDocument(null)}
-                hitSlop={8}
-                disabled={uploading}
-              >
-                <Icon
-                  name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }}
-                  size={22}
-                  color={theme.colors.textTertiary}
-                />
-              </Pressable>
-            </View>
-          )}
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <View style={styles.inputRow}>
-            {scope !== 'internal' && (
-              <>
+                <View style={styles.pendingMeta}>
+                  <Text style={styles.pendingName} numberOfLines={1}>
+                    {pendingImage.fileName ?? 'Imagem selecionada'}
+                  </Text>
+                  <Text style={styles.pendingSub}>
+                    {uploading ? 'A enviar...' : 'Pronta a enviar'}
+                  </Text>
+                </View>
                 <Pressable
-                  testID="message-attach-image"
-                  onPress={handlePickImage}
-                  disabled={uploading || sending}
-                  style={({ pressed }) => [
-                    styles.iconBtn,
-                    pressed && styles.iconBtnPressed,
-                    (uploading || sending) && styles.dim,
-                  ]}
-                  accessibilityLabel="Anexar imagem"
+                  onPress={() => setPendingImage(null)}
+                  hitSlop={8}
+                  disabled={uploading}
                 >
                   <Icon
-                    name={{ sf: 'photo', ion: 'image-outline' }}
-                    size={20}
-                    color={theme.colors.textSecondary}
+                    name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }}
+                    size={22}
+                    color={theme.colors.textTertiary}
                   />
                 </Pressable>
-                <Pressable
-                  testID="message-attach-document"
-                  onPress={handlePickDocument}
-                  disabled={uploading || sending}
-                  style={({ pressed }) => [
-                    styles.iconBtn,
-                    pressed && styles.iconBtnPressed,
-                    (uploading || sending) && styles.dim,
-                  ]}
-                  accessibilityLabel="Anexar documento"
-                >
-                  <Icon
-                    name={{ sf: 'paperclip', ion: 'attach' }}
-                    size={20}
-                    color={theme.colors.textSecondary}
-                  />
-                </Pressable>
-              </>
+              </View>
             )}
 
-            <TextInput
-              testID={isInternalScope ? 'message-input-internal' : 'message-input'}
-              value={text}
-              onChangeText={setText}
-              placeholder={
-                isInternalScope
-                  ? 'Escreve uma nota interna...'
-                  : 'Escreve uma mensagem...'
-              }
-              placeholderTextColor={theme.colors.textTertiary as any}
-              multiline
-              editable={!uploading && !sending}
-              style={styles.input}
-            />
-            <Pressable
-              testID={isInternalScope ? 'message-send-internal' : 'message-send'}
-              onPress={handleSend}
-              disabled={!canSubmit}
-              style={[styles.sendBtn, canSubmit ? styles.sendBtnActive : styles.sendBtnIdle]}
-              accessibilityLabel="Enviar mensagem"
-            >
-              {sending ? (
-                <ActivityIndicator color={theme.colors.onInk} size="small" />
-              ) : (
-                <Icon
-                  name={{ sf: 'arrow.up', ion: 'arrow-up' }}
-                  size={18}
-                  color={canSubmit ? theme.colors.onInk : theme.colors.textTertiary}
-                />
+            {pendingDocument && (
+              <View style={styles.pendingRow}>
+                <View style={styles.pendingDocIcon}>
+                  <Icon
+                    name={{ sf: 'doc', ion: 'document-outline' }}
+                    size={20}
+                    color={theme.colors.textSecondary}
+                  />
+                </View>
+                <View style={styles.pendingMeta}>
+                  <Text style={styles.pendingName} numberOfLines={1}>
+                    {pendingDocument.fileName ?? 'Documento selecionado'}
+                  </Text>
+                  <Text style={styles.pendingSub}>
+                    {uploading
+                      ? 'A enviar...'
+                      : (formatBytes(pendingDocument.size) ?? 'Pronto a enviar')}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => setPendingDocument(null)}
+                  hitSlop={8}
+                  disabled={uploading}
+                >
+                  <Icon
+                    name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }}
+                    size={22}
+                    color={theme.colors.textTertiary}
+                  />
+                </Pressable>
+              </View>
+            )}
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <View style={styles.inputRow}>
+              {scope !== 'internal' && (
+                <>
+                  <Pressable
+                    testID="message-attach-image"
+                    onPress={handlePickImage}
+                    disabled={uploading || sending}
+                    style={({ pressed }) => [
+                      styles.iconBtn,
+                      pressed && styles.iconBtnPressed,
+                      (uploading || sending) && styles.dim,
+                    ]}
+                    accessibilityLabel="Anexar imagem"
+                  >
+                    <Icon
+                      name={{ sf: 'photo', ion: 'image-outline' }}
+                      size={20}
+                      color={theme.colors.textSecondary}
+                    />
+                  </Pressable>
+                  <Pressable
+                    testID="message-attach-document"
+                    onPress={handlePickDocument}
+                    disabled={uploading || sending}
+                    style={({ pressed }) => [
+                      styles.iconBtn,
+                      pressed && styles.iconBtnPressed,
+                      (uploading || sending) && styles.dim,
+                    ]}
+                    accessibilityLabel="Anexar documento"
+                  >
+                    <Icon
+                      name={{ sf: 'paperclip', ion: 'attach' }}
+                      size={20}
+                      color={theme.colors.textSecondary}
+                    />
+                  </Pressable>
+                </>
               )}
-            </Pressable>
+
+              <TextInput
+                testID={isInternalScope ? 'message-input-internal' : 'message-input'}
+                value={text}
+                onChangeText={setText}
+                placeholder={
+                  isInternalScope
+                    ? 'Escreve uma nota interna...'
+                    : 'Escreve uma mensagem...'
+                }
+                placeholderTextColor={theme.colors.textTertiary as any}
+                multiline
+                editable={!uploading && !sending}
+                style={styles.input}
+              />
+              <Pressable
+                testID={isInternalScope ? 'message-send-internal' : 'message-send'}
+                onPress={handleSend}
+                disabled={!canSubmit}
+                style={[styles.sendBtn, canSubmit ? styles.sendBtnActive : styles.sendBtnIdle]}
+                accessibilityLabel="Enviar mensagem"
+              >
+                {sending ? (
+                  <ActivityIndicator color={theme.colors.onInk} size="small" />
+                ) : (
+                  <Icon
+                    name={{ sf: 'arrow.up', ion: 'arrow-up' }}
+                    size={18}
+                    color={canSubmit ? theme.colors.onInk : theme.colors.textTertiary}
+                  />
+                )}
+              </Pressable>
+            </View>
           </View>
         </Animated.View>
       )}
@@ -419,7 +440,7 @@ function TriageMessage({
   data: { topic: string; responses: Record<string, unknown>; riskLevel: string };
 }) {
   const { theme } = useUnistyles();
-  const color = RISK_COLORS[data.riskLevel] ?? theme.colors.textSecondary;
+  const color = riskColor(theme, data.riskLevel) ?? theme.colors.textSecondary;
   return (
     <View style={styles.triage}>
       <View style={styles.triageHeader}>
@@ -469,8 +490,9 @@ function AiResponseMessage({
   );
 }
 
+const layout = { flex: { flex: 1 } } as const;
+
 const styles = StyleSheet.create((theme) => ({
-  flex: { flex: 1 },
   list: { flex: 1, backgroundColor: theme.colors.background },
   listContent: { padding: theme.spacing.md, gap: theme.spacing.sm },
   empty: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.sm },
@@ -479,6 +501,16 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.textSecondary,
     textAlign: 'center',
   },
+  nextStep: {
+    marginTop: theme.spacing.sm,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
+    backgroundColor: theme.colors.surfaceSunken,
+    gap: theme.spacing.xs,
+  },
+  nextStepTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.textPrimary },
+  nextStepText: { fontSize: 15, lineHeight: 22, color: theme.colors.textSecondary },
   notice: {
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
@@ -493,8 +525,6 @@ const styles = StyleSheet.create((theme) => ({
     paddingTop: theme.spacing.md,
     paddingHorizontal: theme.spacing.md,
     gap: theme.spacing.sm,
-    backgroundColor: theme.colors.background,
-    overflow: 'hidden',
   },
   pendingRow: {
     flexDirection: 'row',
