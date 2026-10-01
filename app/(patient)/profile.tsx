@@ -18,15 +18,9 @@ import { Icon } from '@/components/ui/Icon';
 import { WellbeingTrend } from '@/components/WellbeingTrend';
 import { useTheme, type ThemeMode } from '@/lib/theme';
 import { fonts } from '@/lib/fonts';
+import { PREGNANCY_OPTIONS } from '@/constants/profile';
 
 const AGE_RANGES = ['<18', '18-25', '26-35', '36-45', '46-55', '>55'];
-const PREGNANCY_OPTIONS: { value: string; label: string }[] = [
-  { value: 'not-pregnant', label: 'Não estou grávida' },
-  { value: 'pregnant', label: 'Estou grávida' },
-  { value: 'trying', label: 'Estou a tentar engravidar' },
-  { value: 'postpartum', label: 'Pós-parto' },
-  { value: 'prefer-not-to-say', label: 'Prefiro não dizer' },
-];
 
 const PREGNANCY_LABELS: Record<string, string> = Object.fromEntries(
   PREGNANCY_OPTIONS.map((o) => [o.value, o.label])

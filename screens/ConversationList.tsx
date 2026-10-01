@@ -28,6 +28,8 @@ type Props = {
   showPriority?: boolean;
   /** Status badge is professional-facing triage metadata; off for patients. */
   showStatus?: boolean;
+  /** Shown when the list is empty, so a filtered-out list doesn't look broken. */
+  emptyComponent?: React.ReactElement | null;
 };
 
 export function ConversationList({
@@ -35,6 +37,7 @@ export function ConversationList({
   basePath,
   showPriority = false,
   showStatus = false,
+  emptyComponent,
 }: Props) {
   const router = useRouter();
   const { theme } = useUnistyles();
@@ -47,6 +50,7 @@ export function ConversationList({
       style={styles.list}
       contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
+      ListEmptyComponent={emptyComponent}
       renderItem={({ item }) => {
         const topic = TOPICS.find((t) => t.id === item.topic);
         const pastel = theme.topic[topic?.color ?? 'general'];

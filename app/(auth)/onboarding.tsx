@@ -7,14 +7,9 @@ import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { fonts } from '@/lib/fonts';
+import { PREGNANCY_OPTIONS } from '@/constants/profile';
 
 const AGE_RANGES = ['18-25', '26-35', '36-45', '46+'];
-const PREGNANCY_OPTIONS = [
-  { value: 'not-pregnant', label: 'Não estou grávida' },
-  { value: 'pregnant', label: 'Estou grávida' },
-  { value: 'trying', label: 'Estou a tentar engravidar' },
-  { value: 'prefer-not-to-say', label: 'Prefiro não dizer' },
-];
 
 export default function Onboarding() {
   const router = useRouter();
