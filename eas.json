@@ -14,6 +14,9 @@
       "channel": "development",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "development"
       }
     },
     "development-simulator": {
@@ -21,6 +24,11 @@
       "ios": {
         "simulator": true
       }
+    },
+    "development-testflight": {
+      "extends": "development",
+      "distribution": "store",
+      "autoIncrement": true
     },
     "preview": {
       "extends": "base",
