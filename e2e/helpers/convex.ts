@@ -3,7 +3,7 @@ import { api } from '../../convex/_generated/api';
 
 const CONVEX_URL =
   process.env.EXPO_PUBLIC_CONVEX_URL ??
-  'https://fiery-toucan-646.eu-west-1.convex.cloud';
+  'http://127.0.0.1:3210';
 
 export const convexClient = new ConvexHttpClient(CONVEX_URL);
 

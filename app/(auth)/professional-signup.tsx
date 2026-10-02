@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { useMutation } from 'convex/react';
+import { useConvexAuth, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Input } from '@/components/ui/Input';
@@ -26,6 +26,7 @@ type Doc = { picked: PickedImage; storageId?: string; uploading: boolean };
 
 export default function ProfessionalSignup() {
   const { signIn } = useAuthActions();
+  const { isAuthenticated } = useConvexAuth();
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
   const submit = useMutation(api.users.submitProfessionalVerification);
   const router = useRouter();
@@ -108,7 +109,6 @@ export default function ProfessionalSignup() {
           professionalVerificationNotes: notes.trim() || undefined,
         })
       );
-      router.replace('/');
     } catch (e: any) {
       setError(e?.message ?? strings.errors.generic);
     } finally {
@@ -121,7 +121,6 @@ export default function ProfessionalSignup() {
     setGuestLoading(true);
     try {
       await signIn('anonymous-professional');
-      router.replace('/');
     } catch (e: any) {
       const message = e?.message ?? String(e);
       setError(`Guest professional falhou: ${message}`);
@@ -130,6 +129,10 @@ export default function ProfessionalSignup() {
     }
   }
 
+
+  // Navigate once the session is actually active: redirecting right after
+  // signIn() resolves races the auth state and bounces back to login.
+  if (isAuthenticated && !loading && !guestLoading) return <Redirect href="/" />;
   return (
     <ScrollView
       style={styles.screen}
@@ -166,6 +169,7 @@ export default function ProfessionalSignup() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          autoComplete="new-password"
         />
         <Input
           testID="prof-signup-password-confirm-input"
@@ -173,6 +177,7 @@ export default function ProfessionalSignup() {
           value={confirm}
           onChangeText={setConfirm}
           secureTextEntry
+          autoComplete="new-password"
         />
       </Section>
 
@@ -330,7 +335,7 @@ function DocSlot({ label, doc, required, onPress, onRemove }: DocSlotProps) {
   if (!doc) {
     return (
       <Pressable onPress={onPress} style={({ pressed }) => [styles.docEmpty, pressed && styles.dim]}>
-        <Icon name={{ sf: 'doc.badge.plus', ion: 'document-attach' }} size={20} color={theme.colors.ink} />
+        <Icon name={{ sf: 'doc.badge.plus', ion: 'document-attach' }} size={20} color={theme.colors.inkText} />
         <Text style={styles.docEmptyLabel}>
           {label}
           {required && <Text style={styles.required}> *</Text>}
@@ -349,7 +354,7 @@ function DocSlot({ label, doc, required, onPress, onRemove }: DocSlotProps) {
         </Text>
       </View>
       {doc.uploading ? (
-        <ActivityIndicator color={theme.colors.ink} size="small" />
+        <ActivityIndicator color={theme.colors.inkText} size="small" />
       ) : (
         <Pressable onPress={onRemove} hitSlop={8}>
           <Icon name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }} size={22} color={theme.colors.textTertiary} />
@@ -372,7 +377,7 @@ function Divider({ label }: { label: string }) {
 const styles = StyleSheet.create((theme) => ({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.lg, gap: theme.spacing.xl },
-  ink: { color: theme.colors.ink },
+  ink: { color: theme.colors.inkText },
   onInk: { color: theme.colors.onInk },
   head: { gap: theme.spacing.sm },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
@@ -385,7 +390,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontFamily: fonts.displayExtraBold, fontSize: 22, color: theme.colors.ink },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 22, color: theme.colors.inkText },
   subtitle: { fontSize: 14, color: theme.colors.textSecondary },
   section: { gap: theme.spacing.sm },
   sectionTitle: {
@@ -410,7 +415,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.xs,
     backgroundColor: theme.colors.surface,
   },
-  dashedText: { fontSize: 14, color: theme.colors.ink, fontWeight: '500' },
+  dashedText: { fontSize: 14, color: theme.colors.inkText, fontWeight: '500' },
   dim: { opacity: 0.7 },
   error: { fontSize: 14, color: theme.colors.danger },
   submitGroup: { gap: theme.spacing.sm },
@@ -442,7 +447,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.xs,
     backgroundColor: theme.colors.surface,
   },
-  docEmptyLabel: { fontSize: 14, fontWeight: '500', color: theme.colors.ink },
+  docEmptyLabel: { fontSize: 14, fontWeight: '500', color: theme.colors.inkText },
   required: { color: theme.colors.danger },
   docEmptyHint: { fontSize: 12, color: theme.colors.textTertiary },
   docFilled: {

@@ -5,6 +5,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
 import { Icon, type IconName } from '@/components/ui/Icon';
+import { Button } from '@/components/ui/Button';
 import { fonts } from '@/lib/fonts';
 
 type Status = 'waiting' | 'active' | 'closed';
@@ -24,12 +25,19 @@ const SCOPE_FILTERS: { label: string; value: Scope }[] = [
   { label: 'Todas', value: 'all' },
 ];
 
-const PRIORITY_FILTERS: { label: string; value: Priority; color: string }[] = [
-  { label: 'Urgente', value: 'urgent', color: '#D7264C' },
-  { label: 'Alta', value: 'high', color: '#D85A30' },
-  { label: 'Média', value: 'medium', color: '#C77B16' },
-  { label: 'Baixa', value: 'low', color: '#1E6B56' },
+const PRIORITY_FILTERS: { label: string; value: Priority }[] = [
+  { label: 'Urgente', value: 'urgent' },
+  { label: 'Alta', value: 'high' },
+  { label: 'Média', value: 'medium' },
+  { label: 'Baixa', value: 'low' },
 ];
+
+const EMPTY_TEXT: Record<Scope, string> = {
+  mine: 'Não tens conversas atribuídas.',
+  unassigned: 'Não há conversas por atribuir.',
+  review: 'Nada para rever.',
+  all: 'Sem conversas com estes filtros.',
+};
 
 export default function Queue() {
   const [statusFilter, setStatusFilter] = useState<Status | undefined>(undefined);
@@ -44,6 +52,21 @@ export default function Queue() {
       priority: priorityFilter,
     }) ?? [];
   const { theme } = useUnistyles();
+  // From the theme so the active chip stays legible in dark mode.
+  const priorityColor: Record<Priority, string> = {
+    urgent: theme.colors.danger,
+    high: theme.colors.danger,
+    medium: theme.colors.warning,
+    low: theme.colors.success,
+  };
+
+  function showScope(scope: Scope, priority?: Priority) {
+    setScopeFilter(scope);
+    setStatusFilter(undefined);
+    setPriorityFilter(priority);
+  }
+
+  const hasUnassigned = (stats?.unassigned ?? 0) > 0;
 
   return (
     <View style={styles.root}>
@@ -54,7 +77,8 @@ export default function Queue() {
             label="Minhas"
             value={stats?.mine ?? 0}
             icon={{ sf: 'person.fill', ion: 'person' }}
-            color={theme.colors.ink}
+            color={theme.colors.inkText}
+            onPress={() => showScope('mine')}
           />
           <StatCard
             testID="queue-stat-unassigned"
@@ -62,6 +86,7 @@ export default function Queue() {
             value={stats?.unassigned ?? 0}
             icon={{ sf: 'tray', ion: 'mail-unread-outline' }}
             color={theme.colors.warning}
+            onPress={() => showScope('unassigned')}
           />
           <StatCard
             testID="queue-stat-urgent"
@@ -69,6 +94,7 @@ export default function Queue() {
             value={stats?.urgent ?? 0}
             icon={{ sf: 'exclamationmark.triangle.fill', ion: 'warning' }}
             color={theme.colors.danger}
+            onPress={() => showScope('all', 'urgent')}
           />
         </View>
 
@@ -102,7 +128,7 @@ export default function Queue() {
               key={f.value}
               testID={`queue-priority-${f.value}`}
               label={f.label}
-              accentColor={f.color}
+              accentColor={priorityColor[f.value]}
               active={priorityFilter === f.value}
               onPress={() => setPriorityFilter((cur) => (cur === f.value ? undefined : f.value))}
             />
@@ -112,9 +138,23 @@ export default function Queue() {
 
       <ConversationList
         conversations={conversations as any}
-        basePath="/(professional)/conversations"
+        basePath="/(professional)/cases"
         showPriority
         showStatus
+        emptyComponent={
+          <View testID="queue-empty" style={styles.empty}>
+            <Text style={styles.emptyText}>{EMPTY_TEXT[scopeFilter]}</Text>
+            {scopeFilter === 'mine' && hasUnassigned && (
+              <Button
+                testID="queue-empty-show-unassigned"
+                kind="secondary"
+                size="sm"
+                label={`Ver não atribuídas (${stats?.unassigned})`}
+                onPress={() => showScope('unassigned')}
+              />
+            )}
+          </View>
+        }
       />
     </View>
   );
@@ -125,18 +165,26 @@ type StatCardProps = {
   value: number;
   icon: IconName;
   color: string;
+  onPress: () => void;
   testID?: string;
 };
 
-function StatCard({ label, value, icon, color, testID }: StatCardProps) {
+// Doubles as a shortcut to the matching filter.
+function StatCard({ label, value, icon, color, onPress, testID }: StatCardProps) {
   return (
-    <View testID={testID} style={styles.statCard}>
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.statCard, pressed && styles.statPressed]}
+    >
       <View style={styles.statHead}>
         <Icon name={icon} size={14} color={color} />
         <Text style={styles.statLabel} numberOfLines={1}>{label}</Text>
       </View>
       <Text style={styles.statValue}>{value}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -154,10 +202,20 @@ function Chip({ label, active, onPress, accentColor, testID }: ChipProps) {
   return (
     <Pressable
       testID={testID}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      hitSlop={6}
       onPress={onPress}
       style={[styles.chip, active ? { backgroundColor: activeBg } : styles.chipIdle]}
     >
-      <Text style={[styles.chipText, active ? styles.chipTextOn : styles.chipTextOff]}>
+      <Text
+        style={[
+          styles.chipText,
+          active ? styles.chipTextOn : styles.chipTextOff,
+          // Priority fills are light in dark mode; onDanger flips to dark text there.
+          active && accentColor ? { color: theme.colors.onDanger } : null,
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -169,6 +227,9 @@ const styles = StyleSheet.create((theme) => ({
   headerScroll: { flexGrow: 0 },
   header: { padding: theme.spacing.md, gap: theme.spacing.md },
   statRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  statPressed: { opacity: 0.85 },
+  empty: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.md },
+  emptyText: { fontSize: 15, color: theme.colors.textSecondary, textAlign: 'center' },
   statCard: {
     flex: 1,
     backgroundColor: theme.colors.surface,

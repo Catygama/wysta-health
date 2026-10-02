@@ -27,6 +27,11 @@ type Question = {
   required: boolean;
 };
 
+// A 'yes' on a yes/no red flag, or 9+ on a 0–10 scale red flag.
+function isRedFlagAnswer(value: string | number | undefined): boolean {
+  return value === 'yes' || (typeof value === 'number' && value >= 9);
+}
+
 export default function Triage() {
   const { topic } = useLocalSearchParams<{ topic: TopicId }>();
   const router = useRouter();
@@ -38,6 +43,10 @@ export default function Triage() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | number>>({});
   const [showUrgency, setShowUrgency] = useState(false);
+  // Answers held back while the urgency alert is showing; applied on dismiss.
+  const [pendingAdvance, setPendingAdvance] = useState<Record<string, string | number> | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
 
   const topicInfo = TOPICS.find((t) => t.id === topic);
@@ -48,23 +57,19 @@ export default function Triage() {
   const isLast = step === total - 1;
 
   const redFlagTriggered = useMemo(() => {
-    return questions.some((q) => {
-      if (!q.isRedFlag) return false;
-      const a = answers[q.id];
-      if (a === 'yes') return true;
-      if (typeof a === 'number' && a >= 9) return true;
-      return false;
-    });
+    return questions.some((q) => q.isRedFlag && isRedFlagAnswer(answers[q.id]));
   }, [questions, answers]);
 
-  async function submit() {
+  // Takes the responses explicitly: callers pass the just-updated answers, which
+  // aren't in `answers` state until the next render.
+  async function submit(responses: Record<string, string | number>) {
     if (!topic) return;
     setLoading(true);
     try {
       const id = await createConversation({
         topic,
         title: `${topicInfo?.label} — nova conversa`,
-        triageData: { responses: answers },
+        triageData: { responses },
       });
       router.replace({ pathname: '/(patient)/conversations/[id]', params: { id } });
     } finally {
@@ -72,17 +77,35 @@ export default function Triage() {
     }
   }
 
+  function advance(responses: Record<string, string | number>) {
+    if (isLast) {
+      submit(responses);
+    } else {
+      setStep((s) => s + 1);
+    }
+  }
+
   function handleAnswer(value: string | number) {
     if (!current) return;
     const next = { ...answers, [current.id]: value };
     setAnswers(next);
-    if (current.isRedFlag && value === 'yes') {
+    if (current.isRedFlag && isRedFlagAnswer(value)) {
+      // Stop here so the alert is actually seen: advancing (or submitting, on
+      // the last question) would navigate away from it. The patient moves on
+      // only by dismissing it.
+      setPendingAdvance(next);
       setShowUrgency(true);
+      return;
     }
-    if (isLast) {
-      submit();
-    } else {
-      setStep((s) => s + 1);
+    advance(next);
+  }
+
+  function dismissUrgency() {
+    setShowUrgency(false);
+    if (pendingAdvance) {
+      const responses = pendingAdvance;
+      setPendingAdvance(null);
+      advance(responses);
     }
   }
 
@@ -94,7 +117,7 @@ export default function Triage() {
   if (triage === undefined) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={theme.colors.ink} />
+        <ActivityIndicator color={theme.colors.inkText} />
       </View>
     );
   }
@@ -139,7 +162,7 @@ export default function Triage() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={theme.colors.ink} />
+        <ActivityIndicator color={theme.colors.inkText} />
         <Text style={styles.loadingText}>A criar a tua conversa...</Text>
       </View>
     );
@@ -154,7 +177,8 @@ export default function Triage() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.head}>
-        <Text testID="triage-current-meta" style={styles.srOnly}>
+        {/* Test hook for e2e; hidden from screen readers, which would read the JSON. */}
+        <Text testID="triage-current-meta" style={styles.srOnly} aria-hidden>
           {JSON.stringify({
             id: current.id,
             type: current.type,
@@ -165,6 +189,21 @@ export default function Triage() {
             isLast,
           })}
         </Text>
+        <Pressable
+          testID="triage-back"
+          accessibilityRole="button"
+          accessibilityLabel={step > 0 ? 'Pergunta anterior' : 'Voltar'}
+          onPress={() => (step > 0 ? setStep((s) => s - 1) : router.back())}
+          hitSlop={8}
+          style={({ pressed }) => [styles.backButton, pressed && styles.backPressed]}
+        >
+          <Icon
+            name={{ sf: 'chevron.left', ion: 'chevron-back' }}
+            size={20}
+            color={theme.colors.textPrimary}
+          />
+          <Text style={styles.backLabel}>{step > 0 ? 'Anterior' : 'Voltar'}</Text>
+        </Pressable>
         <View style={styles.titleRow}>
           {topicInfo && (
             <View style={[styles.topicChip, { backgroundColor: pastel.fill }]}>
@@ -184,7 +223,7 @@ export default function Triage() {
         </View>
       </View>
 
-      {showUrgency && <UrgencyAlert onDismiss={() => setShowUrgency(false)} />}
+      {showUrgency && <UrgencyAlert onDismiss={dismissUrgency} />}
 
       <View style={styles.card}>
         <Text style={styles.question}>
@@ -200,6 +239,8 @@ export default function Triage() {
                 <Pressable
                   key={opt}
                   testID={`triage-option-${opt}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
                   onPress={() => handleAnswer(opt)}
                   style={[styles.yesNo, selected ? styles.optOn : styles.optOff]}
                 >
@@ -220,6 +261,8 @@ export default function Triage() {
                 <Pressable
                   key={opt}
                   testID={`triage-option-${idx}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
                   onPress={() => handleAnswer(opt)}
                   style={[styles.option, selected ? styles.optOn : styles.optOff]}
                 >
@@ -242,6 +285,9 @@ export default function Triage() {
                   <Pressable
                     key={opt}
                     testID={`triage-scale-${opt}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${opt} de ${current.options!.length}`}
+                    accessibilityState={{ selected }}
                     onPress={() => handleAnswer(value)}
                     style={[styles.scaleCell, selected ? styles.optOn : styles.optOff]}
                   >
@@ -253,8 +299,10 @@ export default function Triage() {
               })}
             </View>
             <View style={styles.scaleLabels}>
-              <Text style={styles.scaleHint}>Sem dor</Text>
-              <Text style={styles.scaleHint}>Dor máxima</Text>
+              <Text style={styles.scaleHint}>{current.options[0]} · Pouca dor</Text>
+              <Text style={styles.scaleHint}>
+                Dor máxima · {current.options[current.options.length - 1]}
+              </Text>
             </View>
           </View>
         )}
@@ -294,21 +342,18 @@ export default function Triage() {
         </View>
       )}
 
-      <View style={styles.nav}>
-        <Pressable
-          onPress={() => (step > 0 ? setStep((s) => s - 1) : router.back())}
-          hitSlop={8}
-        >
-          <Text style={styles.navLink}>
-            ← {step > 0 ? 'Pergunta anterior' : 'Voltar'}
-          </Text>
-        </Pressable>
-        {redFlagTriggered && (
-          <Pressable onPress={() => setShowUrgency(true)} hitSlop={8}>
+      {redFlagTriggered && !showUrgency && (
+        <View style={styles.nav}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setShowUrgency(true)}
+            hitSlop={8}
+            style={styles.navUrgentButton}
+          >
             <Text style={styles.navUrgent}>Ver aviso urgente</Text>
           </Pressable>
-        )}
-      </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -354,7 +399,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontFamily: fonts.displayExtraBold, fontSize: 24, color: theme.colors.ink },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 24, color: theme.colors.inkText },
   progressWrap: { gap: theme.spacing.xs },
   progressLabel: { fontSize: 12, color: theme.colors.textSecondary },
   progressTrack: {
@@ -393,17 +438,19 @@ const styles = StyleSheet.create((theme) => ({
   optTextOn: { color: theme.colors.onInk },
   optTextOff: { color: theme.colors.textPrimary },
   scaleWrap: { gap: theme.spacing.sm },
-  scaleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
+  // Even 5-per-row grid, so 1–10 reads as two clean rows on any phone width.
+  scaleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
   scaleCell: {
-    width: 44,
-    height: 44,
+    flexBasis: '17%',
+    flexGrow: 1,
+    height: 52,
     borderRadius: theme.radius.md,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
   },
   scaleLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  scaleHint: { fontSize: 12, color: theme.colors.textTertiary },
+  scaleHint: { fontSize: 13, color: theme.colors.textSecondary },
   textWrap: { gap: theme.spacing.sm },
   textInput: {
     borderRadius: theme.radius.md,
@@ -424,7 +471,18 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.sm,
   },
   redFlagText: { fontSize: 14, color: theme.colors.danger, flex: 1 },
-  nav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  navLink: { fontSize: 14, color: theme.colors.accent, fontWeight: '500' },
-  navUrgent: { fontSize: 14, color: theme.colors.danger, fontWeight: '500' },
+  nav: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  navUrgentButton: { minHeight: 44, justifyContent: 'center' },
+  navUrgent: { fontSize: 15, color: theme.colors.danger, fontWeight: '600' },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 2,
+    minHeight: 44,
+    paddingRight: theme.spacing.sm,
+    marginLeft: -theme.spacing.xs,
+  },
+  backPressed: { opacity: 0.6 },
+  backLabel: { fontSize: 16, color: theme.colors.textPrimary, fontWeight: '500' },
 }));

@@ -30,7 +30,7 @@ function ProfessionalTabs() {
         <NativeTabs.Trigger.Label>Fila</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="education">
+      <NativeTabs.Trigger name="library">
         <NativeTabs.Trigger.Icon sf={{ default: 'book', selected: 'book.fill' }} md="book" />
         <NativeTabs.Trigger.Label>Saúde</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>

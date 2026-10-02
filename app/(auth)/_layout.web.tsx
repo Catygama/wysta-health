@@ -46,7 +46,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: 'center',
   },
   logoText: { color: theme.colors.onInk, fontFamily: fonts.displayExtraBold, fontSize: 15 },
-  wordmark: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.ink, letterSpacing: -0.3 },
+  wordmark: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText, letterSpacing: -0.3 },
   center: { flex: 1, alignItems: 'center' },
   centerDesktop: { paddingVertical: theme.spacing.lg },
   panel: { flex: 1, width: '100%' },

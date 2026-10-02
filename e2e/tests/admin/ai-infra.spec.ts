@@ -12,7 +12,7 @@ import {
 
 const CONVEX_URL =
   process.env.EXPO_PUBLIC_CONVEX_URL ??
-  'https://fiery-toucan-646.eu-west-1.convex.cloud';
+  'http://127.0.0.1:3210';
 
 // Playwright workers do not inherit Bun's auto-loaded .env.local, so read the
 // key directly when the env var is not already set.

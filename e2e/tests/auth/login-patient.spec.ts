@@ -10,7 +10,7 @@ test.describe('Patient login', () => {
       .getByTestId('auth-password-input')
       .fill(TEST_USERS.patientA.password);
     await page.getByTestId('auth-login-button').click();
-    await expect(page.getByTestId('patient-topic-contraception')).toBeVisible({
+    await expect(page.getByTestId('patient-new-conversation')).toBeVisible({
       timeout: 15_000,
     });
   });

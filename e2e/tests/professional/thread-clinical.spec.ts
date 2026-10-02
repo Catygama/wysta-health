@@ -13,7 +13,7 @@ test('Professional sees patient context + triage summary tab', async ({
     status: 'active',
   });
   await loginAs(page, TEST_USERS.professionalA.email);
-  await page.goto(`/(professional)/conversations/${seeded.conversationId}`);
+  await page.goto(`/(professional)/cases/${seeded.conversationId}`);
 
   await expect(page.getByTestId('thread-tab-chat')).toBeVisible({
     timeout: 15_000,

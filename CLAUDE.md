@@ -62,7 +62,7 @@ docs/                           # ENGINEERING.md, TASKS.md, plans/
 - **Tema**: `constants/theme.ts` usa `PlatformColor` em iOS e fallbacks hex noutras plataformas
 - **Lógica de negócio no backend Convex**, não no frontend
 - **Notas internas de profissionais**: campo `isInternal: true` em `messages`, filtradas no backend
-- **Tópicos**: centralizados em `convex/lib/topics.ts` (id + `topicValidator`); adicionar um tópico = lá + `constants/topics.ts` (label/ícone/cor) + cor em `lib/unistyles.ts`. Atuais: contraception, pregnancy, sti, menstrual-cycle, general, sexual-wellbeing
+- **Tópicos**: centralizados em `convex/lib/topics.ts` (id + `topicValidator`); adicionar um tópico = lá + `constants/topics.ts` (label/ícone/cor) + cor em `lib/unistyles.ts`. Atuais: contraception, pregnancy, sti, menstrual-cycle, sexual-wellbeing + `general` (catch-all "Outros assuntos", `isCatchAll: true` — não aparece como escolha de tema; a app usa `TOPIC_CHOICES` + uma entrada separada "Pergunta na mesma"/`OTHER_TOPIC`)
 - **AI por tópico**: `aiPrompts` tem `topic` opcional; `getActivePrompt(purpose, topic?)` usa a variante do tópico senão o prompt global. Configs (modelo/key) ficam globais por agente. Defaults em `convex/ai/defaults.ts` (`DEFAULT_PROMPTS` + `DEFAULT_TOPIC_PROMPTS`); editáveis no painel admin `(admin)/ai.tsx`
 
 ## Auth flows

@@ -3,11 +3,11 @@ import { defineConfig, devices } from '@playwright/test';
 // Custom port to avoid colliding with other Expo dev servers running on 8081.
 const PORT = 8091;
 const BASE_URL = `http://localhost:${PORT}`;
-// Defaults to the project's dev Convex deployment defined in .env.local.
-// Override with EXPO_PUBLIC_CONVEX_URL when pointing at a different backend.
+// Defaults to a local Convex backend: global setup wipes the database, so it
+// must never default to a shared deployment. Override with EXPO_PUBLIC_CONVEX_URL.
 const CONVEX_URL =
   process.env.EXPO_PUBLIC_CONVEX_URL ??
-  'https://fiery-toucan-646.eu-west-1.convex.cloud';
+  'http://127.0.0.1:3210';
 
 export default defineConfig({
   testDir: './e2e/tests',
