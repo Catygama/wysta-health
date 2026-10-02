@@ -1,0 +1,44 @@
+# On every push to main: if the native layer (fingerprint) already has an
+# Android build, ship the JS as an over-the-air update; otherwise make a new
+# build, which then receives later updates. iOS joins once Apple credentials
+# are set up (see TestFlight).
+name: Deploy
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  fingerprint:
+    name: Fingerprint
+    type: fingerprint
+    environment: production
+
+  get_android_build:
+    name: Find matching Android build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: android
+      profile: preview
+      fingerprint_hash: ${{ needs.fingerprint.outputs.android_fingerprint_hash }}
+      wait_for_in_progress: true
+
+  build_android:
+    name: Build Android (native changed)
+    needs: [get_android_build]
+    if: ${{ !needs.get_android_build.outputs.build_id }}
+    type: build
+    params:
+      platform: android
+      profile: preview
+
+  update_android:
+    name: OTA update (JS only)
+    needs: [get_android_build]
+    if: ${{ needs.get_android_build.outputs.build_id }}
+    type: update
+    environment: production
+    params:
+      channel: production
+      platform: android
