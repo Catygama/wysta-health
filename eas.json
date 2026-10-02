@@ -34,17 +34,6 @@
     "production": {
       "extends": "base",
       "autoIncrement": true
-    },
-    "e2e": {
-      "extends": "base",
-      "distribution": "internal",
-      "withoutCredentials": true,
-      "ios": {
-        "simulator": true
-      },
-      "android": {
-        "buildType": "apk"
-      }
     }
   },
   "submit": {
