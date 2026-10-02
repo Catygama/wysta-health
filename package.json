@@ -47,6 +47,7 @@
     "expo-splash-screen": "~55.0.25",
     "expo-symbols": "~55.0.9",
     "expo-system-ui": "~55.0.22",
+    "expo-updates": "~55.0.33",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.10",

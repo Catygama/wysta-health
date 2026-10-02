@@ -5,14 +5,13 @@
   },
   "build": {
     "base": {
-      "env": {
-        "EXPO_PUBLIC_CONVEX_URL": "https://loyal-dolphin-681.eu-west-1.convex.cloud",
-        "EXPO_PUBLIC_GUEST_AUTH": "true"
-      }
+      "environment": "production"
     },
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "environment": "development",
+      "channel": "development",
       "android": {
         "buildType": "apk"
       }
@@ -26,6 +25,7 @@
     "preview": {
       "extends": "base",
       "distribution": "internal",
+      "channel": "production",
       "android": {
         "buildType": "apk"
       },
@@ -33,6 +33,7 @@
     },
     "production": {
       "extends": "base",
+      "channel": "production",
       "autoIncrement": true
     }
   },
