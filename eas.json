@@ -11,14 +11,21 @@
       }
     },
     "development": {
-      "extends": "base",
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "development-simulator": {
+      "extends": "development",
+      "ios": {
+        "simulator": true
+      }
     },
     "preview": {
       "extends": "base",
       "distribution": "internal",
-      "channel": "preview",
       "android": {
         "buildType": "apk"
       },
@@ -26,7 +33,6 @@
     },
     "production": {
       "extends": "base",
-      "channel": "production",
       "autoIncrement": true
     }
   },
