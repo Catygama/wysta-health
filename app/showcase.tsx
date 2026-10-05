@@ -11,6 +11,8 @@ import { ChatMessage } from '@/components/chat/ChatMessage';
 import { fonts } from '@/lib/fonts';
 
 export default function Showcase() {
+  // Fixed at mount: render must stay pure.
+  const [now] = useState(() => Date.now());
   const [text, setText] = useState('');
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -58,14 +60,14 @@ export default function Showcase() {
       <ChatMessage
         side="other"
         content="Olá Maria! É bastante comum nas primeiras semanas, e tende a passar."
-        createdAt={Date.now() - 600000}
+        createdAt={now - 600000}
         messageType="text"
         testID="bubble-other"
       />
       <ChatMessage
         side="own"
         content="Comecei a pílula há 2 semanas e tenho tido enjoos. É normal?"
-        createdAt={Date.now() - 300000}
+        createdAt={now - 300000}
         messageType="text"
         testID="bubble-own"
       />
@@ -73,7 +75,7 @@ export default function Showcase() {
         side="other"
         internal
         content="Paciente refere náuseas. Sem sinais de alarme."
-        createdAt={Date.now() - 120000}
+        createdAt={now - 120000}
         messageType="text"
         testID="bubble-internal"
       />
@@ -84,7 +86,7 @@ export default function Showcase() {
         attachmentUrl="https://example.com/x.pdf"
         attachmentSize={284000}
         messageType="file"
-        createdAt={Date.now() - 60000}
+        createdAt={now - 60000}
         testID="bubble-file"
       />
     </ScrollView>

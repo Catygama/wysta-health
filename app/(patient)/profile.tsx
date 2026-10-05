@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -42,16 +42,6 @@ export default function Profile() {
   const [medicationInput, setMedicationInput] = useState('');
   const [medications, setMedications] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!user?.profile) return;
-    setDisplayName(user.profile.displayName ?? '');
-    setAgeRange(user.profile.ageRange ?? '');
-    setPregnancyStatus(user.profile.pregnancyStatus ?? '');
-    setLocation(user.profile.location ?? '');
-    setConditions(user.profile.conditions ?? []);
-    setMedications(user.profile.medications ?? []);
-  }, [user?.profile]);
 
   function resetForm() {
     setDisplayName(user?.profile?.displayName ?? '');
@@ -122,7 +112,15 @@ export default function Profile() {
       <View style={styles.header}>
         <Text style={styles.title}>O meu perfil</Text>
         {!editing && (
-          <Pressable testID="profile-edit-button" onPress={() => setEditing(true)} hitSlop={8}>
+          <Pressable
+            testID="profile-edit-button"
+            // Load the saved profile into the form when editing starts.
+            onPress={() => {
+              resetForm();
+              setEditing(true);
+            }}
+            hitSlop={8}
+          >
             <Text style={styles.editLink}>Editar</Text>
           </Pressable>
         )}
