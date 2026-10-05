@@ -6,7 +6,7 @@ Plataforma digital de saúde sexual e reprodutiva feminina, contexto português.
 
 ## Stack
 
-- **Frontend**: Expo SDK 55 (React Native 0.83) + Expo Router 55 — iOS, Android, Web
+- **Frontend**: Expo SDK 57 (React Native 0.86) + Expo Router 57 — iOS, Android, Web
 - **Backend**: Convex (realtime, DB, file storage) — deploy prod em EU-west-1 (`loyal-dolphin-681`)
 - **Auth**: @convex-dev/auth — providers `Password` + `Anonymous` (guest)
 - **Package manager**: bun
