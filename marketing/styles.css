@@ -13,7 +13,7 @@
   --surface: #FFFFFF;
   --text: #50000D;
   --text-2: #7A5450;
-  --text-3: #B39894;
+  --text-3: #7E5F5B;   /* 5.4:1 on --bg, 4.7:1 on --bg-alt (WCAG AA) */
   --divider: rgba(80, 0, 13, 0.10);
 
   /* Topic tints (same pairs as the app's topic colors). */
