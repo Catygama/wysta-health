@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -75,6 +75,17 @@ export function MessageThread({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const listRef = useRef<FlatList>(null);
+  const inputRef = useRef<TextInput>(null);
+
+  // Web: a textarea doesn't auto-grow and defaults to two rows. Size it to its
+  // content (one line when empty) up to INPUT_MAX_HEIGHT, then it scrolls.
+  useLayoutEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const el = inputRef.current as unknown as HTMLTextAreaElement | null;
+    if (!el?.style) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, INPUT_MIN_HEIGHT), INPUT_MAX_HEIGHT)}px`;
+  }, [text]);
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { progress } = useReanimatedKeyboardAnimation();
@@ -416,6 +427,9 @@ export function MessageThread({
               )}
 
               <TextInput
+                ref={inputRef}
+                // @ts-expect-error web-only: one visible row instead of the textarea default of two
+                rows={1}
                 testID={isInternalScope ? 'message-input-internal' : 'message-input'}
                 value={text}
                 onChangeText={setText}
@@ -531,6 +545,9 @@ function SuggestEndButton({ onPress }: { onPress: () => void }) {
 
 const layout = { flex: { flex: 1 } } as const;
 
+const INPUT_MIN_HEIGHT = 44;
+const INPUT_MAX_HEIGHT = 140;
+
 const styles = StyleSheet.create((theme) => ({
   list: { flex: 1, backgroundColor: theme.colors.background },
   listContent: { padding: theme.spacing.md, gap: theme.spacing.sm },
@@ -615,8 +632,9 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: 16,
     fontWeight: '500',
     color: theme.colors.textPrimary,
-    maxHeight: 120,
-    minHeight: 44,
+    lineHeight: 22,
+    maxHeight: INPUT_MAX_HEIGHT,
+    minHeight: INPUT_MIN_HEIGHT,
     variants: {
       scope: {
         chat: { backgroundColor: theme.colors.surfaceSunken },
