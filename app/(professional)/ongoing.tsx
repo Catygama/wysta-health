@@ -48,7 +48,6 @@ export default function Ongoing() {
         conversations={(conversations ?? []) as any}
         basePath="/(professional)/cases"
         showPriority
-        showStatus
         emptyComponent={
           conversations === undefined ? null : (
             <View testID="ongoing-empty" style={styles.empty}>
