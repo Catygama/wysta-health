@@ -195,8 +195,8 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 
 /* Sections */
 .section { max-width: var(--shell); margin: 0 auto; padding: 44px 24px; }
-.section-alt { max-width: none; background: var(--bg-alt); }
-.section-alt > * { max-width: var(--shell); margin-left: auto; margin-right: auto; }
+.section-alt { max-width: none; padding-left: 0; padding-right: 0; background: var(--bg-alt); }
+.section-alt > * { max-width: var(--shell); margin-left: auto; margin-right: auto; padding: 0 24px; }
 .section-title { font-size: clamp(28px, 4vw, 44px); color: var(--ink); }
 .section-sub { font-size: 18px; color: var(--text-2); max-width: 560px; margin-top: 14px; }
 
@@ -222,7 +222,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .topic-apricot { background: var(--apricot); color: var(--apricot-on); }
 
 /* Privacy */
-.privacy { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center; }
+.privacy { display: grid; gap: 28px; }
 .privacy-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .privacy-list li { display: flex; align-items: center; gap: 12px; font-size: 17px; color: var(--text); }
 .tick {
@@ -246,5 +246,4 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 @media (max-width: 720px) {
   .nav-links { gap: 14px; }
   .nav-links a:not(.btn) { display: none; }
-  .privacy { grid-template-columns: 1fr; gap: 28px; }
 }
