@@ -1,11 +1,14 @@
-import { Platform, type ColorValue } from 'react-native';
+import { Platform, View, type ColorValue } from 'react-native';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Ionicons } from '@expo/vector-icons';
 import { type ComponentProps } from 'react';
+import { Glyph, type GlyphName } from '@/components/ui/glyphs';
 
 export type IconName = {
   sf: SymbolViewProps['name'];
   ion: ComponentProps<typeof Ionicons>['name'];
+  /** Custom SVG glyph (components/ui/glyphs); overrides sf/ion on every platform. */
+  glyph?: GlyphName;
 };
 
 type Props = {
@@ -24,6 +27,14 @@ export function Icon({ name, size = 24, color, style, accessibilityLabel }: Prop
   const a11y = accessibilityLabel
     ? { accessible: true, accessibilityRole: 'image' as const, accessibilityLabel }
     : { accessible: false, 'aria-hidden': true };
+
+  if (name.glyph) {
+    return (
+      <View {...a11y} style={[{ width: size, height: size }, style as any]}>
+        <Glyph name={name.glyph} size={size} color={color ?? '#000'} />
+      </View>
+    );
+  }
 
   if (Platform.OS === 'ios') {
     return (
