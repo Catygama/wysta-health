@@ -19,7 +19,7 @@ import { WellbeingTrend } from '@/components/WellbeingTrend';
 import { HistoryLink } from '@/components/HistoryLink';
 import { AcademicNotice } from '@/components/AcademicNotice';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { useTheme, type ThemeMode } from '@/lib/theme';
+import { ThemeCard } from '@/components/ThemeCard';
 import { fonts } from '@/lib/fonts';
 import { PREGNANCY_OPTIONS } from '@/constants/profile';
 
@@ -329,40 +329,6 @@ export default function Profile() {
   );
 }
 
-const THEME_OPTIONS: { value: ThemeMode; label: string; description: string }[] = [
-  { value: 'system', label: 'Sistema', description: 'Segue o tema do dispositivo' },
-  { value: 'light', label: 'Claro', description: 'Forçar tema claro' },
-  { value: 'dark', label: 'Escuro', description: 'Forçar tema escuro' },
-];
-
-function ThemeCard() {
-  const { mode, setMode } = useTheme();
-  return (
-    <Card title="Tema">
-      <View style={styles.optionList}>
-        {THEME_OPTIONS.map((opt) => {
-          const active = mode === opt.value;
-          return (
-            <Pressable
-              key={opt.value}
-              testID={`theme-mode-${opt.value}`}
-              onPress={() => setMode(opt.value)}
-              style={[styles.themeOption, active ? styles.selOn : styles.selOff]}
-            >
-              <Text style={[styles.themeLabel, active ? styles.selTextOn : styles.selTextOff]}>
-                {opt.label}
-              </Text>
-              <Text style={[styles.themeDesc, active ? styles.themeDescOn : styles.themeDescOff]}>
-                {opt.description}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </Card>
-  );
-}
-
 function BootstrapAdminCard() {
   const hasAdmin = useQuery(api.users.hasAnyAdmin);
   const bootstrap = useMutation(api.users.bootstrapAdmin);
@@ -518,7 +484,6 @@ const styles = StyleSheet.create((theme) => ({
   optionList: { gap: theme.spacing.sm },
   actions: { gap: theme.spacing.sm },
   selOn: { backgroundColor: theme.colors.ink },
-  selOff: { backgroundColor: theme.colors.surface },
   selOffSunken: { backgroundColor: theme.colors.surfaceSunken },
   selTextOn: { color: theme.colors.onInk },
   selTextOff: { color: theme.colors.textSecondary },
@@ -532,11 +497,6 @@ const styles = StyleSheet.create((theme) => ({
   selRow: { padding: theme.spacing.md, borderRadius: theme.radius.md, borderCurve: 'continuous' },
   selRowText: { fontSize: 16 },
   selRowTextOff: { color: theme.colors.textPrimary },
-  themeOption: { padding: theme.spacing.md, borderRadius: theme.radius.md, borderCurve: 'continuous', gap: 2 },
-  themeLabel: { fontSize: 16, fontWeight: '500' },
-  themeDesc: { fontSize: 12 },
-  themeDescOn: { color: theme.colors.onInk, opacity: 0.85 },
-  themeDescOff: { color: theme.colors.textSecondary },
   privacy: {
     backgroundColor: theme.colors.surfaceSunken,
     borderRadius: theme.radius.md,
