@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
@@ -42,6 +42,11 @@ export default function Wellbeing() {
   const { theme } = useUnistyles();
   const createConversation = useMutation(api.conversations.create);
   const submitCheckin = useMutation(api.wellbeing.submitCheckin);
+  // Came for a professional and already has one open on this topic: go there.
+  const openByTopic = useQuery(
+    api.conversations.openProfessionalByTopic,
+    user && mode === 'professional' ? {} : 'skip',
+  );
   const pastel = theme.topic.wellbeing;
 
   const [phase, setPhase] = useState<Phase>('goals');
@@ -54,6 +59,10 @@ export default function Wellbeing() {
   if (authLoading) return null;
   if (!user) return <Redirect href="/(auth)/login" />;
   if (role !== 'patient') return <Redirect href="/" />;
+  const openId = mode === 'professional' ? openByTopic?.['sexual-wellbeing'] : undefined;
+  if (openId) {
+    return <Redirect href={{ pathname: '/(patient)/conversations/[id]', params: { id: openId } }} />;
+  }
 
   function pickGoal(g: (typeof GOALS)[number]) {
     setGoal(g);
