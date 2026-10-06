@@ -134,7 +134,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   position: relative;
   max-width: var(--shell);
   margin: 0 auto;
-  padding: 72px 24px 88px;
+  padding: 72px 24px 58px;
 }
 .eyebrow {
   text-transform: uppercase; letter-spacing: 0.12em; font-size: 13px; font-weight: 700;
@@ -154,7 +154,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 /* "Também no telemóvel": small phone drawing + platform links. iPhone has no
    build yet, so it is plain text (not a link) until there is one. */
 .app-download {
-  margin-top: 28px;
+  margin-top: 58px; /* = hero bottom padding, so it sits centred in that gap */
   display: flex; align-items: center; gap: 10px;
   font-size: 14px; line-height: 1.45; color: var(--ink);
 }
