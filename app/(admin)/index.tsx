@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FlatList, View, Text, Pressable, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { FlatList, View, Text, Pressable, ActivityIndicator, TextInput } from 'react-native';
 import { Link } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
@@ -7,6 +7,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { fonts } from '@/lib/fonts';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -29,6 +30,12 @@ export default function AdminPanel() {
   const [seedResult, setSeedResult] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [search, setSearch] = useState('');
+  // Pending role change awaiting confirmation (Alert.alert is a no-op on web).
+  const [pendingRole, setPendingRole] = useState<{
+    userId: string;
+    currentRole: string;
+    newRole: 'patient' | 'professional' | 'admin';
+  } | null>(null);
   const { theme } = useUnistyles();
 
   if (users === undefined) {
@@ -44,14 +51,7 @@ export default function AdminPanel() {
     currentRole: string,
     newRole: 'patient' | 'professional' | 'admin'
   ) {
-    Alert.alert(
-      'Alterar role',
-      `Mudar de ${ROLE_LABELS[currentRole] ?? currentRole} para ${ROLE_LABELS[newRole]}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Confirmar', onPress: () => setRole({ targetUserId: userId as any, role: newRole }) },
-      ]
-    );
+    setPendingRole({ userId, currentRole, newRole });
   }
 
   async function runSeed() {
@@ -90,6 +90,7 @@ export default function AdminPanel() {
   );
 
   return (
+    <>
     <FlatList
       data={filtered}
       keyExtractor={(item) => item._id}
@@ -202,6 +203,24 @@ export default function AdminPanel() {
         );
       }}
     />
+    <ConfirmDialog
+      testID="role-change-dialog"
+      visible={pendingRole !== null}
+      title="Alterar role"
+      message={
+        pendingRole
+          ? `Mudar de ${ROLE_LABELS[pendingRole.currentRole] ?? pendingRole.currentRole} para ${ROLE_LABELS[pendingRole.newRole]}?`
+          : undefined
+      }
+      confirmLabel="Confirmar"
+      onCancel={() => setPendingRole(null)}
+      onConfirm={async () => {
+        if (!pendingRole) return;
+        await setRole({ targetUserId: pendingRole.userId as any, role: pendingRole.newRole });
+        setPendingRole(null);
+      }}
+    />
+    </>
   );
 }
 

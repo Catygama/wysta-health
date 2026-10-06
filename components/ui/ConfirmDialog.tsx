@@ -12,12 +12,15 @@ type Props = {
   cancelLabel?: string;
   /** Styles the confirm button as destructive. */
   destructive?: boolean;
+  /** Single-button notice (no cancel); closing still calls onCancel. */
+  hideCancel?: boolean;
   onConfirm: () => Promise<unknown> | void;
   onCancel: () => void;
   testID?: string;
 };
 
-// Cross-platform confirmation dialog (Alert.alert is a no-op on web).
+// Cross-platform confirmation dialog (Alert.alert is a no-op on web). With
+// hideCancel it doubles as a one-button notice.
 // Stays open while onConfirm runs and shows its error if it throws.
 export function ConfirmDialog({
   visible,
@@ -26,6 +29,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel = 'Cancelar',
   destructive,
+  hideCancel,
   onConfirm,
   onCancel,
   testID,
@@ -60,15 +64,17 @@ export function ConfirmDialog({
           {message && <Text style={styles.message}>{message}</Text>}
           {error && <Text style={styles.error}>{error}</Text>}
           <View style={styles.actions}>
-            <View style={styles.action}>
-              <Button
-                testID={testID ? `${testID}-cancel` : undefined}
-                label={cancelLabel}
-                kind="secondary"
-                onPress={cancel}
-                disabled={busy}
-              />
-            </View>
+            {!hideCancel && (
+              <View style={styles.action}>
+                <Button
+                  testID={testID ? `${testID}-cancel` : undefined}
+                  label={cancelLabel}
+                  kind="secondary"
+                  onPress={cancel}
+                  disabled={busy}
+                />
+              </View>
+            )}
             <View style={styles.action}>
               <Button
                 testID={testID ? `${testID}-confirm` : undefined}

@@ -6,7 +6,6 @@ import {
   Pressable,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useQuery, useMutation } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
@@ -18,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
 import { WellbeingTrend } from '@/components/WellbeingTrend';
 import { HistoryLink } from '@/components/HistoryLink';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTheme, type ThemeMode } from '@/lib/theme';
 import { fonts } from '@/lib/fonts';
 import { PREGNANCY_OPTIONS } from '@/constants/profile';
@@ -36,6 +36,8 @@ export default function Profile() {
   const { theme } = useUnistyles();
 
   const [editing, setEditing] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [ageRange, setAgeRange] = useState('');
   const [pregnancyStatus, setPregnancyStatus] = useState('');
@@ -87,12 +89,6 @@ export default function Profile() {
     }
   }
 
-  function confirmSignOut() {
-    Alert.alert('Sair', 'Tens a certeza que queres terminar a sessão?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: () => signOut() },
-    ]);
-  }
 
   function addTag(value: string, list: string[], setList: (v: string[]) => void) {
     const v = value.trim();
@@ -269,10 +265,11 @@ export default function Profile() {
         <Text style={styles.manageTitle}>Gestão de conta</Text>
         <Pressable
           onPress={() =>
-            Alert.alert(
-              'Exportar dados',
-              'Em breve poderás exportar uma cópia dos teus dados. Por agora contacta o suporte.'
-            )
+            setNotice({
+              title: 'Exportar dados',
+              message:
+                'Em breve poderás exportar uma cópia dos teus dados. Por agora contacta o suporte.',
+            })
           }
           style={styles.manageRow}
         >
@@ -281,10 +278,11 @@ export default function Profile() {
         </Pressable>
         <Pressable
           onPress={() =>
-            Alert.alert(
-              'Apagar conta',
-              'A eliminação de conta requer confirmação manual. Contacta o suporte para procedermos.'
-            )
+            setNotice({
+              title: 'Apagar conta',
+              message:
+                'A eliminação de conta requer confirmação manual. Contacta o suporte para procedermos.',
+            })
           }
           style={styles.manageRow}
         >
@@ -295,7 +293,36 @@ export default function Profile() {
 
       <BootstrapAdminCard />
 
-      <Button testID="profile-logout-button" label="Terminar sessão" variant="secondary" onPress={confirmSignOut} />
+      <Button
+        testID="profile-logout-button"
+        label="Terminar sessão"
+        variant="secondary"
+        onPress={() => setConfirmSignOut(true)}
+      />
+
+      {/* Alert.alert is a no-op on web, so confirmations/notices use ConfirmDialog. */}
+      <ConfirmDialog
+        testID="signout-dialog"
+        visible={confirmSignOut}
+        title="Terminar sessão?"
+        message="Tens a certeza que queres terminar a sessão?"
+        confirmLabel="Sair"
+        destructive
+        onCancel={() => setConfirmSignOut(false)}
+        onConfirm={async () => {
+          await signOut();
+          setConfirmSignOut(false);
+        }}
+      />
+      <ConfirmDialog
+        visible={notice !== null}
+        title={notice?.title ?? ''}
+        message={notice?.message}
+        confirmLabel="Entendi"
+        hideCancel
+        onCancel={() => setNotice(null)}
+        onConfirm={() => setNotice(null)}
+      />
 
       <Text style={styles.emergency}>
         Em emergência liga 112 ou SNS 24 (808 24 24 24). A Wysta não substitui uma
