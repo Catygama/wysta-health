@@ -30,7 +30,7 @@ export const strings = {
   urgency: {
     title: 'Situação urgente',
     message:
-      'Com base nas tuas respostas, esta situação pode requerer atenção imediata.',
+      'Esta situação pode precisar de atenção imediata.',
     snsCta: 'Ligar SNS 24 (808 24 24 24)',
     emergencyCta: 'Ligar 112',
     dismiss: 'Continuar mesmo assim',
