@@ -242,6 +242,8 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.spacing.xs,
     marginRight: theme.spacing.sm,
+    // Keeps the buttons off long titles like "Bem-estar sexual".
+    marginLeft: theme.spacing.md,
   },
   endBtn: {
     paddingHorizontal: theme.spacing.sm,
