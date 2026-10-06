@@ -20,7 +20,7 @@ export const PRIORITY_LABELS: Record<string, string> = {
 };
 
 export const PRIORITY_COLORS: Record<string, string> = {
-  urgent: '#760416',
+  urgent: '#831526',
   high: '#EA580C',
   medium: '#D97706',
   low: '#829461',
