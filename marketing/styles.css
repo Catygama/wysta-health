@@ -194,7 +194,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .chip-apricot { background: var(--apricot); color: var(--apricot-on); }
 
 /* Sections */
-.section { max-width: var(--shell); margin: 0 auto; padding: 80px 24px; }
+.section { max-width: var(--shell); margin: 0 auto; padding: 44px 24px; }
 .section-alt { max-width: none; background: var(--bg-alt); }
 .section-alt > * { max-width: var(--shell); margin-left: auto; margin-right: auto; }
 .section-title { font-size: clamp(28px, 4vw, 44px); color: var(--ink); }
@@ -232,7 +232,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 }
 
 /* CTA */
-.cta-inner { position: relative; max-width: var(--shell); margin: 0 auto; padding: 80px 24px; text-align: center; }
+.cta-inner { position: relative; max-width: var(--shell); margin: 0 auto; padding: 44px 24px; text-align: center; }
 .cta h2 { font-size: clamp(30px, 5vw, 52px); color: var(--ink); }
 .cta p { color: var(--text-2); font-size: 18px; margin: 16px 0 30px; }
 
