@@ -346,19 +346,6 @@ export default function Triage() {
         )}
       </View>
 
-      {current.isRedFlag && (
-        <View style={styles.redFlag}>
-          <Icon
-            name={{ sf: 'exclamationmark.triangle.fill', ion: 'warning' }}
-            size={18}
-            color={theme.colors.danger}
-          />
-          <Text style={styles.redFlagText}>
-            Se tiveres sintomas graves, liga 112 ou contacta o SNS 24.
-          </Text>
-        </View>
-      )}
-
       {redFlagTriggered && !showUrgency && (
         <View style={styles.nav}>
           <Pressable
@@ -481,15 +468,6 @@ const styles = StyleSheet.create((theme) => ({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  redFlag: {
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.dangerLight,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
-  redFlagText: { fontSize: 14, color: theme.colors.danger, flex: 1 },
   nav: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   navUrgentButton: { minHeight: 44, justifyContent: 'center' },
   navUrgent: { fontSize: 15, color: theme.colors.danger, fontWeight: '600' },
