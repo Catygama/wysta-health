@@ -1,19 +1,22 @@
-import { Text, View } from 'react-native';
+import { FlatList, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
-import { ConversationList } from '@/screens/ConversationList';
+import { ConversationFeedCard } from '@/screens/ConversationFeedCard';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { fonts } from '@/lib/fonts';
 
+// "Conversas" tab: every open conversation (professional and AI). Closed ones
+// live in Perfil → Histórico.
 export default function PatientConversations() {
-  const conversations = useQuery(api.conversations.listForPatient) ?? [];
+  const conversations = useQuery(api.conversations.listForPatient);
   const router = useRouter();
   const { theme } = useUnistyles();
+  const open = (conversations ?? []).filter((c) => c.status !== 'closed');
 
-  if (conversations.length === 0) {
+  if (conversations !== undefined && open.length === 0) {
     return (
       <View testID="conversations-empty" style={styles.empty}>
         <View style={styles.iconChip}>
@@ -26,10 +29,10 @@ export default function PatientConversations() {
             color={theme.topic.intimate.on}
           />
         </View>
-        <Text style={styles.title}>Sem conversas ainda</Text>
+        <Text style={styles.title}>Sem conversas abertas</Text>
         <Text style={styles.body}>
-          Escolhe um tópico para iniciares uma conversa com um profissional de
-          saúde.
+          Escolhe um tópico no Início para falares com um profissional de saúde ou com a
+          assistente AI.
         </Text>
         <View style={styles.cta}>
           <Button label="Iniciar conversa" onPress={() => router.push('/(patient)/')} />
@@ -39,14 +42,28 @@ export default function PatientConversations() {
   }
 
   return (
-    <ConversationList
-      conversations={conversations}
-      basePath="/(patient)/conversations"
+    <FlatList
+      testID="conversations-list"
+      data={open}
+      keyExtractor={(item) => item._id}
+      style={styles.list}
+      contentContainerStyle={styles.content}
+      contentInsetAdjustmentBehavior="automatic"
+      renderItem={({ item }) => (
+        <ConversationFeedCard
+          conversation={item}
+          onPress={() =>
+            router.push({ pathname: '/(patient)/conversations/[id]', params: { id: item._id } })
+          }
+        />
+      )}
     />
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
+  list: { flex: 1, backgroundColor: theme.colors.background },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.sm },
   empty: {
     flex: 1,
     justifyContent: 'center',

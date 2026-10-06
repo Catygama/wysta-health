@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { UrgencyAlert } from '@/screens/UrgencyAlert';
 import { TOPICS, type TopicId } from '@/constants/topics';
+import { kindForMode, type ConversationMode } from '@/constants/conversation';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fonts } from '@/lib/fonts';
 
@@ -28,7 +29,9 @@ type Question = {
 };
 
 export default function Triage() {
-  const { topic } = useLocalSearchParams<{ topic: TopicId }>();
+  // `mode` is the path chosen on Home (professional / ai); it decides the
+  // conversation kind created when the questionnaire ends.
+  const { topic, mode } = useLocalSearchParams<{ topic: TopicId; mode?: ConversationMode }>();
   const router = useRouter();
   const { user, isLoading: authLoading, role } = useCurrentUser();
   const { theme } = useUnistyles();
@@ -65,6 +68,7 @@ export default function Triage() {
         topic,
         title: `${topicInfo?.label} — nova conversa`,
         triageData: { responses: answers },
+        kind: kindForMode(mode),
       });
       router.replace({ pathname: '/(patient)/conversations/[id]', params: { id } });
     } finally {
@@ -120,6 +124,7 @@ export default function Triage() {
                 const id = await createConversation({
                   topic,
                   title: `${topicInfo?.label} — nova conversa`,
+                  kind: kindForMode(mode),
                 });
                 router.replace({
                   pathname: '/(patient)/conversations/[id]',

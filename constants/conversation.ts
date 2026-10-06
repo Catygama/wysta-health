@@ -38,3 +38,11 @@ export const ESCALATION_LEVEL_LABELS: Record<string, string> = {
   'same-day': 'Urgência no próprio dia',
   emergency: 'Emergência imediata',
 };
+
+// Path chosen on the patient Home ("Profissional de saúde" / "Assistente IA"),
+// carried as the `mode` route param through topic picker → triage.
+export type ConversationMode = 'professional' | 'ai';
+
+export function kindForMode(mode: string | undefined): 'human-async' | 'ai-only' {
+  return mode === 'ai' ? 'ai-only' : 'human-async';
+}

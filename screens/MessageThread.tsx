@@ -46,6 +46,8 @@ type Props = {
   canSend?: boolean;
   forceInternal?: boolean;
   closed?: boolean;
+  /** Patient only: the AI suggested ending — offer a button that calls this. */
+  onRequestEnd?: () => void;
 };
 
 const RISK_COLORS: Record<string, string> = {
@@ -62,6 +64,7 @@ export function MessageThread({
   canSend = true,
   forceInternal = false,
   closed = false,
+  onRequestEnd,
 }: Props) {
   const messages =
     useQuery(api.messages.list, { conversationId: conversationId as any }) ??
@@ -178,7 +181,7 @@ export function MessageThread({
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={FILL}
       behavior="padding"
       keyboardVerticalOffset={headerHeight}
     >
@@ -225,7 +228,20 @@ export function MessageThread({
             return <SystemMessage content={item.content} />;
           }
           if (item.messageType === 'ai-response') {
-            return <AiResponseMessage content={item.content} streaming={item.streaming} />;
+            // Only the latest message can carry the suggestion: once the
+            // patient writes again, the conversation clearly isn't over.
+            const offerEnd =
+              !!onRequestEnd &&
+              !closed &&
+              !item.streaming &&
+              !!item.metadata?.suggestClose &&
+              item._id === filteredMessages[filteredMessages.length - 1]?._id;
+            return (
+              <>
+                <AiResponseMessage content={item.content} streaming={item.streaming} />
+                {offerEnd && <SuggestEndButton onPress={onRequestEnd} />}
+              </>
+            );
           }
           const isOwn = item.senderId === currentUserId;
           return (
@@ -458,7 +474,11 @@ function AiResponseMessage({
   return (
     <View style={styles.ai}>
       <View style={styles.aiHeader}>
-        <Text style={styles.aiSparkle}>✨</Text>
+        <Icon
+          name={{ sf: 'sparkles', ion: 'sparkles-outline' }}
+          size={14}
+          color={styles.aiLabel.color}
+        />
         <Text style={styles.aiLabel}>Assistente Wysta</Text>
       </View>
       <Text style={styles.aiBody} selectable>
@@ -469,8 +489,27 @@ function AiResponseMessage({
   );
 }
 
+function SuggestEndButton({ onPress }: { onPress: () => void }) {
+  return (
+    <View style={styles.suggestEnd}>
+      <Text style={styles.suggestEndText}>Já tens o que precisavas?</Text>
+      <Pressable
+        testID="ai-suggest-end-button"
+        onPress={onPress}
+        style={({ pressed }) => [styles.suggestEndBtn, pressed && styles.suggestEndPressed]}
+      >
+        <Text style={styles.suggestEndBtnText}>Terminar conversa</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// Plain object, not a Unistyles style: on web Unistyles only applies styles to
+// components its Babel plugin rewrites (react-native ones), so a third-party
+// KeyboardAvoidingView silently loses `flex: 1` and the list stops scrolling.
+const FILL = { flex: 1 } as const;
+
 const styles = StyleSheet.create((theme) => ({
-  flex: { flex: 1 },
   list: { flex: 1, backgroundColor: theme.colors.background },
   listContent: { padding: theme.spacing.md, gap: theme.spacing.sm },
   empty: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.sm },
@@ -602,7 +641,6 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.xs,
   },
   aiHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
-  aiSparkle: { fontSize: 14 },
   aiLabel: {
     fontSize: 12,
     fontWeight: '500',
@@ -611,4 +649,20 @@ const styles = StyleSheet.create((theme) => ({
   },
   aiBody: { fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 },
   aiCursor: { color: theme.colors.textTertiary },
+  suggestEnd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.xs,
+  },
+  suggestEndText: { flex: 1, fontSize: 13, color: theme.colors.textSecondary },
+  suggestEndBtn: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.ink,
+  },
+  suggestEndPressed: { opacity: 0.7 },
+  suggestEndBtnText: { fontSize: 13, fontWeight: '500', color: theme.colors.onInk },
 }));

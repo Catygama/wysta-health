@@ -7,19 +7,17 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery, useAction, useMutation } from 'convex/react';
+import { useQuery, useAction } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { TOPICS, type TopicColor } from '@/constants/topics';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Card';
-import { Chip } from '@/components/ui/Chip';
-import { Avatar } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
 import { fonts } from '@/lib/fonts';
-import { relativeTime } from '@/lib/format';
+import type { ConversationMode } from '@/constants/conversation';
 
 function TopicIcon({ color, icon, size = 44 }: { color: TopicColor; icon: IconName; size?: number }) {
   const { theme } = useUnistyles();
@@ -38,20 +36,20 @@ function TopicIcon({ color, icon, size = 44 }: { color: TopicColor; icon: IconNa
 
 export default function PatientHome() {
   const router = useRouter();
+  const { theme } = useUnistyles();
   const user = useQuery(api.users.currentUser);
-  const conversations = useQuery(api.conversations.listForPatient) ?? [];
   const greeting = user?.profile?.displayName || user?.email?.split('@')[0] || 'utente';
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  const active = conversations.filter((c) => c.status !== 'closed');
+  // Which path the patient chose on Home; the topic picker is open while set.
+  const [pickerMode, setPickerMode] = useState<ConversationMode | null>(null);
 
   function startTopic(topicId: string) {
-    setPickerOpen(false);
+    const mode = pickerMode ?? 'professional';
+    setPickerMode(null);
     if (topicId === 'sexual-wellbeing') {
-      router.push('/wellbeing');
+      router.push({ pathname: '/wellbeing', params: { mode } });
       return;
     }
-    router.push({ pathname: '/triage', params: { topic: topicId } });
+    router.push({ pathname: '/triage', params: { topic: topicId, mode } });
   }
 
   return (
@@ -65,146 +63,77 @@ export default function PatientHome() {
         <Text style={styles.subtitle}>Sobre o que precisas de ajuda hoje?</Text>
       </View>
 
-      {active.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>As tuas conversas</Text>
-          <View style={styles.feed}>
-            {active.map((c) => (
-              <ConversationFeedCard
-                key={c._id}
-                conversation={c}
-                onPress={() =>
-                  router.push({
-                    pathname: '/(patient)/conversations/[id]',
-                    params: { id: c._id },
-                  })
-                }
-              />
-            ))}
-          </View>
-        </View>
-      )}
-
       <View style={styles.section}>
-        <Button
-          testID="patient-new-conversation"
-          label="Começar nova conversa"
-          onPress={() => setPickerOpen(true)}
+        <PathCard
+          testID="home-path-professional"
+          icon={{ sf: 'stethoscope', ion: 'medkit-outline' }}
+          iconFill={theme.topic.contraception.fill}
+          title="Profissional de saúde"
+          description="Responde a umas perguntas e um profissional responde-te em até 24h"
+          onPress={() => setPickerMode('professional')}
         />
-        <View style={styles.chipRow}>
-          {TOPICS.map((t) => (
-            <Chip
-              key={t.id}
-              testID={`patient-topic-chip-${t.id}`}
-              label={t.label}
-              topic={t.color}
-              onPress={() => startTopic(t.id)}
-            />
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.section}>
+        <PathCard
+          testID="home-path-ai"
+          icon={{ sf: 'sparkles', ion: 'sparkles-outline' }}
+          iconFill={theme.topic.intimate.fill}
+          title="Assistente IA"
+          description="Responde a umas perguntas e recebe resposta imediata. Podes pedir um profissional a qualquer momento"
+          onPress={() => setPickerMode('ai')}
+        />
         <AnonymousAiButton />
-        <StartAiOnlyButton />
       </View>
 
       <TopicPickerSheet
-        visible={pickerOpen}
-        onClose={() => setPickerOpen(false)}
+        visible={pickerMode !== null}
+        mode={pickerMode ?? 'professional'}
+        onClose={() => setPickerMode(null)}
         onSelect={startTopic}
       />
     </ScrollView>
   );
 }
 
-type FeedConversation = {
-  _id: string;
-  topic: string;
-  preview: string | null;
-  previewAt: number | null;
-  responderName: string | null;
-  isAiOnly: boolean;
-};
-
-function ConversationFeedCard({
-  conversation,
-  onPress,
-}: {
-  conversation: FeedConversation;
-  onPress: () => void;
-}) {
-  const topic = TOPICS.find((t) => t.id === conversation.topic);
-  const isAi = conversation.isAiOnly;
-  const name = conversation.responderName ?? (isAi ? 'Assistente Wysta' : 'Equipa Wysta');
-  const initials = conversation.responderName
-    ? conversation.responderName
-        .split(' ')
-        .map((s) => s[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
-    : isAi
-      ? 'AI'
-      : 'W';
-  const tone = conversation.responderName ? 'lilac' : isAi ? 'mint' : 'ink';
-
-  return (
-    <Card
-      testID={`patient-conversation-${conversation._id}`}
-      onPress={onPress}
-      style={styles.feedCard}
-    >
-      <Avatar initials={initials} tone={tone} size={44} />
-      <View style={styles.feedBody}>
-        <View style={styles.feedTop}>
-          <Text style={styles.feedName} numberOfLines={1}>{name}</Text>
-          {conversation.previewAt && (
-            <Text style={styles.feedTime}>{relativeTime(conversation.previewAt)}</Text>
-          )}
-        </View>
-        <Text style={styles.feedTopic}>{topic?.label ?? conversation.topic}</Text>
-        {conversation.preview && (
-          <Text style={styles.feedPreview} numberOfLines={1}>{conversation.preview}</Text>
-        )}
-      </View>
-    </Card>
-  );
-}
-
 function TopicPickerSheet({
   visible,
+  mode,
   onClose,
   onSelect,
 }: {
   visible: boolean;
+  mode: ConversationMode;
   onClose: () => void;
   onSelect: (topicId: string) => void;
 }) {
   const { theme } = useUnistyles();
+  // Wide screens: two columns, so all topics fit without scrolling.
+  const twoColumns = useWindowDimensions().width >= 640;
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
         <View style={styles.sheet}>
           <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Nova conversa</Text>
+            <Text style={styles.sheetTitle}>
+              {mode === 'ai' ? 'Falar com a assistente IA' : 'Falar com um profissional'}
+            </Text>
             <Pressable testID="topic-picker-close" onPress={onClose} hitSlop={8}>
               <Icon name={{ sf: 'xmark', ion: 'close' }} size={22} color={theme.colors.textSecondary} />
             </Pressable>
           </View>
           <Text style={styles.sheetNote}>
-            Escolhe o tema para começares. As respostas chegam normalmente em 24h.
+            {mode === 'ai'
+              ? 'Escolhe o tema. Depois de umas perguntas, a assistente responde-te na hora.'
+              : 'Escolhe o tema. Depois de umas perguntas, um profissional responde-te em até 24h.'}
           </Text>
-          <ScrollView style={styles.pickerScroll} contentContainerStyle={styles.topicList}>
+          <View style={[styles.topicList, twoColumns && styles.topicGrid]}>
             {TOPICS.map((t) => (
               <Card
                 key={t.id}
                 testID={`topic-picker-${t.id}`}
                 onPress={() => onSelect(t.id)}
                 tone="sunken"
-                style={styles.topicCard}
+                style={[styles.topicCard, twoColumns && styles.topicCardHalf]}
               >
-                <TopicIcon color={t.color} icon={t.icon} />
+                <TopicIcon color={t.color} icon={t.icon} size={36} />
                 <View style={styles.topicMeta}>
                   <Text style={styles.topicLabel}>{t.label}</Text>
                   <Text style={styles.topicDesc}>{t.description}</Text>
@@ -216,7 +145,7 @@ function TopicPickerSheet({
                 />
               </Card>
             ))}
-          </ScrollView>
+          </View>
         </View>
       </View>
     </Modal>
@@ -258,13 +187,18 @@ function AnonymousAiButton() {
 
   return (
     <>
-      <Card testID="anonymous-ai-open" onPress={() => setOpen(true)} style={styles.aiCard}>
-        <View style={styles.aiAvatar}>
-          <Text style={styles.aiSparkle}>✨</Text>
+      <Card
+        testID="anonymous-ai-open"
+        onPress={() => setOpen(true)}
+        tone="sunken"
+        style={styles.aiCard}
+      >
+        <View style={[styles.aiAvatar, styles.anonAvatar]}>
+          <Icon name={{ sf: 'lock', ion: 'lock-closed-outline' }} size={18} color={theme.colors.ink} />
         </View>
         <View style={styles.aiMeta}>
-          <Text style={styles.aiTitle}>Pergunta anónima à AI</Text>
-          <Text style={styles.aiSub}>Não fica guardado no teu histórico</Text>
+          <Text style={styles.aiTitle}>Pergunta anónima</Text>
+          <Text style={styles.aiSub}>Uma pergunta rápida à IA, não fica guardada</Text>
         </View>
         <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={18} color={styles.chevron.color} />
       </Card>
@@ -273,7 +207,7 @@ function AnonymousAiButton() {
         <View style={styles.modalBackdrop}>
           <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>✨ Pergunta anónima</Text>
+              <Text style={styles.sheetTitle}>Pergunta anónima</Text>
               <Pressable testID="anonymous-ai-close" onPress={close} hitSlop={8}>
                 <Icon name={{ sf: 'xmark', ion: 'close' }} size={22} color={theme.colors.textSecondary} />
               </Pressable>
@@ -324,37 +258,33 @@ function AnonymousAiButton() {
   );
 }
 
-function StartAiOnlyButton() {
-  const router = useRouter();
-  const create = useMutation(api.conversations.create);
-  const [busy, setBusy] = useState(false);
+// Home entry for one of the two conversation paths (professional / AI).
+function PathCard({
+  testID,
+  icon,
+  iconFill,
+  title,
+  description,
+  onPress,
+}: {
+  testID: string;
+  icon: IconName;
+  iconFill: string;
+  title: string;
+  description: string;
+  onPress: () => void;
+}) {
   const { theme } = useUnistyles();
-
-  async function start() {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const id = await create({ topic: 'general', title: 'Conversa com AI', kind: 'ai-only' });
-      router.push({ pathname: '/(patient)/conversations/[id]', params: { id: id as any } });
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
-    <Card testID="start-ai-only" onPress={start} style={styles.aiCard}>
-      <View style={[styles.aiAvatar, styles.aiAvatarMint]}>
-        <Text style={styles.aiSparkle}>💬</Text>
+    <Card testID={testID} onPress={onPress} style={styles.pathCard}>
+      <View style={styles.pathBody}>
+        <View style={[styles.pathIcon, { backgroundColor: iconFill }]}>
+          <Icon name={icon} size={20} color={theme.colors.ink} />
+        </View>
+        <Text style={styles.pathTitle}>{title}</Text>
+        <Text style={styles.pathDesc}>{description}</Text>
       </View>
-      <View style={styles.aiMeta}>
-        <Text style={styles.aiTitle}>Conversar só com AI</Text>
-        <Text style={styles.aiSub}>Resposta imediata · podes pedir profissional a qualquer momento</Text>
-      </View>
-      {busy ? (
-        <ActivityIndicator color={theme.colors.accent} size="small" />
-      ) : (
-        <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={18} color={styles.chevron.color} />
-      )}
+      <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={18} color={styles.chevron.color} />
     </Card>
   );
 }
@@ -366,26 +296,22 @@ const styles = StyleSheet.create((theme) => ({
   greeting: { fontFamily: fonts.displayExtraBold, fontSize: 28, color: theme.colors.ink },
   subtitle: { fontSize: 16, color: theme.colors.textSecondary },
   section: { gap: theme.spacing.md },
-  sectionTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.textPrimary },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
-  // Care feed
-  feed: { gap: theme.spacing.sm },
-  feedCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
-  feedBody: { flex: 1, gap: 2 },
-  feedTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.sm },
-  feedName: { fontSize: 15, fontWeight: '500', color: theme.colors.textPrimary, flex: 1 },
-  feedTime: { fontSize: 12, color: theme.colors.textTertiary },
-  feedTopic: { fontSize: 12, color: theme.colors.accent, fontWeight: '500' },
-  feedPreview: { fontSize: 13, color: theme.colors.textSecondary },
   // Topic picker / topic cards
   topicList: { gap: theme.spacing.sm },
-  topicCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  topicGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  topicCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+  },
+  // Two per row (basis below 50% leaves room for the gap; grow fills it).
+  topicCardHalf: { flexGrow: 1, flexBasis: '45%' },
   topicIcon: { alignItems: 'center', justifyContent: 'center', borderCurve: 'continuous' },
   topicMeta: { flex: 1, gap: 2 },
   topicLabel: { fontSize: 16, fontWeight: '500', color: theme.colors.textPrimary },
   topicDesc: { fontSize: 13, color: theme.colors.textSecondary },
   chevron: { color: theme.colors.textTertiary },
-  pickerScroll: { maxHeight: 420 },
   // AI cards
   aiCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   aiAvatar: {
@@ -396,13 +322,25 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  aiAvatarMint: { backgroundColor: theme.topic.intimate.fill },
-  aiSparkle: { fontSize: 18 },
+  anonAvatar: { backgroundColor: theme.colors.surface },
+  // Home path cards
+  pathCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, padding: theme.spacing.md },
+  pathBody: { flex: 1, gap: theme.spacing.xs },
+  pathIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  pathTitle: { fontSize: 16, fontWeight: '500', color: theme.colors.textPrimary },
+  pathDesc: { fontSize: 13, lineHeight: 19, color: theme.colors.textSecondary },
   aiMeta: { flex: 1, gap: 2 },
   aiTitle: { fontSize: 15, fontWeight: '500', color: theme.colors.textPrimary },
   aiSub: { fontSize: 12, color: theme.colors.textSecondary },
   // Sheets
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(23,17,43,0.45)', justifyContent: 'flex-end' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: theme.colors.background,
     borderTopLeftRadius: theme.radius.xl,

@@ -10,12 +10,14 @@ import {
 } from 'react-native';
 import { useQuery, useMutation } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
+import { useRouter } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
 import { WellbeingTrend } from '@/components/WellbeingTrend';
+import { HistoryLink } from '@/components/HistoryLink';
 import { useTheme, type ThemeMode } from '@/lib/theme';
 import { fonts } from '@/lib/fonts';
 
@@ -33,6 +35,7 @@ const PREGNANCY_LABELS: Record<string, string> = Object.fromEntries(
 );
 
 export default function Profile() {
+  const router = useRouter();
   const { signOut } = useAuthActions();
   const user = useQuery(api.users.currentUser);
   const updateProfile = useMutation(api.users.updateProfile);
@@ -137,6 +140,8 @@ export default function Profile() {
       <Card>
         <Row label="Email" value={user?.email ?? '—'} selectable />
       </Card>
+
+      <HistoryLink onPress={() => router.push('/(patient)/profile/history')} />
 
       <WellbeingTrend />
 

@@ -9,7 +9,7 @@ import {
   TextInput,
   Switch,
 } from 'react-native';
-import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
@@ -25,11 +25,13 @@ import {
   PRIORITY_COLORS,
 } from '@/constants/conversation';
 import { useTabBar } from '@/contexts/TabBarContext';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 type Tab = 'chat' | 'internal' | 'summary';
 
 export default function ProfessionalConversation() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const user = useQuery(api.users.currentUser);
   const conversation = useQuery(api.conversations.get, id ? { id: id as any } : 'skip');
   const messages = useQuery(api.messages.list, id ? { conversationId: id as any } : 'skip');
@@ -42,6 +44,7 @@ export default function ProfessionalConversation() {
   const { setIsTabBarHidden } = useTabBar();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [redirectOpen, setRedirectOpen] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
   const [tab, setTab] = useState<Tab>('chat');
   const { theme } = useUnistyles();
 
@@ -71,6 +74,9 @@ export default function ProfessionalConversation() {
   const isAssignedToOther = !!conversation.professionalId && !isMine;
   const canClose = isMine && !isClosed;
   const canEscalate = isMine && !isClosed;
+  const isAiOnly = conversation.kind === 'ai-only';
+  const openRelated = (relatedId: string) =>
+    router.push({ pathname: '/(professional)/conversations/[id]', params: { id: relatedId } });
 
   const statusColor = STATUS_COLORS[conversation.status] ?? theme.colors.textSecondary;
   const priorityColor = PRIORITY_COLORS[conversation.priority] ?? theme.colors.textSecondary;
@@ -142,7 +148,13 @@ export default function ProfessionalConversation() {
           {canAssign && (
             <ActionButton
               testID="conversation-assign-button"
-              label={isAssignedToOther ? 'Assumir conversa' : 'Atribuir a mim'}
+              label={
+                isAiOnly
+                  ? 'Intervir nesta conversa'
+                  : isAssignedToOther
+                    ? 'Assumir conversa'
+                    : 'Atribuir a mim'
+              }
               variant="primary"
               onPress={() => assign({ id: id as any })}
             />
@@ -184,7 +196,7 @@ export default function ProfessionalConversation() {
               testID="conversation-close-button"
               label="Encerrar"
               variant="secondary"
-              onPress={() => close({ id: id as any })}
+              onPress={() => setConfirmClose(true)}
             />
           )}
         </View>
@@ -193,6 +205,36 @@ export default function ProfessionalConversation() {
             <Text style={styles.reviewBannerTitle}>Pedido de 2ª opinião</Text>
             <Text style={styles.reviewBannerText}>{conversation.reviewQuestion}</Text>
           </View>
+        )}
+        {isAiOnly && !isClosed && (
+          <View testID="ai-conversation-notice" style={styles.relatedBanner}>
+            <Text style={styles.relatedTitle}>Conversa da utente com a assistente AI</Text>
+            <Text style={styles.relatedText}>
+              Se intervieres, esta passa a ser a conversa com profissional e a conversa com
+              profissional anterior é encerrada.
+            </Text>
+          </View>
+        )}
+        {conversation.counterpartConversation?.kind === 'ai-only' &&
+          conversation.counterpartConversation.status !== 'closed' && (
+            <RelatedLink
+              testID="related-ai-conversation"
+              text="A utente está também a conversar com a assistente AI."
+              action="Ver conversa com AI"
+              onPress={() => openRelated(conversation.counterpartConversation!._id)}
+            />
+          )}
+        {conversation.contextConversation && (
+          <RelatedLink
+            testID="related-context-conversation"
+            text={
+              conversation.contextConversation.kind === 'ai-only'
+                ? 'Esta conversa começou a partir de uma conversa com a assistente AI.'
+                : 'Esta conversa tem contexto de uma conversa anterior com profissional.'
+            }
+            action="Ver conversa anterior"
+            onPress={() => openRelated(conversation.contextConversation!._id)}
+          />
         )}
       </ScrollView>
 
@@ -231,6 +273,19 @@ export default function ProfessionalConversation() {
           await requestReview({ id: id as any, question });
         }}
       />
+      <ConfirmDialog
+        testID="close-conversation-dialog"
+        visible={confirmClose}
+        title="Tem a certeza que quer terminar a conversa?"
+        message="A conversa passa para o Histórico e a utente deixa de poder enviar mensagens nela."
+        confirmLabel="Terminar"
+        destructive
+        onCancel={() => setConfirmClose(false)}
+        onConfirm={async () => {
+          await close({ id: id as any });
+          setConfirmClose(false);
+        }}
+      />
       <RecommendInPersonSheet
         visible={redirectOpen}
         onClose={() => setRedirectOpen(false)}
@@ -239,6 +294,25 @@ export default function ProfessionalConversation() {
         }}
       />
     </View>
+  );
+}
+
+function RelatedLink({
+  testID,
+  text,
+  action,
+  onPress,
+}: {
+  testID: string;
+  text: string;
+  action: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable testID={testID} onPress={onPress} style={styles.relatedBanner}>
+      <Text style={styles.relatedText}>{text}</Text>
+      <Text style={styles.relatedAction}>{action} →</Text>
+    </Pressable>
   );
 }
 
@@ -580,6 +654,16 @@ const styles = StyleSheet.create((theme) => ({
   },
   reviewBannerTitle: { fontSize: 12, fontWeight: '500', color: theme.colors.warning },
   reviewBannerText: { fontSize: 14, color: theme.colors.textPrimary },
+  relatedBanner: {
+    backgroundColor: theme.colors.surfaceSunken,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    padding: theme.spacing.sm,
+    gap: 2,
+  },
+  relatedTitle: { fontSize: 12, fontWeight: '500', color: theme.colors.ink },
+  relatedText: { fontSize: 13, color: theme.colors.textPrimary },
+  relatedAction: { fontSize: 13, fontWeight: '500', color: theme.colors.accent },
   // Tabs
   tabBar: { flexDirection: 'row', backgroundColor: theme.colors.background },
   tab: {
@@ -702,7 +786,7 @@ const styles = StyleSheet.create((theme) => ({
   usbBtnOff: { opacity: 0.7 },
   usbBtnText: { fontSize: 12, fontWeight: '500', color: theme.colors.onInk },
   // Sheets
-  backdrop: { flex: 1, backgroundColor: 'rgba(23,17,43,0.45)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: theme.colors.background,
     borderTopLeftRadius: theme.radius.xl,

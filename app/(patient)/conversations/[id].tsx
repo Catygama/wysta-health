@@ -1,25 +1,27 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
-import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useQuery, useMutation, useAction } from 'convex/react';
+import { View, Text, Pressable, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useQuery, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
 import { MessageThread } from '@/screens/MessageThread';
 import { useTabBar } from '@/contexts/TabBarContext';
 import { TOPICS } from '@/constants/topics';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export default function PatientConversation() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, waiting } = useLocalSearchParams<{ id: string; waiting?: string }>();
+  const router = useRouter();
   const user = useQuery(api.users.currentUser);
   const conversation = useQuery(api.conversations.get, id ? { id: id as any } : 'skip');
-  const messages = useQuery(api.messages.list, id ? { conversationId: id as any } : 'skip') ?? [];
+  const switchMode = useMutation(api.conversations.switchMode);
+  const closeConversation = useMutation(api.conversations.close);
   const { setIsTabBarHidden } = useTabBar();
-  const respond = useAction(api.ai.assistant.respond);
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [asking, setAsking] = useState(false);
-  const [askError, setAskError] = useState<string | null>(null);
+  const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  const [confirmEnd, setConfirmEnd] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -33,25 +35,23 @@ export default function PatientConversation() {
   const closed = conversation?.status === 'closed';
   const isAiOnly = conversation?.kind === 'ai-only';
 
-  // The assistant answers the patient's most recent text message. AI-only
-  // conversations already auto-respond to every message, so the manual
-  // trigger is offered only on professional conversations.
-  const lastPatientQuery = [...messages]
-    .reverse()
-    .find((m) => m.senderId === user._id && m.messageType === 'text')?.content;
-  const canAskAi = !isAiOnly && !closed && !!lastPatientQuery;
-
-  async function askAssistant() {
-    if (!lastPatientQuery) return;
-    setMenuOpen(false);
-    setAskError(null);
-    setAsking(true);
+  // Professional ↔ AI toggle. The backend returns the open counterpart
+  // conversation or creates a new one carrying this one as context.
+  async function onSwitch() {
+    setSwitchError(null);
+    setSwitching(true);
     try {
-      await respond({ conversationId: id as any, query: lastPatientQuery });
+      const target = await switchMode({ id: id as any });
+      router.replace({
+        pathname: '/(patient)/conversations/[id]',
+        // Returning to an existing professional conversation: remind the
+        // patient a reply is still pending there.
+        params: isAiOnly && !target.created ? { id: target.id, waiting: '1' } : { id: target.id },
+      });
     } catch (e: any) {
-      setAskError(e?.message ?? 'Não foi possível obter resposta da assistente.');
+      setSwitchError(e?.message ?? 'Não foi possível mudar de conversa.');
     } finally {
-      setAsking(false);
+      setSwitching(false);
     }
   }
 
@@ -61,86 +61,133 @@ export default function PatientConversation() {
         options={{
           title: topic?.label ?? 'Conversa',
           headerRight:
-            canAskAi && !asking
-              ? () => <KebabButton onPress={() => setMenuOpen((o) => !o)} />
+            conversation && !closed
+              ? () => (
+                  <View style={styles.headerActions}>
+                    <SwitchButton toAi={!isAiOnly} busy={switching} onPress={onSwitch} />
+                    <EndButton onPress={() => setConfirmEnd(true)} />
+                  </View>
+                )
               : undefined,
         }}
       />
-      {isAiOnly && !closed && <AiOnlyBanner conversationId={id} />}
-      {asking && <AskingBanner />}
-      {askError && <AskErrorBanner text={askError} onDismiss={() => setAskError(null)} />}
+      {isAiOnly && !closed && <AiOnlyBanner />}
+      {!isAiOnly && !closed && waiting === '1' && <WaitingBanner />}
+      {switchError && <ErrorBanner text={switchError} onDismiss={() => setSwitchError(null)} />}
       <MessageThread
         conversationId={id}
         currentUserId={user._id}
         isProfessional={false}
         closed={closed}
+        onRequestEnd={() => setConfirmEnd(true)}
       />
-      {menuOpen && canAskAi && (
-        <ConversationMenu onAsk={askAssistant} onClose={() => setMenuOpen(false)} />
-      )}
+      <ConfirmDialog
+        testID="end-conversation-dialog"
+        visible={confirmEnd}
+        title="Tens a certeza que queres terminar a conversa?"
+        message="A conversa passa para o Histórico, no teu Perfil, e já não poderás enviar mensagens nela."
+        confirmLabel="Terminar"
+        destructive
+        onCancel={() => setConfirmEnd(false)}
+        onConfirm={async () => {
+          await closeConversation({ id: id as any });
+          setConfirmEnd(false);
+        }}
+      />
     </>
   );
 }
 
-function KebabButton({ onPress }: { onPress: () => void }) {
+function SwitchButton({
+  toAi,
+  busy,
+  onPress,
+}: {
+  toAi: boolean;
+  busy: boolean;
+  onPress: () => void;
+}) {
   const { theme } = useUnistyles();
   return (
     <Pressable
-      testID="conversation-menu-button"
+      testID={toAi ? 'conversation-switch-to-ai' : 'conversation-switch-to-professional'}
       onPress={onPress}
-      hitSlop={10}
-      accessibilityLabel="Mais opções"
-      style={({ pressed }) => [styles.kebab, pressed && styles.kebabPressed]}
+      disabled={busy}
+      hitSlop={8}
+      style={({ pressed }) => [styles.cta, (pressed || busy) && styles.ctaBusy]}
     >
-      <Icon
-        name={{ sf: 'ellipsis', ion: 'ellipsis-vertical' }}
-        size={20}
-        color={theme.colors.ink}
-      />
+      {busy ? (
+        <ActivityIndicator size="small" color={theme.colors.onInk} />
+      ) : (
+        <Icon
+          name={toAi ? { sf: 'sparkles', ion: 'sparkles' } : { sf: 'stethoscope', ion: 'medkit-outline' }}
+          size={14}
+          color={theme.colors.onInk}
+        />
+      )}
+      <Text style={styles.ctaText}>{toAi ? 'Conversar com IA' : 'Falar com profissional'}</Text>
     </Pressable>
   );
 }
 
-function ConversationMenu({
-  onAsk,
-  onClose,
-}: {
-  onAsk: () => void;
-  onClose: () => void;
-}) {
+function EndButton({ onPress }: { onPress: () => void }) {
+  const { theme } = useUnistyles();
+  // Narrow phones: icon only, so the topic title keeps its room.
+  const compact = useWindowDimensions().width < 420;
+  return (
+    <Pressable
+      testID="conversation-end-button"
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityLabel="Terminar conversa"
+      style={({ pressed }) => [styles.endBtn, pressed && styles.ctaBusy]}
+    >
+      <Icon
+        name={{ sf: 'xmark.circle', ion: 'close-circle-outline' }}
+        size={compact ? 18 : 14}
+        color={theme.colors.ink}
+      />
+      {!compact && <Text style={styles.endText}>Terminar</Text>}
+    </Pressable>
+  );
+}
+
+function AiOnlyBanner() {
   const { theme } = useUnistyles();
   return (
-    <View style={styles.overlay} pointerEvents="box-none">
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.menu}>
-        <Pressable
-          testID="conversation-ask-ai"
-          onPress={onAsk}
-          style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
-        >
-          <Icon
-            name={{ sf: 'sparkles', ion: 'sparkles' }}
-            size={18}
-            color={theme.topic.contraception.on}
-          />
-          <Text style={styles.menuLabel}>Pedir resposta da assistente</Text>
-        </Pressable>
+    <View style={styles.banner}>
+      <View style={styles.avatar}>
+        <Icon
+          name={{ sf: 'bubble.left.and.bubble.right', ion: 'chatbubbles-outline' }}
+          size={17}
+          color={theme.colors.ink}
+        />
+      </View>
+      <View style={styles.body}>
+        <Text style={styles.title}>Conversa com a assistente AI</Text>
+        <Text style={styles.sub}>
+          Cada mensagem tua recebe resposta automática. Um profissional de saúde pode ou não
+          ver esta conversa.
+        </Text>
       </View>
     </View>
   );
 }
 
-function AskingBanner() {
+function WaitingBanner() {
   const { theme } = useUnistyles();
   return (
-    <View style={[styles.banner, styles.askingBanner]}>
-      <ActivityIndicator size="small" color={theme.topic.contraception.on} />
-      <Text style={styles.askingText}>A assistente está a pensar…</Text>
+    <View testID="waiting-professional-banner" style={[styles.banner, styles.waitingBanner]}>
+      <Icon name={{ sf: 'clock', ion: 'time-outline' }} size={18} color={theme.colors.ink} />
+      <View style={styles.body}>
+        <Text style={styles.title}>A aguardar resposta do profissional</Text>
+        <Text style={styles.sub}>Vais receber uma notificação quando responder.</Text>
+      </View>
     </View>
   );
 }
 
-function AskErrorBanner({ text, onDismiss }: { text: string; onDismiss: () => void }) {
+function ErrorBanner({ text, onDismiss }: { text: string; onDismiss: () => void }) {
   const { theme } = useUnistyles();
   return (
     <Pressable style={[styles.banner, styles.errorBanner]} onPress={onDismiss}>
@@ -154,87 +201,7 @@ function AskErrorBanner({ text, onDismiss }: { text: string; onDismiss: () => vo
   );
 }
 
-function AiOnlyBanner({ conversationId }: { conversationId: string }) {
-  const { theme } = useUnistyles();
-  const handoff = useMutation(api.conversations.requestAiHandoff);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function ask() {
-    setError(null);
-    setBusy(true);
-    try {
-      await handoff({ id: conversationId as any });
-    } catch (e: any) {
-      setError(e?.message ?? 'Falha');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <View style={styles.banner}>
-      <View style={styles.avatar}>
-        <Text style={styles.emoji}>💬</Text>
-      </View>
-      <View style={styles.body}>
-        <Text style={styles.title}>Conversa só com AI</Text>
-        <Text style={styles.sub}>
-          Cada mensagem tua recebe resposta automática. Para profissional, toca à
-          direita.
-        </Text>
-      </View>
-      <Pressable
-        testID="ai-handoff-button"
-        disabled={busy}
-        onPress={ask}
-        style={[styles.cta, busy && styles.ctaBusy]}
-      >
-        {busy && <ActivityIndicator size="small" color={theme.colors.onInk} />}
-        <Text style={styles.ctaText}>{busy ? 'A pedir...' : 'Falar com profissional'}</Text>
-      </Pressable>
-      {error && <Text style={styles.error}>{error}</Text>}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create((theme) => ({
-  kebab: {
-    width: 36,
-    height: 36,
-    borderRadius: theme.radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  kebabPressed: { backgroundColor: theme.colors.surfaceSunken },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 20,
-  },
-  backdrop: { ...StyleSheet.absoluteFillObject },
-  menu: {
-    position: 'absolute',
-    top: theme.spacing.xs,
-    right: theme.spacing.sm,
-    minWidth: 240,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: theme.colors.divider,
-    padding: theme.spacing.xs,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-  },
-  menuItemPressed: { backgroundColor: theme.colors.surfaceSunken },
-  menuLabel: { fontSize: 15, fontWeight: '500', color: theme.colors.ink },
   banner: {
     marginHorizontal: theme.spacing.sm,
     marginTop: theme.spacing.sm,
@@ -246,12 +213,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
-  askingBanner: { backgroundColor: theme.topic.contraception.fill },
-  askingText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: theme.topic.contraception.on,
-  },
+  waitingBanner: { backgroundColor: theme.colors.surfaceSunken },
   errorBanner: { backgroundColor: theme.colors.dangerLight },
   errorText: { flex: 1, fontSize: 13, color: theme.colors.danger },
   avatar: {
@@ -262,7 +224,6 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emoji: { fontSize: 16 },
   body: { flex: 1, gap: 2 },
   title: { fontSize: 13, fontWeight: '500', color: theme.colors.ink },
   sub: { fontSize: 12, color: theme.colors.textSecondary },
@@ -277,5 +238,21 @@ const styles = StyleSheet.create((theme) => ({
   },
   ctaBusy: { opacity: 0.7 },
   ctaText: { fontSize: 12, fontWeight: '500', color: theme.colors.onInk },
-  error: { fontSize: 12, color: theme.colors.danger },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    marginRight: theme.spacing.sm,
+  },
+  endBtn: {
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.colors.divider,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  endText: { fontSize: 12, fontWeight: '500', color: theme.colors.ink },
 }));

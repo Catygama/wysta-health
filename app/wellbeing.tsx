@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
@@ -9,6 +9,8 @@ import { Icon } from '@/components/ui/Icon';
 import { UrgencyAlert } from '@/screens/UrgencyAlert';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fonts } from '@/lib/fonts';
+import { TOPIC_BY_ID } from '@/constants/topics';
+import { kindForMode, type ConversationMode } from '@/constants/conversation';
 
 type Phase = 'goals' | 'pain-check' | 'checkin';
 
@@ -35,6 +37,7 @@ const CHECKIN = [
 
 export default function Wellbeing() {
   const router = useRouter();
+  const { mode } = useLocalSearchParams<{ mode?: ConversationMode }>();
   const { user, isLoading: authLoading, role } = useCurrentUser();
   const { theme } = useUnistyles();
   const createConversation = useMutation(api.conversations.create);
@@ -79,8 +82,9 @@ export default function Wellbeing() {
         topic: 'sexual-wellbeing',
         title: `Bem-estar sexual — ${goal.label}`,
         wellbeingGoal: goal.label,
-        // Pain/discomfort routes to a professional; other goals are AI-first.
-        kind: goal.id === 'dor' ? 'human-async' : 'ai-only',
+        // Pain/discomfort always routes to a professional (safety). Other goals
+        // follow the path chosen on Home, AI-first when none was given.
+        kind: goal.id === 'dor' ? 'human-async' : mode ? kindForMode(mode) : 'ai-only',
       });
       router.replace({ pathname: '/(patient)/conversations/[id]', params: { id } });
     } finally {
@@ -106,7 +110,7 @@ export default function Wellbeing() {
     >
       <View style={styles.titleRow}>
         <View style={[styles.topicChip, { backgroundColor: pastel.fill }]}>
-          <Icon name={{ sf: 'sparkles', ion: 'sparkles' }} size={20} color={pastel.on} />
+          <Icon name={TOPIC_BY_ID['sexual-wellbeing'].icon} size={20} color={pastel.on} />
         </View>
         <Text style={styles.title}>Bem-estar sexual</Text>
       </View>

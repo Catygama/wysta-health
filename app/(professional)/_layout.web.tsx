@@ -16,6 +16,11 @@ const ITEMS: NavItem[] = [
     href: '/education',
     icon: { sf: 'book', ion: 'book-outline' },
   },
+  {
+    label: 'Perfil',
+    href: '/profile',
+    icon: { sf: 'person', ion: 'person-outline' },
+  },
 ];
 
 export default function ProfessionalLayoutWeb() {
