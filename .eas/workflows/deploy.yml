@@ -1,6 +1,7 @@
 # On every push to main: if the native layer (fingerprint) already has an
 # Android build, ship the JS as an over-the-air update; otherwise make a new
-# build, which then receives later updates. iOS joins once Apple credentials
+# build, which then receives later updates. Dev clients follow the same rule
+# (minus OTA). iOS store builds join once Apple credentials
 # are set up (see TestFlight).
 name: Deploy
 
@@ -42,3 +43,49 @@ jobs:
     params:
       channel: production
       platform: android
+
+  # Dev clients ("Wysta Dev"): rebuilt only when their native layer changes.
+  # They load JS from a local Metro server, so there's nothing to update OTA.
+  # The "development" EAS environment sets APP_VARIANT, matching the profiles.
+  fingerprint_dev:
+    name: Fingerprint (dev client)
+    type: fingerprint
+    environment: development
+
+  get_android_dev_build:
+    name: Find matching Android dev client
+    needs: [fingerprint_dev]
+    type: get-build
+    params:
+      platform: android
+      profile: development
+      fingerprint_hash: ${{ needs.fingerprint_dev.outputs.android_fingerprint_hash }}
+      wait_for_in_progress: true
+
+  build_android_dev:
+    name: Build Android dev client
+    needs: [get_android_dev_build]
+    if: ${{ !needs.get_android_dev_build.outputs.build_id }}
+    type: build
+    params:
+      platform: android
+      profile: development
+
+  get_ios_sim_build:
+    name: Find matching iOS simulator dev client
+    needs: [fingerprint_dev]
+    type: get-build
+    params:
+      platform: ios
+      profile: development-simulator
+      fingerprint_hash: ${{ needs.fingerprint_dev.outputs.ios_fingerprint_hash }}
+      wait_for_in_progress: true
+
+  build_ios_sim:
+    name: Build iOS simulator dev client
+    needs: [get_ios_sim_build]
+    if: ${{ !needs.get_ios_sim_build.outputs.build_id }}
+    type: build
+    params:
+      platform: ios
+      profile: development-simulator
