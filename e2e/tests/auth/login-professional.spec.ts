@@ -11,7 +11,7 @@ test('Professional login lands on queue', async ({ page }) => {
     .getByTestId('auth-password-input')
     .fill(TEST_USERS.professionalA.password);
   await page.getByTestId('auth-professional-login-button').click();
-  await expect(page.getByTestId('queue-sort-oldest')).toBeVisible({
+  await expect(page.getByTestId('queue-sort')).toBeVisible({
     timeout: 15_000,
   });
 });

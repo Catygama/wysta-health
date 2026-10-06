@@ -28,7 +28,7 @@ test.describe('Professional queue', () => {
 
     await loginAs(page, TEST_USERS.professionalA.email);
     await page.goto('/(professional)/queue');
-    await expect(page.getByTestId('queue-sort-oldest')).toBeVisible({
+    await expect(page.getByTestId('queue-sort')).toBeVisible({
       timeout: 15_000,
     });
 

@@ -9,7 +9,7 @@ test('Professional guest sign-in (signup flow surfaces guest button)', async ({
   // Playwright without bypassing the storage guard. Instead we exercise the
   // guest path which is what the dev/test flow uses (auto-verified profile).
   await page.getByTestId('prof-signup-guest-button').click();
-  await expect(page.getByTestId('queue-sort-oldest')).toBeVisible({
+  await expect(page.getByTestId('queue-sort')).toBeVisible({
     timeout: 20_000,
   });
 });
