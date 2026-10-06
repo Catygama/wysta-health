@@ -1,24 +1,28 @@
-/* Wysta — public site. Ink & pastel. Bricolage Grotesque (display) + system sans (body). */
+/* Wysta — public site. Same palette as the app (maroon #50000D, dusty pink
+   #E3C7C7, beige #EFDCD6). Fraunces (display) + system sans (body). */
 
 :root {
-  --ink: #2E1065;
-  --ink-deep: #231055;
-  --accent: #7C3AED;
-  --butter: #FFD978;
-  --bg: #FAF6EE;
-  --bg-alt: #F4EEE3;
+  --ink: #50000D;
+  --ink-deep: #3B000A;
+  --on-ink: #FBF7F4;
+  --accent: #8A3A3A;
+  --butter: #E3C7C7;   /* highlight + primary button on maroon */
+  --bg: #FBF7F4;
+  --bg-alt: #F3E6E1;
+  --blush: #EFDCD6;
   --surface: #FFFFFF;
-  --text: #2B2438;
-  --text-2: #6E6880;
-  --text-3: #B7B0C6;
-  --divider: rgba(43, 36, 56, 0.10);
+  --text: #50000D;
+  --text-2: #7A5450;
+  --text-3: #B39894;
+  --divider: rgba(80, 0, 13, 0.10);
 
-  --lilac: #D8CCFC; --lilac-on: #2E1065;
-  --rose: #FBC4DE;  --rose-on: #6B1B43;
-  --mint: #A8E8D8;  --mint-on: #0B4A3A;
-  --apricot: #FFD2A8; --apricot-on: #7A3B0A;
+  /* Topic tints (same pairs as the app's topic colors). */
+  --lilac: #E3C7C7; --lilac-on: #50000D;      /* Contraceção */
+  --rose: #F2C9D0;  --rose-on: #6B1A2A;       /* Ciclo menstrual */
+  --mint: #EFDCD6;  --mint-on: #5A2A22;       /* Saúde íntima */
+  --apricot: #F3D9B8; --apricot-on: #6B3D0A;  /* Gravidez */
 
-  --display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --display: 'Fraunces', Georgia, serif;
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --shell: 1120px;
 }
@@ -37,7 +41,7 @@ body {
   line-height: 1.6;
 }
 
-h1, h2, h3 { font-family: var(--display); font-weight: 800; margin: 0; line-height: 1.05; letter-spacing: -0.02em; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; line-height: 1.08; letter-spacing: -0.01em; }
 p { margin: 0; }
 a { color: inherit; text-decoration: none; }
 
@@ -60,14 +64,14 @@ a { color: inherit; text-decoration: none; }
 .btn:active { transform: scale(0.97); }
 .btn-pill { border-radius: 999px; padding: 13px 26px; }
 .btn-butter { background: var(--butter); color: var(--ink); }
-.btn-ghost-dark { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,0.35); }
+.btn-ghost-dark { background: transparent; color: var(--on-ink); border: 1.5px solid rgba(251,247,244,0.35); }
 /* fill-wipe hover */
 .btn-butter::after, .btn-ghost-dark::after {
   content: ''; position: absolute; inset: 0; background: rgba(255,255,255,0.16);
   transform: translateY(101%); transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
 }
 .btn:hover::after { transform: translateY(0); }
-.btn-butter:hover::after { background: rgba(46,16,101,0.10); }
+.btn-butter:hover::after { background: rgba(80,0,13,0.10); }
 
 /* Nav */
 .nav {
@@ -81,20 +85,36 @@ a { color: inherit; text-decoration: none; }
 .brand { display: inline-flex; align-items: center; gap: 10px; }
 .brand-mark {
   width: 30px; height: 30px; border-radius: 9px;
-  background: var(--ink); color: #fff;
+  background: var(--ink); color: var(--on-ink);
   display: inline-flex; align-items: center; justify-content: center;
-  font-family: var(--display); font-weight: 800; font-size: 17px;
+  font-family: var(--display); font-weight: 700; font-size: 17px;
 }
-.brand-name { font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--ink); }
+.brand-name { font-family: var(--display); font-weight: 700; font-size: 20px; color: var(--ink); }
 .nav-links { display: flex; align-items: center; gap: 22px; }
 .nav-links a:not(.btn) { color: var(--text-2); font-size: 15px; }
 .nav-links a:not(.btn):hover { color: var(--ink); }
 .nav .btn-ghost-dark { color: var(--ink); border-color: var(--divider); padding: 9px 20px; font-size: 15px; }
-.nav .btn-ghost-dark:hover::after { background: rgba(46,16,101,0.06); }
+.nav .btn-ghost-dark:hover::after { background: rgba(80,0,13,0.06); }
 
-/* Hero */
-.hero { background: var(--ink); color: #fff; }
+/* Hero (light): beige-to-pink wash with a soft pink glow top right. The
+   closing CTA shares it so the page opens and closes the same way. */
+.hero, .cta {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--bg) 0%, var(--blush) 60%, var(--butter) 100%);
+  color: var(--text);
+}
+.hero::before, .cta::before {
+  content: '';
+  position: absolute;
+  width: 560px; height: 560px;
+  right: -140px; top: -160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(227,199,199,0.9) 0%, rgba(227,199,199,0) 70%);
+  pointer-events: none;
+}
 .hero-inner {
+  position: relative;
   max-width: var(--shell);
   margin: 0 auto;
   padding: 72px 24px 88px;
@@ -103,9 +123,16 @@ a { color: inherit; text-decoration: none; }
   text-transform: uppercase; letter-spacing: 0.12em; font-size: 13px; font-weight: 700;
   color: var(--text-3); margin-bottom: 18px;
 }
-.hero .eyebrow { color: rgba(255,255,255,0.55); }
-.hero h1 { font-size: clamp(40px, 7vw, 76px); color: #fff; }
-.lede { font-size: clamp(17px, 2.2vw, 21px); color: rgba(255,255,255,0.78); max-width: 540px; margin-top: 22px; }
+.hero .eyebrow { color: var(--text-2); }
+.hero h1 { font-size: clamp(40px, 7vw, 76px); color: var(--ink); }
+.hero .hl, .cta .hl { color: var(--accent); }
+/* On the light hero the primary button is maroon, the secondary outlined. */
+.hero .btn-butter, .cta .btn-butter { background: var(--ink); color: var(--on-ink); }
+.hero .btn-butter:hover::after, .cta .btn-butter:hover::after { background: rgba(251,247,244,0.14); }
+.hero .btn-ghost-dark { color: var(--ink); border-color: rgba(80,0,13,0.25); }
+.hero .btn-ghost-dark:hover::after { background: rgba(80,0,13,0.06); }
+.hero .chip { box-shadow: inset 0 0 0 1px var(--divider); }
+.lede { font-size: clamp(17px, 2.2vw, 21px); color: var(--text-2); max-width: 540px; margin-top: 22px; }
 .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
 .hero-topics { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 40px; }
 
@@ -129,14 +156,14 @@ a { color: inherit; text-decoration: none; }
 .step-icon {
   width: 44px; height: 44px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
-  font-family: var(--display); font-weight: 800; font-size: 18px; margin-bottom: 18px;
+  font-family: var(--display); font-weight: 700; font-size: 18px; margin-bottom: 18px;
 }
 .step h3 { font-size: 20px; color: var(--ink); margin-bottom: 8px; }
 .step p { color: var(--text-2); font-size: 15px; }
 
 /* Topics */
 .topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 44px; }
-.topic-card { border-radius: 24px; padding: 30px 26px; min-height: 150px; }
+.topic-card { border-radius: 24px; padding: 30px 26px; min-height: 150px; border: 1px solid var(--divider); }
 .topic-card h3 { font-size: 22px; margin-bottom: 10px; }
 .topic-card p { font-size: 15px; opacity: 0.85; }
 .topic-lilac { background: var(--lilac); color: var(--lilac-on); }
@@ -155,10 +182,9 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* CTA */
-.cta { background: var(--ink); color: #fff; }
-.cta-inner { max-width: var(--shell); margin: 0 auto; padding: 80px 24px; text-align: center; }
-.cta h2 { font-size: clamp(30px, 5vw, 52px); color: #fff; }
-.cta p { color: rgba(255,255,255,0.75); font-size: 18px; margin: 16px 0 30px; }
+.cta-inner { position: relative; max-width: var(--shell); margin: 0 auto; padding: 80px 24px; text-align: center; }
+.cta h2 { font-size: clamp(30px, 5vw, 52px); color: var(--ink); }
+.cta p { color: var(--text-2); font-size: 18px; margin: 16px 0 30px; }
 
 /* Footer */
 .footer { background: var(--bg-alt); }
