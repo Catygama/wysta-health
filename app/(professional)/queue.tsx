@@ -10,12 +10,11 @@ import { FilterChip } from '@/components/ui/FilterChip';
 // professional assigns one to themselves it moves to their "Conversas" tab.
 
 type Priority = 'urgent' | 'high' | 'medium' | 'low';
-type Sort = 'urgency' | 'oldest' | 'newest';
+type Sort = 'oldest' | 'newest';
 
 const SORTS: { label: string; value: Sort }[] = [
-  { label: 'Mais urgentes', value: 'urgency' },
   { label: 'Mais antigo', value: 'oldest' },
-  { label: 'Mais recentes', value: 'newest' },
+  { label: 'Mais recente', value: 'newest' },
 ];
 
 const PRIORITY_FILTERS: { label: string; value: Priority }[] = [
@@ -26,7 +25,7 @@ const PRIORITY_FILTERS: { label: string; value: Priority }[] = [
 ];
 
 export default function Requests() {
-  const [sort, setSort] = useState<Sort>('urgency');
+  const [sort, setSort] = useState<Sort>('oldest');
   const [priority, setPriority] = useState<Priority | undefined>(undefined);
   const { theme } = useUnistyles();
 
@@ -35,10 +34,10 @@ export default function Requests() {
     priority,
   });
 
-  // The backend already orders by priority, then recency.
-  const sorted = [...(requests ?? [])];
-  if (sort === 'oldest') sorted.sort((a, b) => a._creationTime - b._creationTime);
-  if (sort === 'newest') sorted.sort((a, b) => b._creationTime - a._creationTime);
+  // Urgency is handled by the priority filter; here the order is by time only.
+  const sorted = [...(requests ?? [])].sort((a, b) =>
+    sort === 'oldest' ? a._creationTime - b._creationTime : b._creationTime - a._creationTime
+  );
 
   // From the theme so the active chip stays legible in dark mode.
   const priorityColor: Record<Priority, string> = {
