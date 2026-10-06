@@ -123,6 +123,21 @@ const ASSISTANT_BASE = [
   'Usa linguagem inclusiva e respeitadora. Evita jargão médico desnecessário.',
 ].join('\n');
 
+// The planner may append this marker to suggest ending the conversation. The
+// assistant strips it before streaming/validation and turns it into a
+// "Terminar conversa" button (messages.metadata.suggestClose).
+export const SUGGEST_CLOSE_MARKER = '[[SUGERIR_TERMINAR]]';
+
+const SUGGEST_CLOSE_RULE = [
+  'Sugerir terminar a conversa:',
+  `- Escreve ${SUGGEST_CLOSE_MARKER} sozinho na última linha APENAS quando`,
+  '  for claramente pertinente: a dúvida da utente ficou resolvida E ela',
+  '  sinalizou que não precisa de mais nada (ex.: agradeceu e despediu-se).',
+  '- NUNCA o uses na primeira resposta, perante sintomas, dúvidas em aberto,',
+  '  urgência ou qualquer sinal de risco. Na dúvida, não o uses.',
+  '- Não menciones o marcador nem escrevas que vais terminar a conversa.',
+].join('\n');
+
 DEFAULT_PROMPTS.chat = {
   systemPrompt: [
     ASSISTANT_BASE,
@@ -144,6 +159,8 @@ DEFAULT_PROMPTS.chat = {
     '- Não interpretes resultados de exames.',
     '- Se já respondeste algo semelhante antes nesta conversa, não',
     '  repitas — refere-te à resposta anterior ou aprofunda.',
+    '',
+    SUGGEST_CLOSE_RULE,
   ].join('\n'),
   userTemplate: [
     '## Contexto',
@@ -312,6 +329,8 @@ export const DEFAULT_TOPIC_PROMPTS: Partial<
         '  encaminhar para profissional em vez de aconselhar auto-tratamento.',
         '- Fecha com um convite gentil a continuar a conversa ou falar com um',
         '  profissional quando fizer sentido (sem fórmula rígida).',
+        '',
+        SUGGEST_CLOSE_RULE,
       ].join('\n'),
       userTemplate: DEFAULT_PROMPTS.chat!.userTemplate,
       temperature: 0.6,

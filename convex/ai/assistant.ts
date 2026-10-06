@@ -24,7 +24,22 @@ import { z } from 'zod';
 import { internal } from '../_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { runAgent } from './runAgent';
+import { SUGGEST_CLOSE_MARKER } from './defaults';
 import type { Id } from '../_generated/dataModel';
+
+// Removes the suggest-close marker from planner output — also a partial
+// marker still arriving at the end of a stream — so the patient never sees it.
+export function stripSuggestClose(text: string): { text: string; suggestClose: boolean } {
+  const suggestClose = text.includes(SUGGEST_CLOSE_MARKER);
+  let out = text.split(SUGGEST_CLOSE_MARKER).join('');
+  for (let n = SUGGEST_CLOSE_MARKER.length - 1; n > 0; n--) {
+    if (out.endsWith(SUGGEST_CLOSE_MARKER.slice(0, n))) {
+      out = out.slice(0, -n);
+      break;
+    }
+  }
+  return { text: out.trimEnd(), suggestClose };
+}
 
 const validatorSchema = z.object({
   decision: z.enum(['approve', 'block']),
@@ -44,6 +59,8 @@ const BLOCKED_AUTO =
   'Esta pergunta merece resposta de um profissional. Toca em "Falar com profissional" para entrar na fila.';
 const BLOCKED_RESPOND =
   'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um profissional.';
+const BLOCKED_ESCALATE =
+  'Esta pergunta precisa de um profissional. Encaminhei esta conversa para a equipa clínica — vais receber resposta aqui.';
 
 type StreamVars = {
   query: string;
@@ -64,7 +81,7 @@ async function streamAndValidate(
     topic?: string;
     blockedMessage: string;
   }
-): Promise<{ sent: boolean }> {
+): Promise<{ sent: boolean; blocked: boolean }> {
   const messageId = await ctx.runMutation(
     internal.ai.assistant.createAssistantPlaceholder,
     { conversationId: args.conversationId, patientId: args.patientId }
@@ -85,17 +102,18 @@ async function streamAndValidate(
           lastLen = textSoFar.length;
           await ctx.runMutation(internal.ai.assistant.patchStreamingMessage, {
             messageId,
-            content: textSoFar,
+            content: stripSuggestClose(textSoFar).text,
           });
         }
       },
     });
+    const { text: draftText, suggestClose } = stripSuggestClose(draft.output);
 
     const [safety, clinical] = await Promise.all([
       runAgent(ctx, {
         purpose: 'chat-validator-safety',
         topic: args.topic as any,
-        vars: { ...args.baseVars, draft: draft.output },
+        vars: { ...args.baseVars, draft: draftText },
         userId: args.patientId,
         conversationId: args.conversationId,
         parentInvocationId: draft.invocationId,
@@ -104,7 +122,7 @@ async function streamAndValidate(
       runAgent(ctx, {
         purpose: 'chat-validator-clinical',
         topic: args.topic as any,
-        vars: { ...args.baseVars, draft: draft.output },
+        vars: { ...args.baseVars, draft: draftText },
         userId: args.patientId,
         conversationId: args.conversationId,
         parentInvocationId: draft.invocationId,
@@ -117,7 +135,7 @@ async function streamAndValidate(
       topic: args.topic as any,
       vars: {
         ...args.baseVars,
-        draft: draft.output,
+        draft: draftText,
         safety: JSON.stringify(safety.output),
         clinical: JSON.stringify(clinical.output),
       },
@@ -130,10 +148,11 @@ async function streamAndValidate(
     const sent = judged.output.action === 'send';
     await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
       messageId,
-      content: sent ? draft.output + DISCLAIMER : args.blockedMessage,
+      content: sent ? draftText + DISCLAIMER : args.blockedMessage,
+      suggestClose: sent && suggestClose,
       invocationId: judged.invocationId,
     });
-    return { sent };
+    return { sent, blocked: !sent };
   } catch (e) {
     console.warn(
       `[assistant.streamAndValidate] failed: ${e instanceof Error ? e.message : String(e)}`
@@ -142,7 +161,7 @@ async function streamAndValidate(
       messageId,
       content: FALLBACK_MESSAGE,
     });
-    return { sent: false };
+    return { sent: false, blocked: false };
   }
 }
 
@@ -173,12 +192,14 @@ export const finalizeAssistantMessage = internalMutation({
     messageId: v.id('messages'),
     content: v.string(),
     invocationId: v.optional(v.id('aiInvocations')),
+    suggestClose: v.optional(v.boolean()),
   },
-  handler: async (ctx, { messageId, content, invocationId }) => {
+  handler: async (ctx, { messageId, content, invocationId, suggestClose }) => {
     await ctx.db.patch(messageId, {
       content,
       streaming: false,
       ...(invocationId ? { aiInvocationId: invocationId } : {}),
+      ...(suggestClose ? { metadata: { suggestClose: true } } : {}),
     });
   },
 });
@@ -218,14 +239,14 @@ export const respondAnonymous = action({
     const [safety, clinical] = await Promise.all([
       runAgent(ctx, {
         purpose: 'chat-validator-safety',
-        vars: { ...baseVars, draft: draft.output },
+        vars: { ...baseVars, draft: stripSuggestClose(draft.output).text },
         userId,
         parentInvocationId: draft.invocationId,
         outputSchema: validatorSchema,
       }),
       runAgent(ctx, {
         purpose: 'chat-validator-clinical',
-        vars: { ...baseVars, draft: draft.output },
+        vars: { ...baseVars, draft: stripSuggestClose(draft.output).text },
         userId,
         parentInvocationId: draft.invocationId,
         outputSchema: validatorSchema,
@@ -235,7 +256,7 @@ export const respondAnonymous = action({
       purpose: 'chat-judge',
       vars: {
         ...baseVars,
-        draft: draft.output,
+        draft: stripSuggestClose(draft.output).text,
         safety: JSON.stringify(safety.output),
         clinical: JSON.stringify(clinical.output),
       },
@@ -246,7 +267,7 @@ export const respondAnonymous = action({
 
     const sent = judged.output.action === 'send';
     const answer = sent
-      ? judged.output.finalAnswer +
+      ? stripSuggestClose(judged.output.finalAnswer).text +
         '\n\n— Assistente AI. Pergunta anónima — não guardada no teu histórico.'
       : 'Esta pergunta não foi enviada por ser de natureza clínica que requer profissional. Para acompanhamento, abre uma conversa normal — esta resposta não foi guardada.';
 
@@ -273,7 +294,7 @@ export const respondAuto = internalAction({
       userId: owner,
     });
     if (!ctxData.allowed) return;
-    await streamAndValidate(ctx, {
+    const { blocked } = await streamAndValidate(ctx, {
       conversationId,
       patientId: owner,
       baseVars: {
@@ -284,8 +305,15 @@ export const respondAuto = internalAction({
         topicAndRisk: ctxData.topicAndRisk,
       },
       topic: ctxData.topic,
-      blockedMessage: BLOCKED_AUTO,
+      blockedMessage: ctxData.escalatesOnBlock ? BLOCKED_ESCALATE : BLOCKED_AUTO,
     });
+    // An AI side chat of an open professional conversation becomes the
+    // professional conversation when the AI asks for a professional.
+    if (blocked && ctxData.escalatesOnBlock) {
+      await ctx.runMutation(internal.conversations.escalateAiConversation, {
+        conversationId,
+      });
+    }
   },
 });
 
@@ -377,22 +405,52 @@ export const gatherContext = internalQuery({
     const visible = messages.reverse().filter(
       (m) => !m.isInternal && m.messageType !== 'system' && m.messageType !== 'triage-response'
     );
-    const conversationHistory =
-      visible.length > 0
-        ? visible
-            .map((m) => {
-              const role =
-                m.messageType === 'ai-response'
-                  ? 'AI (anterior)'
-                  : m.senderId === conv.patientId
-                    ? 'Utente'
-                    : 'Profissional';
-              return `${role}: ${m.content}`;
-            })
-            .join('\n')
-        : 'Sem histórico de mensagens.';
+    const formatLines = (rows: typeof messages) =>
+      rows
+        .map((m) => {
+          const role =
+            m.messageType === 'ai-response'
+              ? 'AI (anterior)'
+              : m.senderId === conv.patientId
+                ? 'Utente'
+                : 'Profissional';
+          return `${role}: ${m.content}`;
+        })
+        .join('\n');
+    let conversationHistory =
+      visible.length > 0 ? formatLines(visible) : 'Sem histórico de mensagens.';
 
-    const triageMsg = messages.find((m) => m.metadata?.triageData);
+    // Conversation this one was spawned from (e.g. the professional chat the
+    // patient left to talk to the AI): prepend its recent messages.
+    let contextMessages: typeof messages = [];
+    if (conv.contextConversationId) {
+      contextMessages = (
+        await ctx.db
+          .query('messages')
+          .withIndex('by_conversation', (q) =>
+            q.eq('conversationId', conv.contextConversationId!)
+          )
+          .order('desc')
+          .take(20)
+      ).reverse();
+      const contextVisible = contextMessages.filter(
+        (m) => !m.isInternal && m.messageType !== 'system' && m.messageType !== 'triage-response'
+      );
+      if (contextVisible.length > 0) {
+        conversationHistory = `Conversa anterior (com profissional):\n${formatLines(contextVisible)}\n\nConversa atual:\n${conversationHistory}`;
+      }
+    }
+
+    let escalatesOnBlock = false;
+    if (conv.kind === 'ai-only' && conv.counterpartConversationId) {
+      const counterpart = await ctx.db.get(conv.counterpartConversationId);
+      escalatesOnBlock =
+        !!counterpart && counterpart.status !== 'closed' && counterpart.kind !== 'ai-only';
+    }
+
+    const triageMsg =
+      messages.find((m) => m.metadata?.triageData) ??
+      contextMessages.find((m) => m.metadata?.triageData);
     const triageData = triageMsg?.metadata?.triageData;
 
     const profileLines: string[] = [];
@@ -423,6 +481,7 @@ export const gatherContext = internalQuery({
       patientProfile,
       recentSummary,
       topicAndRisk,
+      escalatesOnBlock,
     };
   },
 });

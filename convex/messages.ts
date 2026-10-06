@@ -2,6 +2,7 @@ import { mutation, query } from './_generated/server';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
+import { convertAiToProfessional } from './conversations';
 
 export const list = query({
   args: { conversationId: v.id('conversations') },
@@ -111,6 +112,14 @@ export const send = mutation({
       senderProfile?.role === 'professional' ||
       senderProfile?.role === 'admin';
     if (!isProfessional) return;
+
+    // A professional writing in an AI chat takes it over.
+    if (conv.kind === 'ai-only') {
+      await convertAiToProfessional(ctx, conv, {
+        professionalId: userId,
+        reason: 'professional-joined',
+      });
+    }
 
     const preview =
       args.messageType === 'image'

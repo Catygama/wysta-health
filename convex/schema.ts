@@ -96,6 +96,9 @@ export default defineSchema({
       v.union(
         v.literal('resolved'),
         v.literal('redirected-to-in-person'),
+        // Superseded by its AI side chat, which became the professional
+        // conversation (see conversations.convertAiToProfessional).
+        v.literal('continued-elsewhere'),
       )
     ),
     aiSummary: v.optional(v.string()),
@@ -106,6 +109,13 @@ export default defineSchema({
       v.union(v.literal('human-async'), v.literal('ai-only'))
     ),
     aiHandoffRequestedAt: v.optional(v.number()),
+    // Conversation this one was spawned from. Its messages are context for
+    // the AI and visible to professionals. Never changes after creation.
+    contextConversationId: v.optional(v.id('conversations')),
+    // The open conversation of the other kind (ai-only ↔ human-async) the
+    // patient toggles to from the chat header. Cleared when either side
+    // closes or converts.
+    counterpartConversationId: v.optional(v.id('conversations')),
   })
     .index('by_patient', ['patientId'])
     .index('by_professional', ['professionalId'])
@@ -142,6 +152,9 @@ export default defineSchema({
             riskLevel: v.string(),
           })
         ),
+        // AI answer that suggests ending the conversation (shows a
+        // "Terminar conversa" button to the patient).
+        suggestClose: v.optional(v.boolean()),
       })
     ),
   }).index('by_conversation', ['conversationId']),

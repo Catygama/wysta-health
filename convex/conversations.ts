@@ -1,5 +1,6 @@
-import { mutation, query } from './_generated/server';
+import { internalMutation, mutation, query, type MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
+import type { Doc, Id } from './_generated/dataModel';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import {
@@ -120,10 +121,11 @@ export const listForProfessional = query({
           .collect()
       : await ctx.db.query('conversations').collect();
 
-    // Hide ai-only conversations from the professional queue unless the
-    // patient has explicitly requested human handoff.
+    // The queue only lists open conversations (closed ones live in the
+    // professional's Histórico), and hides ai-only conversations unless the
+    // patient has requested human handoff.
     conversations = conversations.filter(
-      (c) => c.kind !== 'ai-only' || c.aiHandoffRequestedAt
+      (c) => c.status !== 'closed' && (c.kind !== 'ai-only' || c.aiHandoffRequestedAt)
     );
 
     if (args.scope === 'mine') {
@@ -202,7 +204,18 @@ export const get = query({
           aiSummaryAt: isProfessional ? patientProfile?.aiSummaryAt : undefined,
         }
       : null;
-    return { ...conv, patient: patientPayload };
+    const related = async (relatedId?: Id<'conversations'>) => {
+      if (!relatedId) return null;
+      const other = await ctx.db.get(relatedId);
+      if (!other) return null;
+      return { _id: other._id, kind: other.kind ?? 'human-async', status: other.status };
+    };
+    return {
+      ...conv,
+      patient: patientPayload,
+      contextConversation: await related(conv.contextConversationId),
+      counterpartConversation: await related(conv.counterpartConversationId),
+    };
   },
 });
 
@@ -294,6 +307,21 @@ export const assign = mutation({
       throw new Error('Conversa fechada não pode ser reatribuída');
     }
     if (conv.professionalId === userId) return; // already mine, no-op
+    // Taking an AI chat means the professional is intervening: it becomes
+    // the professional conversation (and supersedes the previous one).
+    if (conv.kind === 'ai-only') {
+      await convertAiToProfessional(ctx, conv, {
+        professionalId: userId,
+        reason: 'professional-joined',
+      });
+      await ctx.db.insert('auditLog', {
+        conversationId: args.id,
+        professionalId: userId,
+        action: 'assigned',
+        details: 'Profissional interveio na conversa com AI',
+      });
+      return;
+    }
     const wasAssignedToOther = !!conv.professionalId;
     await ctx.db.patch(args.id, {
       professionalId: userId,
@@ -332,34 +360,79 @@ export const unassign = mutation({
   },
 });
 
+// Ends a conversation. Either the patient who owns it or a professional can
+// close it; it then leaves the open lists and shows up in their "Histórico".
 export const close = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
-    await requireProfessional(ctx, userId);
+    const conv = await ctx.db.get(args.id);
+    if (!conv) throw new Error('Conversation not found');
+    const byPatient = conv.patientId === userId;
+    if (!byPatient) await requireProfessional(ctx, userId);
+    if (conv.status === 'closed') return;
     const now = Date.now();
-    await ctx.db.patch(args.id, { status: 'closed', lastMessageAt: now });
+    await ctx.db.patch(args.id, { status: 'closed', closureReason: 'resolved', lastMessageAt: now });
     await ctx.db.insert('messages', {
       conversationId: args.id,
       senderId: userId,
-      content: 'Conversa encerrada pelo profissional de saúde.',
+      content: byPatient
+        ? 'Conversa terminada pela utente.'
+        : 'Conversa encerrada pelo profissional de saúde.',
       messageType: 'system',
     });
-    await ctx.db.insert('auditLog', {
-      conversationId: args.id,
-      professionalId: userId,
-      action: 'closure',
-      details: 'Conversa encerrada',
-    });
-    // Schedule AI summary generation in the background. If config/prompt
-    // are missing or generation fails, the close still succeeds — the
-    // summary just doesn't exist (handled by the action's own try/catch).
-    await ctx.scheduler.runAfter(
-      0,
-      internal.ai.chatSummary.generateOnClose,
-      { conversationId: args.id, triggeredBy: userId }
-    );
+    // auditLog rows are attributed to a professional; a patient closing a
+    // conversation is recorded by the system message above.
+    const professionalId = byPatient ? conv.professionalId : userId;
+    if (!byPatient) {
+      await ctx.db.insert('auditLog', {
+        conversationId: args.id,
+        professionalId: userId,
+        action: 'closure',
+        details: 'Conversa encerrada',
+      });
+    }
+    // Schedule AI summary generation in the background (only meaningful
+    // with a professional on the conversation). If config/prompt are missing
+    // or generation fails, the close still succeeds.
+    if (professionalId) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.ai.chatSummary.generateOnClose,
+        { conversationId: args.id, triggeredBy: professionalId }
+      );
+    }
+  },
+});
+
+// Closed conversations for the "Histórico" screen: the patient's own, or the
+// ones a professional was assigned to.
+export const listHistory = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const profile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+    const isProfessional = profile?.role === 'professional' || profile?.role === 'admin';
+    const rows = isProfessional
+      ? await ctx.db
+          .query('conversations')
+          .withIndex('by_professional', (q) => q.eq('professionalId', userId))
+          .order('desc')
+          .take(300)
+      : await ctx.db
+          .query('conversations')
+          .withIndex('by_patient', (q) => q.eq('patientId', userId))
+          .order('desc')
+          .take(300);
+    return rows
+      .filter((c) => c.status === 'closed')
+      .sort((a, b) => b.lastMessageAt - a.lastMessageAt)
+      .map((c) => ({ ...c, isAiOnly: c.kind === 'ai-only' }));
   },
 });
 
@@ -507,29 +580,156 @@ export const recommendInPerson = mutation({
   },
 });
 
-// Patient requests human handoff on an ai-only conversation. Flips it to
-// 'human-async' and the conversation enters the queue like any other.
-export const requestAiHandoff = mutation({
+// Patient toggles between talking to a professional and to the AI from the
+// chat header. Returns the open counterpart conversation if there is one,
+// otherwise creates it: a new conversation of the other kind that carries the
+// current one as context (the AI reads its messages; professionals see it).
+export const switchMode = mutation({
   args: { id: v.id('conversations') },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ id: Id<'conversations'>; created: boolean }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
     const conv = await ctx.db.get(args.id);
     if (!conv) throw new Error('Conversation not found');
     if (conv.patientId !== userId) throw new Error('Unauthorized');
-    if (conv.kind !== 'ai-only') return; // already a normal conversation
-    await ctx.db.patch(args.id, {
-      kind: 'human-async',
-      status: 'waiting',
-      aiHandoffRequestedAt: Date.now(),
-      lastMessageAt: Date.now(),
+    if (conv.status === 'closed') throw new Error('Conversa fechada');
+
+    const targetKind = conv.kind === 'ai-only' ? 'human-async' : 'ai-only';
+    if (conv.counterpartConversationId) {
+      const other = await ctx.db.get(conv.counterpartConversationId);
+      if (
+        other &&
+        other.patientId === userId &&
+        other.status !== 'closed' &&
+        (other.kind ?? 'human-async') === targetKind
+      ) {
+        return { id: other._id, created: false };
+      }
+    }
+
+    const now = Date.now();
+    const toAi = targetKind === 'ai-only';
+    const newId = await ctx.db.insert('conversations', {
+      patientId: userId,
+      topic: conv.topic,
+      title: toAi ? 'Conversa com AI' : 'Conversa com profissional',
+      priority: conv.priority,
+      status: toAi ? 'active' : 'waiting',
+      lastMessageAt: now,
+      riskLevel: conv.riskLevel,
+      kind: targetKind,
+      wellbeingGoal: conv.wellbeingGoal,
+      contextConversationId: conv._id,
+      counterpartConversationId: conv._id,
+      ...(toAi ? {} : { aiHandoffRequestedAt: now }),
     });
+    await ctx.db.patch(conv._id, { counterpartConversationId: newId });
+
+    // Carry the triage answers over so the queue and the AI see them here too.
+    const opening = await ctx.db
+      .query('messages')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', conv._id))
+      .take(5);
+    const triage = opening.find((m) => m.metadata?.triageData);
+    if (triage) {
+      await ctx.db.insert('messages', {
+        conversationId: newId,
+        senderId: userId,
+        content: triage.content,
+        messageType: 'triage-response',
+        metadata: { triageData: triage.metadata!.triageData },
+      });
+    }
     await ctx.db.insert('messages', {
-      conversationId: args.id,
+      conversationId: newId,
       senderId: userId,
-      content:
-        'O utente pediu acompanhamento por um profissional. Esta conversa transitou da modalidade AI-only para fila de profissionais.',
+      content: toAi
+        ? 'Conversa com a assistente AI. A assistente tem acesso à tua conversa com o profissional.'
+        : 'Pediste acompanhamento por um profissional. O profissional terá acesso à tua conversa com a assistente AI.',
       messageType: 'system',
     });
+    return { id: newId, created: true };
+  },
+});
+
+// Turns an ai-only conversation into the professional conversation. If the
+// patient still has an open professional conversation paired with it, that
+// one is closed and its professional (if any) carries over. Used when the AI
+// escalates (judge blocks) or a professional intervenes in the AI chat.
+export async function convertAiToProfessional(
+  ctx: MutationCtx,
+  aiConv: Doc<'conversations'>,
+  opts: { professionalId?: Id<'users'>; reason: 'ai-escalated' | 'professional-joined' }
+) {
+  if (aiConv.kind !== 'ai-only' || aiConv.status === 'closed') return;
+  const now = Date.now();
+
+  let previous = aiConv.counterpartConversationId
+    ? await ctx.db.get(aiConv.counterpartConversationId)
+    : null;
+  if (previous && (previous.status === 'closed' || previous.kind === 'ai-only')) {
+    previous = null;
+  }
+
+  const professionalId = opts.professionalId ?? previous?.professionalId;
+  const priority =
+    previous && (PRIORITY_RANK[previous.priority] ?? 0) > (PRIORITY_RANK[aiConv.priority] ?? 0)
+      ? previous.priority
+      : aiConv.priority;
+
+  await ctx.db.patch(aiConv._id, {
+    kind: 'human-async',
+    status: professionalId ? 'active' : 'waiting',
+    professionalId,
+    priority,
+    aiHandoffRequestedAt: now,
+    lastMessageAt: now,
+    counterpartConversationId: undefined,
+    // Keep the superseded professional conversation reachable as context.
+    contextConversationId: aiConv.contextConversationId ?? previous?._id,
+  });
+  await ctx.db.insert('messages', {
+    conversationId: aiConv._id,
+    senderId: aiConv.patientId,
+    content:
+      opts.reason === 'professional-joined'
+        ? 'Um profissional juntou-se a esta conversa e vai continuar a acompanhar-te aqui.'
+        : 'A assistente encaminhou esta conversa para um profissional. Vais receber resposta aqui.',
+    messageType: 'system',
+  });
+
+  if (previous) {
+    await ctx.db.patch(previous._id, {
+      status: 'closed',
+      closureReason: 'continued-elsewhere',
+      counterpartConversationId: undefined,
+      lastMessageAt: now,
+    });
+    await ctx.db.insert('messages', {
+      conversationId: previous._id,
+      senderId: aiConv.patientId,
+      content:
+        'Esta conversa foi encerrada: o acompanhamento continua na tua conversa com a assistente, que passou para um profissional.',
+      messageType: 'system',
+    });
+    if (previous.professionalId) {
+      await ctx.db.insert('auditLog', {
+        conversationId: previous._id,
+        professionalId: previous.professionalId,
+        action: 'closure',
+        details: 'Encerrada: acompanhamento continua na conversa com AI convertida',
+      });
+    }
+  }
+}
+
+// Called by the assistant when the judge blocks a draft in an ai-only chat
+// that is paired with an open professional conversation.
+export const escalateAiConversation = internalMutation({
+  args: { conversationId: v.id('conversations') },
+  handler: async (ctx, { conversationId }) => {
+    const conv = await ctx.db.get(conversationId);
+    if (!conv) return;
+    await convertAiToProfessional(ctx, conv, { reason: 'ai-escalated' });
   },
 });
