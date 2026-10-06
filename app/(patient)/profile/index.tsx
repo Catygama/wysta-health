@@ -296,7 +296,7 @@ export default function Profile() {
       <Button
         testID="profile-logout-button"
         label="Terminar sessão"
-        variant="secondary"
+        variant="primary"
         onPress={() => setConfirmSignOut(true)}
       />
 

@@ -46,7 +46,7 @@ export default function ProfessionalProfile() {
         <Icon
           name={{ sf: 'rectangle.portrait.and.arrow.right', ion: 'log-out-outline' }}
           size={18}
-          color={theme.colors.danger}
+          color={theme.colors.inkText}
         />
         <Text style={styles.signOutText}>Terminar sessão</Text>
       </Pressable>
@@ -81,5 +81,5 @@ const styles = StyleSheet.create((theme) => ({
     padding: theme.spacing.md,
   },
   pressed: { opacity: 0.7 },
-  signOutText: { fontSize: 15, fontWeight: '500', color: theme.colors.danger },
+  signOutText: { fontSize: 15, fontWeight: '500', color: theme.colors.inkText },
 }));
