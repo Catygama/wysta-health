@@ -158,8 +158,8 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   list-style: none; margin: 36px 0 0; padding: 0;
   display: flex; flex-wrap: wrap; gap: 8px 22px;
 }
-.topic-dot { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--ink); }
-.topic-dot::before { content: ''; width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.topic-dot { display: inline-flex; align-items: center; gap: 9px; font-size: 17px; font-weight: 600; color: var(--ink); }
+.topic-dot::before { content: ''; width: 12px; height: 12px; border-radius: 50%; flex: none; }
 /* Deep tones of each topic colour: the pastel fills are too faint as a dot. */
 .dot-lilac::before { background: #A65A69; }
 .dot-rose::before { background: #C4627E; }
