@@ -5,6 +5,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
+import { PRIORITY_COLORS } from '@/constants/conversation';
 
 // "Pedidos": requests for a professional that nobody has picked up yet. Once a
 // professional assigns one to themselves it moves to their "Conversas" tab.
@@ -46,7 +47,7 @@ export default function Requests() {
     urgent: theme.colors.danger,
     high: theme.colors.danger,
     medium: theme.colors.warning,
-    low: theme.colors.success,
+    low: PRIORITY_COLORS.low,
   };
 
   const count = requests?.length;
