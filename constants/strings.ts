@@ -22,7 +22,7 @@ export const strings = {
   academic: {
     title: 'Projeto académico',
     message:
-      'A Wysta é um protótipo desenvolvido no âmbito de um projeto académico. Não é um serviço de saúde real e as respostas não substituem uma consulta.',
+      'A Wysta é um projeto desenvolvido em âmbito académico. Não é um serviço de saúde real.',
     // Rendered with tappable numbers (tel: links) by AcademicNotice.
     emergencyLead: 'Em caso de urgência, liga',
     emergencyOr: 'ou',

@@ -98,10 +98,10 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: '500',
     color: theme.colors.textPrimary,
     backgroundColor: theme.colors.surfaceSunken,
-    borderWidth: 2,
+    borderWidth: 1.5,
     variants: {
       state: {
-        idle: { borderColor: 'transparent' },
+        idle: { borderColor: theme.colors.border },
         focused: { borderColor: theme.colors.accent },
         error: { borderColor: theme.colors.danger },
       },

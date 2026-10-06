@@ -210,6 +210,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .footer { background: var(--bg-alt); }
 .footer-inner { max-width: var(--shell); margin: 0 auto; padding: 48px 24px; display: grid; gap: 16px; }
 .footer-note { color: var(--text-2); font-size: 14px; max-width: 620px; }
+.footer-note a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
 .footer-copy { color: var(--text-3); font-size: 13px; }
 
 @media (max-width: 720px) {

@@ -15,6 +15,8 @@ type Props = {
   /** Back-compat alias for `kind`. */
   variant?: Kind;
   size?: 'md' | 'sm';
+  /** Stronger (50%) outline, for secondary buttons that must stand out. */
+  strongBorder?: boolean;
   /** Screen-reader description of the result, when the label alone is ambiguous. */
   accessibilityHint?: string;
   testID?: string;
@@ -28,6 +30,7 @@ export function Button({
   kind,
   variant,
   size = 'md',
+  strongBorder,
   accessibilityHint,
   testID,
 }: Props) {
@@ -54,6 +57,7 @@ export function Button({
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.base,
+        strongBorder && styles.strongBorder,
         pressed && styles.pressed,
         isDisabled && styles.disabled,
       ]}
@@ -68,6 +72,7 @@ export function Button({
 }
 
 const styles = StyleSheet.create((theme) => ({
+  strongBorder: { borderWidth: 1.5, borderColor: theme.colors.borderStrong },
   base: {
     borderRadius: theme.radius.pill,
     borderCurve: 'continuous',
@@ -76,12 +81,16 @@ const styles = StyleSheet.create((theme) => ({
     variants: {
       kind: {
         primary: { backgroundColor: theme.colors.ink },
-        secondary: { backgroundColor: theme.colors.surfaceSunken },
+        secondary: {
+          backgroundColor: theme.colors.surfaceSunken,
+          borderWidth: 1.5,
+          borderColor: theme.colors.border,
+        },
         danger: { backgroundColor: theme.colors.danger },
         ghost: {
           backgroundColor: 'transparent',
           borderWidth: 1.5,
-          borderColor: theme.colors.divider,
+          borderColor: theme.colors.border,
         },
       },
       size: {

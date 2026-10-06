@@ -104,6 +104,7 @@ export default function Login() {
           <Divider label="ou" />
           <Button
             testID="auth-guest-button"
+            strongBorder
             label="Entrar como convidado"
             variant="secondary"
             onPress={handleGuest}

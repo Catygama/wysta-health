@@ -104,6 +104,7 @@ export default function ProfessionalLogin() {
           <Divider label="ou" />
           <Button
             testID="auth-professional-guest-button"
+            strongBorder
             label="Entrar como profissional convidado"
             variant="secondary"
             onPress={handleGuest}

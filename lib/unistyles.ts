@@ -68,6 +68,10 @@ const lightTheme = {
     warningSurface: '#FBEFD9',
     success: '#1E6B56',
     divider: 'rgba(64,1,1,0.10)',
+    // Visible outline for inputs and secondary/outline buttons (a divider is too
+    // faint to delimit a control, especially in dark mode).
+    border: 'rgba(80,0,13,0.22)',
+    borderStrong: 'rgba(80,0,13,0.5)',
   },
   topic: topicsLight,
 } as const;
@@ -96,6 +100,8 @@ const darkTheme = {
     warningSurface: '#3A2E16',
     success: '#6FC8AC',
     divider: 'rgba(239,220,214,0.12)',
+    border: 'rgba(239,220,214,0.30)',
+    borderStrong: 'rgba(239,220,214,0.5)',
   },
   topic: topicsDark,
 } as const;

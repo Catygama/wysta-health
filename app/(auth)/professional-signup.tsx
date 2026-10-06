@@ -266,6 +266,7 @@ export default function ProfessionalSignup() {
           <Divider label="testes internos" />
           <Button
             testID="prof-signup-guest-button"
+            strongBorder
             label="Entrar como profissional convidado"
             variant="secondary"
             onPress={handleGuest}
