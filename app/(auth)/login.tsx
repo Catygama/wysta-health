@@ -6,6 +6,7 @@ import { StyleSheet } from 'react-native-unistyles';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { BrandMark } from '@/components/ui/BrandMark';
 import { strings } from '@/constants/strings';
 import { guestAuthEnabled } from '@/lib/env';
 import { fonts } from '@/lib/fonts';
@@ -55,7 +56,7 @@ export default function Login() {
     >
       <View style={styles.brand}>
         <View style={styles.logo}>
-          <Text style={styles.logoText}>W</Text>
+          <BrandMark size={64} />
         </View>
         <Text style={styles.appName}>{strings.app.name}</Text>
         <Text style={styles.tagline}>Saúde sexual e reprodutiva, com privacidade.</Text>
@@ -151,21 +152,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.lg,
   },
   brand: { alignItems: 'center', gap: theme.spacing.sm },
-  logo: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    borderCurve: 'continuous',
-    backgroundColor: theme.colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.xs,
-  },
-  logoText: {
-    fontFamily: fonts.displayExtraBold,
-    fontSize: 32,
-    color: theme.colors.onInk,
-  },
+  logo: { marginBottom: theme.spacing.xs },
   appName: {
     fontFamily: fonts.displayExtraBold,
     fontSize: 30,

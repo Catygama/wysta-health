@@ -2,6 +2,7 @@ import { Slot } from 'expo-router';
 import { View, Text, useWindowDimensions } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { fonts } from '@/lib/fonts';
+import { BrandMark } from '@/components/ui/BrandMark';
 
 const MOBILE_BREAKPOINT = 640;
 
@@ -13,9 +14,7 @@ export default function AuthLayoutWeb() {
     <View style={[styles.root, isMobile ? styles.rootMobile : styles.rootDesktop]}>
       <View style={[styles.brandBar, isMobile ? styles.brandBarMobile : styles.brandBarDesktop]}>
         <View style={styles.brand}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>W</Text>
-          </View>
+          <BrandMark size={30} />
           <Text style={styles.wordmark}>Wysta</Text>
         </View>
       </View>
@@ -36,16 +35,6 @@ const styles = StyleSheet.create((theme) => ({
   brandBarMobile: { paddingTop: theme.spacing.lg, alignItems: 'flex-start' },
   brandBarDesktop: { paddingTop: theme.spacing.xl, alignItems: 'center' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
-  logo: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    borderCurve: 'continuous',
-    backgroundColor: theme.colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: { color: theme.colors.onInk, fontFamily: fonts.displayExtraBold, fontSize: 15 },
   wordmark: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.ink, letterSpacing: -0.3 },
   center: { flex: 1, alignItems: 'center' },
   centerDesktop: { paddingVertical: theme.spacing.lg },

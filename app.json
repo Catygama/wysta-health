@@ -25,6 +25,9 @@
     },
     "notification": {
       "iosDisplayInForeground": true
+    },
+    "web": {
+      "favicon": "./assets/brand/icon-dark-64.png"
     }
   }
 }

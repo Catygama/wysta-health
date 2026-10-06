@@ -4,6 +4,7 @@ import { Slot, useRouter, usePathname } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Icon, type IconName } from '@/components/ui/Icon';
+import { BrandMark } from '@/components/ui/BrandMark';
 import { useTheme, type ThemeMode } from '@/lib/theme';
 import { fonts } from '@/lib/fonts';
 
@@ -188,9 +189,7 @@ function NavPill({
 function Brand() {
   return (
     <>
-      <View style={styles.logo}>
-        <Text style={styles.logoText}>W</Text>
-      </View>
+      <BrandMark size={30} />
       <Text style={styles.wordmark}>Wysta</Text>
     </>
   );
@@ -315,16 +314,6 @@ const styles = StyleSheet.create((theme) => ({
       },
     },
   },
-  logo: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    borderCurve: 'continuous',
-    backgroundColor: theme.colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: { color: theme.colors.onInk, fontFamily: fonts.displayExtraBold, fontSize: 15 },
   wordmark: {
     fontFamily: fonts.displayBold,
     fontSize: 18,
