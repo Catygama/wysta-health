@@ -21,7 +21,7 @@
       "package": "health.wysta.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#2E1065"
+        "backgroundColor": "#50000D"
       },
       "googleServicesFile": "./google-services.json"
     },
@@ -44,19 +44,19 @@
         "expo-notifications",
         {
           "icon": "./assets/images/notification-icon.png",
-          "color": "#2E1065"
+          "color": "#50000D"
         }
       ],
       [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 120,
+          "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#FAF6EE",
+          "backgroundColor": "#EFDCD6",
           "dark": {
-            "image": "./assets/images/splash-icon.png",
-            "backgroundColor": "#17112B"
+            "image": "./assets/images/splash-icon-dark.png",
+            "backgroundColor": "#50000D"
           }
         }
       ]
