@@ -31,7 +31,7 @@ app/                            # Expo Router
     index, conversations/, education/, profile, triage, wellbeing (intake do pilar Bem-estar sexual)
   (professional)/
     _layout.tsx + _layout.web.tsx
-    queue, conversations/, education/
+    queue (pedidos por atribuir), ongoing (conversas em curso), cases/, library/
   (admin)/                      # Painel de gestão de utilizadores
 
 convex/                         # Backend

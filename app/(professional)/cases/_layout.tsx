@@ -13,7 +13,7 @@ export default function ConversationsLayout() {
           // Opened from the queue (another stack), so there's no native back button.
           headerLeft: navigation.canGoBack()
             ? undefined
-            : () => <HeaderBack fallback="/(professional)/queue" />,
+            : () => <HeaderBack fallback="/(professional)/ongoing" />,
         })}
       />
     </Stack>

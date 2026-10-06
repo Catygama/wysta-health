@@ -7,7 +7,7 @@ import {
 } from '../../helpers/convex';
 
 test.describe('Professional queue', () => {
-  test('filters scope/status/priority and assign updates DB', async ({
+  test('lists unassigned requests and assign updates DB', async ({
     page,
   }) => {
     const unassigned = await seedConversation({
@@ -28,12 +28,11 @@ test.describe('Professional queue', () => {
 
     await loginAs(page, TEST_USERS.professionalA.email);
     await page.goto('/(professional)/queue');
-    await expect(page.getByTestId('queue-stat-mine')).toBeVisible({
+    await expect(page.getByTestId('queue-sort-urgency')).toBeVisible({
       timeout: 15_000,
     });
 
-    // Scope: unassigned shows the urgent waiting row.
-    await page.getByTestId('queue-scope-unassigned').click();
+    // The queue lists unassigned requests: the urgent waiting row is there.
     await expect(
       page.getByTestId(`conversation-row-${unassigned.conversationId}`),
     ).toBeVisible({ timeout: 10_000 });

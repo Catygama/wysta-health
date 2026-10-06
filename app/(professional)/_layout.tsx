@@ -30,6 +30,14 @@ function ProfessionalTabs() {
         <NativeTabs.Trigger.Label>Fila</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="ongoing">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'bubble.left.and.bubble.right', selected: 'bubble.left.and.bubble.right.fill' }}
+          md="forum"
+        />
+        <NativeTabs.Trigger.Label>Conversas</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="library">
         <NativeTabs.Trigger.Icon sf={{ default: 'book', selected: 'book.fill' }} md="book" />
         <NativeTabs.Trigger.Label>Explorar</NativeTabs.Trigger.Label>

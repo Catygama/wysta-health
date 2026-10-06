@@ -1,28 +1,21 @@
 import { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
-import { Icon, type IconName } from '@/components/ui/Icon';
-import { Button } from '@/components/ui/Button';
-import { fonts } from '@/lib/fonts';
+import { FilterChip } from '@/components/ui/FilterChip';
 
-type Status = 'waiting' | 'active' | 'closed';
-type Scope = 'mine' | 'unassigned' | 'review' | 'all';
+// "Pedidos": requests for a professional that nobody has picked up yet. Once a
+// professional assigns one to themselves it moves to their "Conversas" tab.
+
 type Priority = 'urgent' | 'high' | 'medium' | 'low';
+type Sort = 'urgency' | 'oldest' | 'newest';
 
-const STATUS_FILTERS: { label: string; value: Status | undefined }[] = [
-  { label: 'Todas', value: undefined },
-  { label: 'A aguardar', value: 'waiting' },
-  { label: 'Em curso', value: 'active' },
-];
-
-const SCOPE_FILTERS: { label: string; value: Scope }[] = [
-  { label: 'Minhas', value: 'mine' },
-  { label: 'Não atribuídas', value: 'unassigned' },
-  { label: 'Para revisão', value: 'review' },
-  { label: 'Todas', value: 'all' },
+const SORTS: { label: string; value: Sort }[] = [
+  { label: 'Mais urgentes', value: 'urgency' },
+  { label: 'À espera há mais tempo', value: 'oldest' },
+  { label: 'Mais recentes', value: 'newest' },
 ];
 
 const PRIORITY_FILTERS: { label: string; value: Priority }[] = [
@@ -32,26 +25,21 @@ const PRIORITY_FILTERS: { label: string; value: Priority }[] = [
   { label: 'Baixa', value: 'low' },
 ];
 
-const EMPTY_TEXT: Record<Scope, string> = {
-  mine: 'Não tens conversas atribuídas.',
-  unassigned: 'Não há conversas por atribuir.',
-  review: 'Nada para rever.',
-  all: 'Sem conversas com estes filtros.',
-};
-
-export default function Queue() {
-  const [statusFilter, setStatusFilter] = useState<Status | undefined>(undefined);
-  const [scopeFilter, setScopeFilter] = useState<Scope>('mine');
-  const [priorityFilter, setPriorityFilter] = useState<Priority | undefined>(undefined);
-
-  const stats = useQuery(api.conversations.queueStats);
-  const conversations =
-    useQuery(api.conversations.listForProfessional, {
-      status: statusFilter,
-      scope: scopeFilter,
-      priority: priorityFilter,
-    }) ?? [];
+export default function Requests() {
+  const [sort, setSort] = useState<Sort>('urgency');
+  const [priority, setPriority] = useState<Priority | undefined>(undefined);
   const { theme } = useUnistyles();
+
+  const requests = useQuery(api.conversations.listForProfessional, {
+    scope: 'unassigned',
+    priority,
+  });
+
+  // The backend already orders by priority, then recency.
+  const sorted = [...(requests ?? [])];
+  if (sort === 'oldest') sorted.sort((a, b) => a._creationTime - b._creationTime);
+  if (sort === 'newest') sorted.sort((a, b) => b._creationTime - a._creationTime);
+
   // From the theme so the active chip stays legible in dark mode.
   const priorityColor: Record<Priority, string> = {
     urgent: theme.colors.danger,
@@ -60,196 +48,100 @@ export default function Queue() {
     low: theme.colors.success,
   };
 
-  function showScope(scope: Scope, priority?: Priority) {
-    setScopeFilter(scope);
-    setStatusFilter(undefined);
-    setPriorityFilter(priority);
-  }
-
-  const hasUnassigned = (stats?.unassigned ?? 0) > 0;
+  const count = requests?.length;
 
   return (
     <View style={styles.root}>
-      <ScrollView style={styles.headerScroll} contentContainerStyle={styles.header}>
-        <View style={styles.statRow}>
-          <StatCard
-            testID="queue-stat-mine"
-            label="Minhas"
-            value={stats?.mine ?? 0}
-            icon={{ sf: 'person.fill', ion: 'person' }}
-            color={theme.colors.inkText}
-            onPress={() => showScope('mine')}
-          />
-          <StatCard
-            testID="queue-stat-unassigned"
-            label="Não atribuídas"
-            value={stats?.unassigned ?? 0}
-            icon={{ sf: 'tray', ion: 'mail-unread-outline' }}
-            color={theme.colors.warning}
-            onPress={() => showScope('unassigned')}
-          />
-          <StatCard
-            testID="queue-stat-urgent"
-            label="Urgentes"
-            value={stats?.urgent ?? 0}
-            icon={{ sf: 'exclamationmark.triangle.fill', ion: 'warning' }}
-            color={theme.colors.danger}
-            onPress={() => showScope('all', 'urgent')}
-          />
+      <View style={styles.header}>
+        {count !== undefined && (
+          <Text testID="queue-count" style={styles.count}>
+            {count === 0
+              ? priority
+                ? 'Sem pedidos com esta prioridade'
+                : 'Sem pedidos por atribuir'
+              : count === 1
+                ? '1 pedido por atribuir'
+                : `${count} pedidos por atribuir`}
+          </Text>
+        )}
+
+        <View style={styles.group}>
+          <Text style={styles.groupLabel}>Ordenar</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            {SORTS.map((s) => (
+              <FilterChip
+                key={s.value}
+                testID={`queue-sort-${s.value}`}
+                label={s.label}
+                active={sort === s.value}
+                onPress={() => setSort(s.value)}
+              />
+            ))}
+          </ScrollView>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-          {SCOPE_FILTERS.map((f) => (
-            <Chip
-              key={f.value}
-              testID={`queue-scope-${f.value}`}
-              label={f.label}
-              active={scopeFilter === f.value}
-              onPress={() => setScopeFilter(f.value)}
+        <View style={styles.group}>
+          <Text style={styles.groupLabel}>Prioridade</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            <FilterChip
+              testID="queue-priority-all"
+              label="Todas"
+              active={priority === undefined}
+              onPress={() => setPriority(undefined)}
             />
-          ))}
-        </ScrollView>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-          {STATUS_FILTERS.map((f) => (
-            <Chip
-              key={String(f.value)}
-              testID={`queue-status-${f.value ?? 'all'}`}
-              label={f.label}
-              active={statusFilter === f.value}
-              onPress={() => setStatusFilter(f.value)}
-            />
-          ))}
-        </ScrollView>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-          {PRIORITY_FILTERS.map((f) => (
-            <Chip
-              key={f.value}
-              testID={`queue-priority-${f.value}`}
-              label={f.label}
-              accentColor={priorityColor[f.value]}
-              active={priorityFilter === f.value}
-              onPress={() => setPriorityFilter((cur) => (cur === f.value ? undefined : f.value))}
-            />
-          ))}
-        </ScrollView>
-      </ScrollView>
+            {PRIORITY_FILTERS.map((f) => (
+              <FilterChip
+                key={f.value}
+                testID={`queue-priority-${f.value}`}
+                label={f.label}
+                accentColor={priorityColor[f.value]}
+                active={priority === f.value}
+                onPress={() => setPriority((cur) => (cur === f.value ? undefined : f.value))}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      </View>
 
       <ConversationList
-        conversations={conversations as any}
+        conversations={sorted as any}
         basePath="/(professional)/cases"
         showPriority
-        showStatus
+        // Nothing while loading, so a filter change doesn't flash the empty text.
         emptyComponent={
-          <View testID="queue-empty" style={styles.empty}>
-            <Text style={styles.emptyText}>{EMPTY_TEXT[scopeFilter]}</Text>
-            {scopeFilter === 'mine' && hasUnassigned && (
-              <Button
-                testID="queue-empty-show-unassigned"
-                kind="secondary"
-                size="sm"
-                label={`Ver não atribuídas (${stats?.unassigned})`}
-                onPress={() => showScope('unassigned')}
-              />
-            )}
-          </View>
+          requests === undefined ? null : (
+            <View testID="queue-empty" style={styles.empty}>
+              <Text style={styles.emptyText}>
+                {priority
+                  ? 'Nenhum pedido com esta prioridade.'
+                  : 'Não há pedidos por atribuir. Os novos pedidos aparecem aqui.'}
+              </Text>
+            </View>
+          )
         }
       />
     </View>
   );
 }
 
-type StatCardProps = {
-  label: string;
-  value: number;
-  icon: IconName;
-  color: string;
-  onPress: () => void;
-  testID?: string;
-};
-
-// Doubles as a shortcut to the matching filter.
-function StatCard({ label, value, icon, color, onPress, testID }: StatCardProps) {
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={`${label}: ${value}`}
-      onPress={onPress}
-      style={({ pressed }) => [styles.statCard, pressed && styles.statPressed]}
-    >
-      <View style={styles.statHead}>
-        <Icon name={icon} size={14} color={color} />
-        <Text style={styles.statLabel} numberOfLines={1}>{label}</Text>
-      </View>
-      <Text style={styles.statValue}>{value}</Text>
-    </Pressable>
-  );
-}
-
-type ChipProps = {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-  accentColor?: string;
-  testID?: string;
-};
-
-function Chip({ label, active, onPress, accentColor, testID }: ChipProps) {
-  const { theme } = useUnistyles();
-  const activeBg = accentColor ?? theme.colors.ink;
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      hitSlop={6}
-      onPress={onPress}
-      style={[styles.chip, active ? { backgroundColor: activeBg } : styles.chipIdle]}
-    >
-      <Text
-        style={[
-          styles.chipText,
-          active ? styles.chipTextOn : styles.chipTextOff,
-          // Priority fills are light in dark mode; onDanger flips to dark text there.
-          active && accentColor ? { color: theme.colors.onDanger } : null,
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create((theme) => ({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  headerScroll: { flexGrow: 0 },
-  header: { padding: theme.spacing.md, gap: theme.spacing.md },
-  statRow: { flexDirection: 'row', gap: theme.spacing.sm },
-  statPressed: { opacity: 0.85 },
-  empty: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.md },
-  emptyText: { fontSize: 15, color: theme.colors.textSecondary, textAlign: 'center' },
-  statCard: {
-    flex: 1,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-    padding: theme.spacing.md,
-    gap: theme.spacing.xs,
-  },
-  statHead: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
-  statLabel: { fontSize: 12, color: theme.colors.textSecondary, fontWeight: '500' },
-  statValue: { fontFamily: fonts.displayExtraBold, fontSize: 24, color: theme.colors.textPrimary },
-  chipRow: { gap: theme.spacing.sm },
-  chip: {
-    paddingVertical: theme.spacing.xs,
+  header: {
     paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radius.pill,
-    borderCurve: 'continuous',
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.xs,
+    gap: theme.spacing.md,
   },
-  chipIdle: { backgroundColor: theme.colors.surface },
-  chipText: { fontSize: 14, fontWeight: '500' },
-  chipTextOn: { color: theme.colors.onInk },
-  chipTextOff: { color: theme.colors.textPrimary },
+  count: { fontSize: 14, color: theme.colors.textSecondary, fontWeight: '500' },
+  group: { gap: theme.spacing.xs },
+  groupLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  chipRow: { gap: theme.spacing.sm },
+  empty: { padding: theme.spacing.xl, alignItems: 'center' },
+  emptyText: { fontSize: 15, color: theme.colors.textSecondary, textAlign: 'center' },
 }));

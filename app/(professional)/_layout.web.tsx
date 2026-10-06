@@ -13,6 +13,11 @@ const ITEMS: NavItem[] = [
     },
   },
   {
+    label: 'Conversas',
+    href: '/ongoing',
+    icon: { sf: 'bubble.left.and.bubble.right', ion: 'chatbubbles-outline' },
+  },
+  {
     label: 'Explorar',
     href: '/library',
     icon: { sf: 'book', ion: 'book-outline' },

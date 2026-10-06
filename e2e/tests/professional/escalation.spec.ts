@@ -68,9 +68,9 @@ test.describe('Conversation escalation flows', () => {
       })
       .toBe(true);
 
-    // Filtro na queue
-    await page.goto('/(professional)/queue');
-    await page.getByText('Para revisão').click();
+    // Filtro em Conversas
+    await page.goto('/(professional)/ongoing');
+    await page.getByTestId('ongoing-scope-review').click();
     await expect(page.getByText('Esc — review').first()).toBeVisible();
 
     // Marcar concluída
