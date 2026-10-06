@@ -12,7 +12,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     name: 'Wysta Dev',
     slug: config.slug!,
     scheme: 'wysta-dev',
+    // "DEV" ribbon on the icons so it's easy to tell apart from the public app.
+    icon: './assets/images/icon-dev.png',
     ios: { ...config.ios, bundleIdentifier: 'health.wysta.app.dev' },
-    android: { ...config.android, package: 'health.wysta.app.dev' },
+    android: {
+      ...config.android,
+      package: 'health.wysta.app.dev',
+      adaptiveIcon: {
+        ...config.android?.adaptiveIcon,
+        foregroundImage: './assets/images/adaptive-icon-dev.png',
+      },
+    },
   };
 };
