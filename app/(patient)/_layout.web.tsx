@@ -18,7 +18,7 @@ const ITEMS: NavItem[] = [
   {
     label: 'Explorar',
     href: '/education',
-    icon: { sf: 'safari', ion: 'compass-outline' },
+    icon: { sf: 'book', ion: 'book-outline' },
   },
   {
     label: 'Perfil',
