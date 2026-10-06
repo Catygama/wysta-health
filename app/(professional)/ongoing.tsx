@@ -81,7 +81,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
     paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.xs,
+    paddingBottom: theme.spacing.sm,
   },
   empty: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.md },
   emptyText: { fontSize: 15, color: theme.colors.textSecondary, textAlign: 'center' },

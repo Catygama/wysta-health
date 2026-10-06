@@ -107,7 +107,8 @@ export function ConversationList({
 
 const styles = StyleSheet.create((theme) => ({
   list: { flex: 1, backgroundColor: theme.colors.background },
-  content: { padding: theme.spacing.md, gap: theme.spacing.sm },
+  // Small top padding: the screens above the list already add their own spacing.
+  content: { padding: theme.spacing.md, paddingTop: theme.spacing.xs, gap: theme.spacing.sm },
   card: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   iconChip: {
     width: 44,
