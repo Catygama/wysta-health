@@ -149,15 +149,24 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 /* Outline buttons are identified by their border, which needs 3:1 (WCAG 1.4.11). */
 .hero .btn-ghost-dark { color: var(--ink); border-color: var(--text-2); }
 .hero .btn-ghost-dark:hover::after { background: rgba(80,0,13,0.06); }
-.hero .chip { box-shadow: inset 0 0 0 1px var(--divider); }
 .lede { font-size: clamp(17px, 2.2vw, 21px); color: var(--text-2); max-width: 540px; margin-top: 22px; }
 .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
 .app-download { margin-top: 18px; font-size: 15px; color: var(--text-2); }
 .app-download a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
-.hero-topics { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 40px; }
+/* Topics in the hero read as information (colour dot + text), not buttons. */
+.hero-topics {
+  list-style: none; margin: 36px 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 8px 22px;
+}
+.topic-dot { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text-2); }
+.topic-dot::before { content: ''; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+/* Mid tones of each topic colour: the pastel fills are too faint as a dot. */
+.dot-lilac::before { background: #C98F99; }
+.dot-rose::before { background: #E3A0B0; }
+.dot-mint::before { background: #C9A6C4; }
+.dot-apricot::before { background: #E8B39E; }
 
 /* Chips */
-.chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 9px 16px; font-size: 14px; font-weight: 700; font-family: var(--display); }
 .chip-lilac { background: var(--lilac); color: var(--lilac-on); }
 .chip-rose { background: var(--rose); color: var(--rose-on); }
 .chip-mint { background: var(--mint); color: var(--mint-on); }
