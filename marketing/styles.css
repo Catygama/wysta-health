@@ -212,9 +212,9 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .step p { color: var(--text-2); font-size: 15px; }
 
 /* Topics */
-.topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 44px; }
-.topic-card { border-radius: 24px; padding: 30px 26px; min-height: 150px; border: 1px solid var(--divider); }
-.topic-card h3 { font-size: 22px; margin-bottom: 10px; }
+.topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 28px; }
+.topic-card { border-radius: 20px; padding: 18px 22px; border: 1px solid var(--divider); }
+.topic-card h3 { font-size: 22px; margin-bottom: 4px; }
 .topic-card p { font-size: 15px; opacity: 0.85; }
 .topic-lilac { background: var(--lilac); color: var(--lilac-on); }
 .topic-rose { background: var(--rose); color: var(--rose-on); }
