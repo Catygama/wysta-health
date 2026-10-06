@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Modal,
   TextInput,
   Switch,
+  PanResponder,
+  Platform,
 } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useAction } from 'convex/react';
@@ -48,6 +50,29 @@ export default function ProfessionalConversation() {
   const [confirmClose, setConfirmClose] = useState(false);
   const [tab, setTab] = useState<Tab>('chat');
   const { theme } = useUnistyles();
+
+  // Draggable split between the case details (top) and the chat (bottom).
+  // null = default size (up to 45% of the screen) until the divider is dragged.
+  const [headHeight, setHeadHeight] = useState<number | null>(null);
+  const headHeightRef = useRef(0);
+  const bodyHeightRef = useRef(0);
+  const maxHeadRef = useRef(0);
+  const dragStartRef = useRef(0);
+  const splitResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: () => {
+        dragStartRef.current = headHeightRef.current;
+        // The details can take whatever the chat body has beyond its minimum.
+        maxHeadRef.current = Math.max(0, headHeightRef.current + bodyHeightRef.current - MIN_THREAD_HEIGHT);
+      },
+      onPanResponderMove: (_, g) => {
+        setHeadHeight(Math.min(Math.max(dragStartRef.current + g.dy, 0), maxHeadRef.current));
+      },
+    })
+  ).current;
 
   useFocusEffect(
     useCallback(() => {
@@ -91,7 +116,10 @@ export default function ProfessionalConversation() {
             conversation.patient?.displayName ?? conversation.patient?.email ?? topic?.label ?? 'Conversa',
         }}
       />
-      <ScrollView style={styles.headScroll} contentContainerStyle={styles.head}>
+      <ScrollView
+        style={[styles.headScroll, headHeight !== null && { height: headHeight, maxHeight: undefined }]}
+        contentContainerStyle={styles.head}
+      >
         <View style={styles.topicRow}>
           {topic && (
             <View style={[styles.topicChip, { backgroundColor: pastel.fill }]}>
@@ -247,13 +275,24 @@ export default function ProfessionalConversation() {
         )}
       </ScrollView>
 
+      <View
+        {...splitResponder.panHandlers}
+        // The handle sits right under the details, so its y is their height.
+        onLayout={(e) => (headHeightRef.current = e.nativeEvent.layout.y)}
+        style={[styles.splitHandle, Platform.OS === 'web' && (WEB_ROW_RESIZE as object)]}
+        accessibilityLabel="Arrastar para ajustar o tamanho do chat"
+        testID="case-split-handle"
+      >
+        <View style={styles.splitGrip} />
+      </View>
+
       <View style={styles.tabBar}>
         <TabButton testID="thread-tab-chat" label="Chat" active={tab === 'chat'} onPress={() => setTab('chat')} />
         <TabButton testID="thread-tab-internal" label="Notas internas" active={tab === 'internal'} onPress={() => setTab('internal')} />
         <TabButton testID="thread-tab-summary" label="Sumário" active={tab === 'summary'} onPress={() => setTab('summary')} />
       </View>
 
-      <View style={styles.body}>
+      <View style={styles.body} onLayout={(e) => (bodyHeightRef.current = e.nativeEvent.layout.height)}>
         {tab === 'summary' ? (
           <SummaryPanel
             conversationId={id}
@@ -636,10 +675,28 @@ function RecommendInPersonSheet({
   );
 }
 
+// Room always left for the chat body (messages + composer) when dragging down.
+const MIN_THREAD_HEIGHT = 200;
+// Web-only cursor/selection props, not in RN's style types.
+const WEB_ROW_RESIZE = { cursor: 'row-resize', userSelect: 'none', touchAction: 'none' };
+
 const styles = StyleSheet.create((theme) => ({
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background },
   root: { flex: 1, backgroundColor: theme.colors.background },
   headScroll: { flexGrow: 0, maxHeight: '45%' },
+  splitHandle: {
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.divider,
+  },
+  splitGrip: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.border,
+  },
   head: { padding: theme.spacing.md, gap: theme.spacing.sm },
   topicRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   topicChip: {
