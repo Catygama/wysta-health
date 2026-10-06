@@ -13,9 +13,9 @@ const ITEMS: NavItem[] = [
     },
   },
   {
-    label: 'Saúde',
+    label: 'Explorar',
     href: '/library',
-    icon: { sf: 'book', ion: 'book-outline' },
+    icon: { sf: 'safari', ion: 'compass-outline' },
   },
   {
     label: 'Perfil',

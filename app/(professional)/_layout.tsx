@@ -31,8 +31,8 @@ function ProfessionalTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="library">
-        <NativeTabs.Trigger.Icon sf={{ default: 'book', selected: 'book.fill' }} md="book" />
-        <NativeTabs.Trigger.Label>Saúde</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'safari', selected: 'safari.fill' }} md="explore" />
+        <NativeTabs.Trigger.Label>Explorar</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profile">

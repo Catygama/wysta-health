@@ -16,9 +16,9 @@ const ITEMS: NavItem[] = [
     icon: { sf: 'bubble.left.and.bubble.right', ion: 'chatbubbles-outline' },
   },
   {
-    label: 'Saúde',
+    label: 'Explorar',
     href: '/education',
-    icon: { sf: 'book', ion: 'book-outline' },
+    icon: { sf: 'safari', ion: 'compass-outline' },
   },
   {
     label: 'Perfil',
