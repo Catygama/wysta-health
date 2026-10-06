@@ -18,7 +18,10 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+    /* TypeScript 6 no longer auto-includes @types/*; Convex functions read
+     * process.env, so Node types must be listed explicitly. */
+    "types": ["node"]
   },
   "include": ["./**/*"],
   "exclude": ["./_generated"]
