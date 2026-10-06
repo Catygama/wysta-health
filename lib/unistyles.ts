@@ -72,6 +72,8 @@ const lightTheme = {
     // faint to delimit a control, especially in dark mode).
     border: 'rgba(80,0,13,0.22)',
     borderStrong: 'rgba(80,0,13,0.5)',
+    // Soft glow around a focused input (paired with an ink border).
+    focusRing: 'rgba(80,0,13,0.14)',
   },
   topic: topicsLight,
 } as const;
@@ -102,6 +104,7 @@ const darkTheme = {
     divider: 'rgba(239,220,214,0.12)',
     border: 'rgba(239,220,214,0.30)',
     borderStrong: 'rgba(239,220,214,0.5)',
+    focusRing: 'rgba(227,199,199,0.22)',
   },
   topic: topicsDark,
 } as const;

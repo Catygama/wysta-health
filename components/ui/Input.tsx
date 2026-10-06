@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TextInput, View, Text, type TextInputProps } from 'react-native';
+import { TextInput, View, Text, type TextInputProps, Platform } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 type Props = {
@@ -65,7 +65,7 @@ export function Input({
         autoComplete={resolvedAutoComplete}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={styles.field}
+        style={[styles.field, WEB_NO_OUTLINE]}
       />
       {error ? (
         <Text
@@ -80,6 +80,11 @@ export function Input({
     </View>
   );
 }
+
+// Web only: drop the browser's default focus outline (an OS-colored ring, often
+// orange); the focused state draws an ink border + soft glow instead. Kept out
+// of the typed stylesheet because RN's outlineStyle type has no 'none'.
+const WEB_NO_OUTLINE = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null;
 
 const styles = StyleSheet.create((theme) => ({
   wrap: { gap: theme.spacing.xs },
@@ -102,7 +107,7 @@ const styles = StyleSheet.create((theme) => ({
     variants: {
       state: {
         idle: { borderColor: theme.colors.border },
-        focused: { borderColor: theme.colors.accent },
+        focused: { borderColor: theme.colors.ink, boxShadow: `0 0 0 4px ${theme.colors.focusRing}` },
         error: { borderColor: theme.colors.danger },
       },
     },
