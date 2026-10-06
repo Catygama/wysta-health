@@ -113,6 +113,7 @@ const styles = StyleSheet.create((theme) => ({
   header: {
     paddingHorizontal: theme.spacing.md,
     paddingTop: theme.spacing.xs,
+    paddingBottom: theme.spacing.sm,
     gap: 2,
   },
   count: { fontSize: 13, color: theme.colors.textSecondary },
