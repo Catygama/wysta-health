@@ -112,7 +112,7 @@ const styles = StyleSheet.create((theme) => ({
   root: { flex: 1, backgroundColor: theme.colors.background },
   header: {
     paddingHorizontal: theme.spacing.md,
-    paddingTop: theme.spacing.md,
+    paddingTop: theme.spacing.xs,
     gap: 2,
   },
   count: { fontSize: 13, color: theme.colors.textSecondary },
