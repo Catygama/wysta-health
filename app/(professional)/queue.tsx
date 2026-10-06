@@ -14,7 +14,7 @@ type Sort = 'urgency' | 'oldest' | 'newest';
 
 const SORTS: { label: string; value: Sort }[] = [
   { label: 'Mais urgentes', value: 'urgency' },
-  { label: 'À espera há mais tempo', value: 'oldest' },
+  { label: 'Mais antigo', value: 'oldest' },
   { label: 'Mais recentes', value: 'newest' },
 ];
 
