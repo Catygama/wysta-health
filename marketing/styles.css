@@ -158,13 +158,13 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   list-style: none; margin: 36px 0 0; padding: 0;
   display: flex; flex-wrap: wrap; gap: 8px 22px;
 }
-.topic-dot { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text-2); }
-.topic-dot::before { content: ''; width: 10px; height: 10px; border-radius: 50%; flex: none; }
-/* Mid tones of each topic colour: the pastel fills are too faint as a dot. */
-.dot-lilac::before { background: #C98F99; }
-.dot-rose::before { background: #E3A0B0; }
-.dot-mint::before { background: #C9A6C4; }
-.dot-apricot::before { background: #E8B39E; }
+.topic-dot { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.topic-dot::before { content: ''; width: 11px; height: 11px; border-radius: 50%; flex: none; }
+/* Deep tones of each topic colour: the pastel fills are too faint as a dot. */
+.dot-lilac::before { background: #A65A69; }
+.dot-rose::before { background: #C4627E; }
+.dot-mint::before { background: #8C5A87; }
+.dot-apricot::before { background: #BF7556; }
 
 /* Chips */
 .chip-lilac { background: var(--lilac); color: var(--lilac-on); }
