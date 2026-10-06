@@ -17,6 +17,13 @@ export const strings = {
     passwordMismatch: 'As palavras-passe não coincidem',
     notAuthenticated: 'Sessão expirada. Faz login novamente.',
   },
+  // Shown on auth screens, profile and the landing: Wysta is an academic
+  // prototype, not a real clinical service.
+  academic: {
+    title: 'Projeto académico',
+    message:
+      'A Wysta é um protótipo desenvolvido no âmbito de um projeto académico. Não é um serviço de saúde real e as respostas não substituem uma consulta. Em caso de urgência, liga 112 ou SNS 24 (808 24 24 24).',
+  },
   urgency: {
     title: 'Situação urgente',
     message:

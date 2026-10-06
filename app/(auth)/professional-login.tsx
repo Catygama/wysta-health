@@ -10,6 +10,7 @@ import { Icon } from '@/components/ui/Icon';
 import { strings } from '@/constants/strings';
 import { guestAuthEnabled } from '@/lib/env';
 import { fonts } from '@/lib/fonts';
+import { AcademicNotice } from '@/components/AcademicNotice';
 
 export default function ProfessionalLogin() {
   const { signIn } = useAuthActions();
@@ -65,6 +66,8 @@ export default function ProfessionalLogin() {
         <Text style={styles.title}>Profissional</Text>
         <Text style={styles.tagline}>Acesso para profissionais de saúde verificados.</Text>
       </View>
+
+      <AcademicNotice />
 
       <View style={styles.form}>
         <Input

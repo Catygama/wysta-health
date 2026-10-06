@@ -73,6 +73,14 @@ a { color: inherit; text-decoration: none; }
 .btn:hover::after { transform: translateY(0); }
 .btn-butter:hover::after { background: rgba(80,0,13,0.10); }
 
+/* Academic-project notice (top of page) */
+.academic-bar {
+  background: var(--ink); color: var(--on-ink);
+  font-size: 13px; line-height: 1.5; text-align: center;
+  padding: 10px 24px;
+}
+.academic-bar strong { font-weight: 700; }
+
 /* Nav */
 .nav {
   max-width: var(--shell);
@@ -129,8 +137,8 @@ a { color: inherit; text-decoration: none; }
 .hero .chip { box-shadow: inset 0 0 0 1px var(--divider); }
 .lede { font-size: clamp(17px, 2.2vw, 21px); color: var(--text-2); max-width: 540px; margin-top: 22px; }
 .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
-.app-download { margin-top: 18px; font-size: 15px; color: rgba(255,255,255,0.72); }
-.app-download a { color: #fff; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.app-download { margin-top: 18px; font-size: 15px; color: var(--text-2); }
+.app-download a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .hero-topics { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 40px; }
 
 /* Chips */

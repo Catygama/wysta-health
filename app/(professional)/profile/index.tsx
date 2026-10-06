@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import { HistoryLink } from '@/components/HistoryLink';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/Icon';
+import { AcademicNotice } from '@/components/AcademicNotice';
 
 export default function ProfessionalProfile() {
   const router = useRouter();
@@ -50,6 +51,8 @@ export default function ProfessionalProfile() {
         />
         <Text style={styles.signOutText}>Terminar sessão</Text>
       </Pressable>
+
+      <AcademicNotice />
 
       <ConfirmDialog
         visible={confirmSignOut}

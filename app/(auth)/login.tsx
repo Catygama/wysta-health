@@ -11,6 +11,7 @@ import { BrandMark } from '@/components/ui/BrandMark';
 import { strings } from '@/constants/strings';
 import { guestAuthEnabled } from '@/lib/env';
 import { fonts } from '@/lib/fonts';
+import { AcademicNotice } from '@/components/AcademicNotice';
 
 export default function Login() {
   const { signIn } = useAuthActions();
@@ -65,6 +66,8 @@ export default function Login() {
         <Text style={styles.appName}>{strings.app.name}</Text>
         <Text style={styles.tagline}>Saúde sexual e reprodutiva, com privacidade.</Text>
       </View>
+
+      <AcademicNotice />
 
       <View style={styles.form}>
         <Input

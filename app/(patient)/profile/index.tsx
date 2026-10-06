@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
 import { WellbeingTrend } from '@/components/WellbeingTrend';
 import { HistoryLink } from '@/components/HistoryLink';
+import { AcademicNotice } from '@/components/AcademicNotice';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTheme, type ThemeMode } from '@/lib/theme';
 import { fonts } from '@/lib/fonts';
@@ -323,10 +324,7 @@ export default function Profile() {
         onConfirm={() => setNotice(null)}
       />
 
-      <Text style={styles.emergency}>
-        Em emergência liga 112 ou SNS 24 (808 24 24 24). A Wysta não substitui uma
-        urgência médica.
-      </Text>
+      <AcademicNotice />
     </ScrollView>
   );
 }
@@ -571,12 +569,6 @@ const styles = StyleSheet.create((theme) => ({
   bootstrapTitle: { fontFamily: fonts.displayBold, fontSize: 14, color: theme.colors.warning },
   bootstrapText: { fontSize: 12, color: theme.colors.textSecondary },
   errorText: { fontSize: 12, color: theme.colors.danger },
-  emergency: {
-    fontSize: 12,
-    color: theme.colors.textTertiary,
-    textAlign: 'center',
-    paddingHorizontal: theme.spacing.md,
-  },
   tagEditor: { gap: theme.spacing.sm },
   tagInputRow: { flexDirection: 'row', gap: theme.spacing.sm },
   tagInput: {

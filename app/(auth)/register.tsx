@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { strings } from '@/constants/strings';
 import { fonts } from '@/lib/fonts';
+import { AcademicNotice } from '@/components/AcademicNotice';
 
 export default function Register() {
   const { signIn } = useAuthActions();
@@ -47,6 +48,8 @@ export default function Register() {
       contentInsetAdjustmentBehavior="automatic"
     >
       <Text style={styles.title}>Criar conta</Text>
+
+      <AcademicNotice />
 
       <View style={styles.form}>
         <Input
