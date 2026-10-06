@@ -10,6 +10,8 @@ test('Continue conversation card navigates to thread', async ({ page }) => {
     initialMessage: 'olá',
   });
   await loginAs(page, TEST_USERS.patientB.email);
+  // Open conversations live in the Conversas tab.
+  await page.goto('/(patient)/conversations');
   const card = page.getByTestId(/^patient-conversation-/).first();
   await expect(card).toBeVisible({ timeout: 15_000 });
   await card.click();

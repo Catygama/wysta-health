@@ -8,6 +8,8 @@ type TopicId =
   | 'general';
 
 type RiskTarget = 'low' | 'urgent';
+// Path chosen on Home; decides the conversation kind the triage creates.
+type Mode = 'professional' | 'ai';
 
 type CurrentMeta = {
   id: string;
@@ -83,9 +85,9 @@ async function answerSingle(
 
 export async function answerTriage(
   page: Page,
-  opts: { topic: TopicId; target: RiskTarget },
+  opts: { topic: TopicId; target: RiskTarget; mode?: Mode },
 ) {
-  await page.goto(`/triage?topic=${opts.topic}`);
+  await page.goto(`/triage?topic=${opts.topic}&mode=${opts.mode ?? 'professional'}`);
   let meta = await waitForMeta(page, (m) => m.step === 0);
   while (true) {
     const previous = meta;

@@ -20,6 +20,9 @@ test('Close conversation sets status closed', async ({ page }) => {
     timeout: 15_000,
   });
   await page.getByTestId('conversation-close-button').click();
+  // Closing asks for confirmation first.
+  await expect(page.getByTestId('close-conversation-dialog')).toBeVisible();
+  await page.getByTestId('close-conversation-dialog-confirm').click();
 
   await expect
     .poll(
