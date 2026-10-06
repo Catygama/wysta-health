@@ -44,7 +44,7 @@ export default function Requests() {
 
   // From the theme so the dots stay legible in dark mode.
   const priorityColor: Record<Priority, string> = {
-    urgent: theme.colors.danger,
+    urgent: PRIORITY_COLORS.urgent,
     high: theme.colors.danger,
     medium: theme.colors.warning,
     low: PRIORITY_COLORS.low,
