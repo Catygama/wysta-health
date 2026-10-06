@@ -54,7 +54,6 @@ export function WebShell({ items, brandHref = '/', maxWidth = 1040 }: Props) {
       )}
       <ContentContainer
         maxWidth={isMobile ? Number.POSITIVE_INFINITY : maxWidth}
-        bottomInset={isMobile ? 64 : 0}
         framed={!isMobile}
       >
         <Slot />
@@ -200,24 +199,21 @@ function Brand() {
 function ContentContainer({
   children,
   maxWidth,
-  bottomInset,
   framed,
 }: {
   children: ReactNode;
   maxWidth: number;
-  bottomInset: number;
   framed: boolean;
 }) {
+  // No bottom padding: the mobile BottomNav sits in the normal flex flow below
+  // this panel, so it already takes its own space.
   return (
     <View style={styles.contentOuter}>
       <View
         style={[
           styles.contentPanel,
           framed && styles.contentPanelFramed,
-          {
-            maxWidth: Number.isFinite(maxWidth) ? maxWidth : undefined,
-            paddingBottom: bottomInset,
-          },
+          { maxWidth: Number.isFinite(maxWidth) ? maxWidth : undefined },
         ]}
       >
         {children}
