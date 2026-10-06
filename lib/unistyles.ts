@@ -17,7 +17,7 @@ const shared = {
 
 // Topic pastels: { fill, on } pairs. `on` is the only legal text color on `fill`.
 const topicsLight = {
-  contraception: { fill: '#E3C7C7', on: '#50000D' },
+  contraception: { fill: '#C98F99', on: '#3F000A' },
   cycle: { fill: '#F2C9D0', on: '#6B1A2A' },
   intimate: { fill: '#E6D3E3', on: '#5B2350' },
   pregnancy: { fill: '#F5D6C8', on: '#7A3A24' },
@@ -26,7 +26,7 @@ const topicsLight = {
 } as const;
 
 const topicsDark = {
-  contraception: { fill: '#5A2020', on: '#E3C7C7' },
+  contraception: { fill: '#6A2A36', on: '#F0C9D0' },
   cycle: { fill: '#5C1E2C', on: '#F2C9D0' },
   intimate: { fill: '#4A2A44', on: '#E6D3E3' },
   pregnancy: { fill: '#5A3226', on: '#F5D6C8' },
@@ -49,6 +49,7 @@ const lightTheme = {
     inkPressed: '#3B000A',
     onInk: '#FBF7F4',
     accent: '#8A3A3A',
+    // Brand pink tint used as a fill (icon circles, avatars, tags); pair with inkText.
     butter: '#E3C7C7',
     background: '#FBF7F4',
     surface: '#FFFFFF',
@@ -80,7 +81,7 @@ const darkTheme = {
     inkPressed: '#D4B3B3',
     onInk: '#50000D',
     accent: '#EFB9B0',
-    butter: '#E3C7C7',
+    butter: '#5A2020',
     background: '#2A0006',
     surface: '#3D000A',
     surfaceSunken: '#330008',

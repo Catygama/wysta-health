@@ -32,7 +32,7 @@ const styles = StyleSheet.create((theme) => ({
     borderCurve: 'continuous',
     variants: {
       tone: {
-        lilac: { backgroundColor: theme.topic.contraception.fill },
+        lilac: { backgroundColor: theme.colors.butter },
         mint: { backgroundColor: theme.topic.intimate.fill },
         ink: { backgroundColor: theme.colors.ink },
       },
@@ -42,7 +42,7 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: '500',
     variants: {
       tone: {
-        lilac: { color: theme.topic.contraception.on },
+        lilac: { color: theme.colors.inkText },
         mint: { color: theme.topic.intimate.on },
         ink: { color: theme.colors.onInk },
       },

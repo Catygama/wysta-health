@@ -68,7 +68,7 @@ export default function PatientHome() {
         <PathCard
           testID="home-path-professional"
           icon={{ sf: 'stethoscope', ion: 'medkit-outline' }}
-          iconFill={theme.topic.contraception.fill}
+          iconFill={theme.colors.butter}
           title="Profissional de saúde"
           description="Responde a umas perguntas e um profissional responde-te em até 24h"
           onPress={() => setPickerMode('professional')}
@@ -334,7 +334,7 @@ const styles = StyleSheet.create((theme) => ({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: theme.topic.contraception.fill,
+    backgroundColor: theme.colors.butter,
     alignItems: 'center',
     justifyContent: 'center',
   },

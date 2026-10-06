@@ -474,7 +474,7 @@ function TagEditor({ value, onChangeText, tags, onAdd, onRemove, placeholder }: 
           {tags.map((tag) => (
             <Pressable key={tag} onPress={() => onRemove(tag)} style={styles.tagChip}>
               <Text style={styles.tagChipText}>{tag}</Text>
-              <Icon name={{ sf: 'xmark', ion: 'close' }} size={10} color={theme.topic.contraception.on} />
+              <Icon name={{ sf: 'xmark', ion: 'close' }} size={10} color={theme.colors.inkText} />
             </Pressable>
           ))}
         </View>
@@ -595,10 +595,10 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: theme.topic.contraception.fill,
+    backgroundColor: theme.colors.butter,
     paddingVertical: 4,
     paddingHorizontal: theme.spacing.sm,
     borderRadius: theme.radius.pill,
   },
-  tagChipText: { fontSize: 12, fontWeight: '500', color: theme.topic.contraception.on },
+  tagChipText: { fontSize: 12, fontWeight: '500', color: theme.colors.inkText },
 }));
