@@ -19,8 +19,8 @@ const shared = {
 const topicsLight = {
   contraception: { fill: '#E3C7C7', on: '#50000D' },
   cycle: { fill: '#F2C9D0', on: '#6B1A2A' },
-  intimate: { fill: '#EFDCD6', on: '#5A2A22' },
-  pregnancy: { fill: '#F3D9B8', on: '#6B3D0A' },
+  intimate: { fill: '#E6D3E3', on: '#5B2350' },
+  pregnancy: { fill: '#F5D6C8', on: '#7A3A24' },
   general: { fill: '#E6D5CC', on: '#4A2E25' },
   wellbeing: { fill: '#E9C2B4', on: '#6B2A1A' },
 } as const;
@@ -28,8 +28,8 @@ const topicsLight = {
 const topicsDark = {
   contraception: { fill: '#5A2020', on: '#E3C7C7' },
   cycle: { fill: '#5C1E2C', on: '#F2C9D0' },
-  intimate: { fill: '#4A2A24', on: '#EFDCD6' },
-  pregnancy: { fill: '#4E3418', on: '#F3D9B8' },
+  intimate: { fill: '#4A2A44', on: '#E6D3E3' },
+  pregnancy: { fill: '#5A3226', on: '#F5D6C8' },
   general: { fill: '#3E2C26', on: '#E6D5CC' },
   wellbeing: { fill: '#5A2A1E', on: '#E9C2B4' },
 } as const;

@@ -19,8 +19,8 @@
   /* Topic tints (same pairs as the app's topic colors). */
   --lilac: #E3C7C7; --lilac-on: #50000D;      /* Contraceção */
   --rose: #F2C9D0;  --rose-on: #6B1A2A;       /* Ciclo menstrual */
-  --mint: #EFDCD6;  --mint-on: #5A2A22;       /* Saúde íntima */
-  --apricot: #F3D9B8; --apricot-on: #6B3D0A;  /* Gravidez */
+  --mint: #E6D3E3;  --mint-on: #5B2350;       /* Saúde íntima (malva) */
+  --apricot: #F5D6C8; --apricot-on: #7A3A24;  /* Gravidez (pêssego rosado) */
 
   --display: 'Fraunces', Georgia, serif;
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
