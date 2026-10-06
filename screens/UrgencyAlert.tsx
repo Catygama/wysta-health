@@ -2,6 +2,7 @@ import { View, Text, Pressable } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { strings } from '@/constants/strings';
 import { fonts } from '@/lib/fonts';
+import { Icon } from '@/components/ui/Icon';
 
 type Props = {
   onDismiss: () => void;
@@ -10,7 +11,14 @@ type Props = {
 export function UrgencyAlert({ onDismiss }: Props) {
   return (
     <View testID="urgency-alert" style={styles.card}>
-      <Text style={styles.title}>⚠️ {strings.urgency.title}</Text>
+      <View style={styles.titleRow}>
+        <Icon
+          name={{ sf: 'exclamationmark.triangle.fill', ion: 'warning' }}
+          size={20}
+          color={styles.title.color}
+        />
+        <Text style={styles.title}>{strings.urgency.title}</Text>
+      </View>
       <Text style={styles.message}>{strings.urgency.message}</Text>
       <View style={styles.contacts}>
         <Text style={styles.contactsLabel}>Contactos de emergência:</Text>
@@ -32,7 +40,8 @@ const styles = StyleSheet.create((theme) => ({
     padding: theme.spacing.lg,
     gap: theme.spacing.md,
   },
-  title: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.danger },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  title: { flex: 1, fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.danger },
   message: { fontSize: 16, color: theme.colors.textPrimary, lineHeight: 24 },
   contacts: {
     backgroundColor: theme.colors.surface,

@@ -16,7 +16,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  patient: '#2E1065',
+  patient: '#50000D',
   professional: '#0F6E56',
   admin: '#C77B16',
 };

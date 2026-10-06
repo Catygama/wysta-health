@@ -38,9 +38,9 @@ type ColorPalette = {
 // hand (primary = ink, warm off-white surfaces, warm text). Screens migrated to
 // unistyles should read from the theme there instead of this static palette.
 export const lightColors: ColorPalette = {
-  primary: '#2E1065',
-  primaryLight: '#EDE7FB',
-  primaryDark: '#7C3AED',
+  primary: '#50000D',
+  primaryLight: '#E3C7C7',
+  primaryDark: '#8A3A3A',
 
   danger: '#D7264C',
   dangerLight: '#F8DBE2',
@@ -50,28 +50,28 @@ export const lightColors: ColorPalette = {
   successLight: '#DCEFE7',
 
   text: {
-    primary: '#2B2438',
-    secondary: '#6E6880',
-    tertiary: '#B7B0C6',
-    inverse: '#FFFFFF',
+    primary: '#50000D',
+    secondary: '#6E3A36',
+    tertiary: '#A9817C',
+    inverse: '#EFDCD6',
   },
 
   background: {
-    primary: '#FBF8F2',
-    secondary: '#F4EEE3',
-    tertiary: '#ECE3D4',
-    grouped: '#F4EEE3',
-    groupedSecondary: '#FBF8F2',
+    primary: '#FAF2EF',
+    secondary: '#EFDCD6',
+    tertiary: '#E3C7C7',
+    grouped: '#EFDCD6',
+    groupedSecondary: '#FAF2EF',
   },
 
-  border: '#E7DFD0',
-  borderOpaque: '#D8CDB9',
+  border: '#E3C7C7',
+  borderOpaque: '#D3B0AE',
 };
 
 export const darkColors: ColorPalette = {
-  primary: '#A78BFA',
-  primaryLight: '#3B2380',
-  primaryDark: '#C4B5FD',
+  primary: '#E3C7C7',
+  primaryLight: '#50000D',
+  primaryDark: '#EFB9B0',
 
   danger: '#F2879E',
   dangerLight: '#4C1D24',
@@ -81,22 +81,22 @@ export const darkColors: ColorPalette = {
   successLight: '#14322A',
 
   text: {
-    primary: '#EFEAFB',
-    secondary: '#A79FC0',
-    tertiary: '#6E6688',
-    inverse: '#17112B',
+    primary: '#EFDCD6',
+    secondary: '#CFAFAA',
+    tertiary: '#8E6662',
+    inverse: '#50000D',
   },
 
   background: {
-    primary: '#221A3A',
-    secondary: '#1D1631',
-    tertiary: '#2C2348',
-    grouped: '#17112B',
-    groupedSecondary: '#221A3A',
+    primary: '#3D000A',
+    secondary: '#330008',
+    tertiary: '#4D0010',
+    grouped: '#2A0006',
+    groupedSecondary: '#3D000A',
   },
 
-  border: '#33294F',
-  borderOpaque: '#473A66',
+  border: '#5C0A18',
+  borderOpaque: '#701426',
 };
 
 export const colors: ColorPalette = lightColors;

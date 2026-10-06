@@ -59,7 +59,7 @@ export const TOPICS: Topic[] = [
   {
     id: 'sexual-wellbeing',
     label: 'Bem-estar sexual',
-    icon: { sf: 'sparkles', ion: 'sparkles' },
+    icon: { sf: 'camera.macro', ion: 'flower' },
     description: 'Desejo, prazer, intimidade e autoconhecimento',
     color: 'wellbeing',
   },

@@ -44,7 +44,12 @@ const styles = StyleSheet.create((theme) => ({
     borderCurve: 'continuous',
     variants: {
       tone: {
-        surface: { backgroundColor: theme.colors.surface },
+        // Hairline keeps white cards distinct on the near-white page.
+        surface: {
+          backgroundColor: theme.colors.surface,
+          borderWidth: 1,
+          borderColor: theme.colors.divider,
+        },
         sunken: { backgroundColor: theme.colors.surfaceSunken },
       },
       padded: {
