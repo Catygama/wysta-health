@@ -347,16 +347,26 @@ export default function Triage() {
       </View>
 
       {redFlagTriggered && !showUrgency && (
-        <View style={styles.nav}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setShowUrgency(true)}
-            hitSlop={8}
-            style={styles.navUrgentButton}
-          >
-            <Text style={styles.navUrgent}>Ver aviso urgente</Text>
-          </Pressable>
-        </View>
+        // Quiet reminder after "Continuar mesmo assim": reopens the urgency alert.
+        <Pressable
+          testID="triage-reopen-urgency"
+          accessibilityRole="button"
+          onPress={() => setShowUrgency(true)}
+          style={({ pressed }) => [styles.urgentNote, pressed && styles.urgentNotePressed]}
+        >
+          <View style={styles.urgentIcon}>
+            <Icon
+              name={{ sf: 'exclamationmark.triangle.fill', ion: 'warning-outline' }}
+              size={18}
+              color={theme.colors.inkText}
+            />
+          </View>
+          <View style={styles.urgentBody}>
+            <Text style={styles.urgentTitle}>Situação urgente</Text>
+            <Text style={styles.urgentText}>Ver contactos de emergência</Text>
+          </View>
+          <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={18} color={theme.colors.inkText} />
+        </Pressable>
       )}
     </ScrollView>
   );
@@ -468,9 +478,27 @@ const styles = StyleSheet.create((theme) => ({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  nav: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  navUrgentButton: { minHeight: 44, justifyContent: 'center' },
-  navUrgent: { fontSize: 15, color: theme.colors.danger, fontWeight: '600' },
+  urgentNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.lg,
+    borderCurve: 'continuous',
+    backgroundColor: theme.colors.surfaceSunken,
+  },
+  urgentNotePressed: { opacity: 0.85 },
+  urgentIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.butter,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  urgentBody: { flex: 1 },
+  urgentTitle: { fontFamily: fonts.displayBold, fontSize: 15, color: theme.colors.inkText },
+  urgentText: { fontSize: 13, color: theme.colors.textSecondary },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
