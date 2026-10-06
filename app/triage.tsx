@@ -406,7 +406,9 @@ const styles = StyleSheet.create((theme) => ({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg },
   head: { gap: theme.spacing.sm },
-  srOnly: { position: 'absolute', width: 1, height: 1, opacity: 0 },
+  // overflow hidden: a 1px-wide text wraps a character per line and its height
+  // would otherwise stretch the scroll area far below the content.
+  srOnly: { position: 'absolute', width: 1, height: 1, opacity: 0, overflow: 'hidden' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   topicChip: {
     width: 40,
