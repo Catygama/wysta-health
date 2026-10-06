@@ -10,8 +10,6 @@ type Props = {
   message?: string;
   confirmLabel: string;
   cancelLabel?: string;
-  /** Styles the confirm button as destructive. */
-  destructive?: boolean;
   /** Single-button notice (no cancel); closing still calls onCancel. */
   hideCancel?: boolean;
   onConfirm: () => Promise<unknown> | void;
@@ -20,7 +18,8 @@ type Props = {
 };
 
 // Cross-platform confirmation dialog (Alert.alert is a no-op on web). With
-// hideCancel it doubles as a one-button notice.
+// hideCancel it doubles as a one-button notice. The confirm button always uses
+// the brand (primary) color; danger red is reserved for clinical urgency.
 // Stays open while onConfirm runs and shows its error if it throws.
 export function ConfirmDialog({
   visible,
@@ -28,7 +27,6 @@ export function ConfirmDialog({
   message,
   confirmLabel,
   cancelLabel = 'Cancelar',
-  destructive,
   hideCancel,
   onConfirm,
   onCancel,
@@ -79,7 +77,7 @@ export function ConfirmDialog({
               <Button
                 testID={testID ? `${testID}-confirm` : undefined}
                 label={confirmLabel}
-                kind={destructive ? 'danger' : 'primary'}
+                kind="primary"
                 onPress={confirm}
                 loading={busy}
               />

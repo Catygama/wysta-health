@@ -307,7 +307,6 @@ export default function Profile() {
         title="Terminar sessão?"
         message="Tens a certeza que queres terminar a sessão?"
         confirmLabel="Sair"
-        destructive
         onCancel={() => setConfirmSignOut(false)}
         onConfirm={async () => {
           await signOut();

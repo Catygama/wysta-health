@@ -55,7 +55,6 @@ export default function ProfessionalProfile() {
         visible={confirmSignOut}
         title="Terminar sessão?"
         confirmLabel="Sair"
-        destructive
         onCancel={() => setConfirmSignOut(false)}
         onConfirm={() => signOut()}
       />

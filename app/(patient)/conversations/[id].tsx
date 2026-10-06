@@ -87,7 +87,6 @@ export default function PatientConversation() {
         title="Tens a certeza que queres terminar a conversa?"
         message="A conversa passa para o Histórico, no teu Perfil, e já não poderás enviar mensagens nela."
         confirmLabel="Terminar"
-        destructive
         onCancel={() => setConfirmEnd(false)}
         onConfirm={async () => {
           await closeConversation({ id: id as any });

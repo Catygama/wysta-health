@@ -288,7 +288,6 @@ export default function ProfessionalConversation() {
         title="Tem a certeza que quer terminar a conversa?"
         message="A conversa passa para o Histórico e a utente deixa de poder enviar mensagens nela."
         confirmLabel="Terminar"
-        destructive
         onCancel={() => setConfirmClose(false)}
         onConfirm={async () => {
           await close({ id: id as any });
