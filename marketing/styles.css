@@ -134,7 +134,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   position: relative;
   max-width: var(--shell);
   margin: 0 auto;
-  padding: 72px 24px 44px;
+  padding: 44px 24px 44px;
 }
 .eyebrow {
   text-transform: uppercase; letter-spacing: 0.12em; font-size: 13px; font-weight: 700;
