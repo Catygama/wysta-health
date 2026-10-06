@@ -6,6 +6,9 @@ type Props = ViewProps & {
   /** Visual emphasis: 'surface' (white) default, 'sunken' (cream inset). */
   tone?: 'surface' | 'sunken';
   padded?: boolean;
+  /** Spoken name when pressable; defaults to the concatenated child text. */
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
   testID?: string;
 };
 
@@ -15,6 +18,8 @@ export function Card({
   padded = true,
   style,
   children,
+  accessibilityLabel,
+  accessibilityHint,
   testID,
   ...rest
 }: Props) {
@@ -24,6 +29,9 @@ export function Card({
     return (
       <Pressable
         testID={testID}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
         onPress={onPress}
         style={({ pressed }) => [styles.card, pressed && styles.pressed, style]}
       >
@@ -32,7 +40,13 @@ export function Card({
     );
   }
   return (
-    <View testID={testID} style={[styles.card, style]} {...rest}>
+    <View
+      testID={testID}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      style={[styles.card, style]}
+      {...rest}
+    >
       {children}
     </View>
   );

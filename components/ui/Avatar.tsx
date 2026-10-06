@@ -5,14 +5,19 @@ type Props = {
   initials: string;
   size?: number;
   tone?: 'lilac' | 'mint' | 'ink';
+  /** Person's name to announce; without it the avatar is decorative. */
+  accessibilityLabel?: string;
   testID?: string;
 };
 
-export function Avatar({ initials, size = 40, tone = 'lilac', testID }: Props) {
+export function Avatar({ initials, size = 40, tone = 'lilac', accessibilityLabel, testID }: Props) {
   styles.useVariants({ tone });
   return (
     <View
       testID={testID}
+      {...(accessibilityLabel
+        ? { accessible: true, accessibilityRole: 'image' as const, accessibilityLabel }
+        : { 'aria-hidden': true })}
       style={[styles.circle, { width: size, height: size, borderRadius: size / 2 }]}
     >
       <Text style={[styles.text, { fontSize: size * 0.34 }]}>{initials}</Text>

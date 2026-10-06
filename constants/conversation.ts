@@ -46,3 +46,16 @@ export type ConversationMode = 'professional' | 'ai';
 export function kindForMode(mode: string | undefined): 'human-async' | 'ai-only' {
   return mode === 'ai' ? 'ai-only' : 'human-async';
 }
+
+// Risk colors come from the theme so they stay legible in dark mode.
+export function riskColor(
+  theme: { colors: { danger: string; warning: string; success: string } },
+  level: string,
+): string | undefined {
+  const map: Record<string, string> = {
+    high: theme.colors.danger,
+    medium: theme.colors.warning,
+    low: theme.colors.success,
+  };
+  return map[level];
+}

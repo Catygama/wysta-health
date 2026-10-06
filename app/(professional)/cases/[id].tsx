@@ -26,6 +26,7 @@ import {
 } from '@/constants/conversation';
 import { useTabBar } from '@/contexts/TabBarContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { pregnancyClinicalLabel } from '@/constants/profile';
 
 type Tab = 'chat' | 'internal' | 'summary';
 
@@ -58,7 +59,7 @@ export default function ProfessionalConversation() {
   if (!user || conversation === undefined || !id) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color={theme.colors.ink} />
+        <ActivityIndicator color={theme.colors.inkText} />
       </View>
     );
   }
@@ -76,14 +77,20 @@ export default function ProfessionalConversation() {
   const canEscalate = isMine && !isClosed;
   const isAiOnly = conversation.kind === 'ai-only';
   const openRelated = (relatedId: string) =>
-    router.push({ pathname: '/(professional)/conversations/[id]', params: { id: relatedId } });
+    router.push({ pathname: '/(professional)/cases/[id]', params: { id: relatedId } });
 
   const statusColor = STATUS_COLORS[conversation.status] ?? theme.colors.textSecondary;
   const priorityColor = PRIORITY_COLORS[conversation.priority] ?? theme.colors.textSecondary;
 
   return (
     <View style={styles.root}>
-      <Stack.Screen options={{ title: topic?.label ?? 'Conversa' }} />
+      {/* The topic is already the body heading; the header names the patient. */}
+      <Stack.Screen
+        options={{
+          title:
+            conversation.patient?.displayName ?? conversation.patient?.email ?? topic?.label ?? 'Conversa',
+        }}
+      />
       <ScrollView style={styles.headScroll} contentContainerStyle={styles.head}>
         <View style={styles.topicRow}>
           {topic && (
@@ -115,7 +122,9 @@ export default function ProfessionalConversation() {
               {conversation.patient.displayName ?? conversation.patient.email}
               {conversation.patient.ageRange ? ` • ${conversation.patient.ageRange}` : ''}
               {conversation.patient.location ? ` • ${conversation.patient.location}` : ''}
-              {conversation.patient.pregnancyStatus ? ` • ${conversation.patient.pregnancyStatus}` : ''}
+              {conversation.patient.pregnancyStatus
+                ? ` • ${pregnancyClinicalLabel(conversation.patient.pregnancyStatus)}`
+                : ''}
             </Text>
             {(conversation.patient.conditions?.length ?? 0) > 0 && (
               <Text style={styles.patientMeta}>
@@ -329,7 +338,13 @@ type TabButtonProps = { label: string; active: boolean; onPress: () => void; tes
 function TabButton({ label, active, onPress, testID }: TabButtonProps) {
   styles.useVariants({ active });
   return (
-    <Pressable testID={testID} onPress={onPress} style={styles.tab}>
+    <Pressable
+      testID={testID}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={styles.tab}
+    >
       <Text style={styles.tabText}>{label}</Text>
     </Pressable>
   );
@@ -636,7 +651,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.ink, flex: 1 },
+  title: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText, flex: 1 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
   badge: { paddingVertical: 2, paddingHorizontal: theme.spacing.sm, borderRadius: theme.radius.pill },
   badgeText: { fontSize: 12, fontWeight: '500' },
@@ -673,7 +688,7 @@ const styles = StyleSheet.create((theme) => ({
     borderBottomWidth: 2,
     variants: {
       active: {
-        true: { borderBottomColor: theme.colors.ink },
+        true: { borderBottomColor: theme.colors.inkText },
         false: { borderBottomColor: 'transparent' },
       },
     },
@@ -682,7 +697,7 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: 14,
     variants: {
       active: {
-        true: { color: theme.colors.ink, fontWeight: '500' },
+        true: { color: theme.colors.inkText, fontWeight: '500' },
         false: { color: theme.colors.textSecondary, fontWeight: '500' },
       },
     },

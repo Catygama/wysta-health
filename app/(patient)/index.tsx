@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { useQuery, useAction } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
-import { TOPICS, type TopicColor } from '@/constants/topics';
+import { TOPIC_CHOICES, OTHER_TOPIC, type TopicColor } from '@/constants/topics';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Card';
 import { fonts } from '@/lib/fonts';
@@ -38,7 +38,8 @@ export default function PatientHome() {
   const router = useRouter();
   const { theme } = useUnistyles();
   const user = useQuery(api.users.currentUser);
-  const greeting = user?.profile?.displayName || user?.email?.split('@')[0] || 'utente';
+  const greeting =
+    user?.profile?.displayName?.trim().split(/s+/)[0] || user?.email?.split('@')[0] || 'utente';
   // Which path the patient chose on Home; the topic picker is open while set.
   const [pickerMode, setPickerMode] = useState<ConversationMode | null>(null);
 
@@ -115,7 +116,13 @@ function TopicPickerSheet({
             <Text style={styles.sheetTitle}>
               {mode === 'ai' ? 'Falar com a assistente IA' : 'Falar com um profissional'}
             </Text>
-            <Pressable testID="topic-picker-close" onPress={onClose} hitSlop={8}>
+            <Pressable
+              testID="topic-picker-close"
+              accessibilityRole="button"
+              accessibilityLabel="Fechar"
+              onPress={onClose}
+              hitSlop={8}
+            >
               <Icon name={{ sf: 'xmark', ion: 'close' }} size={22} color={theme.colors.textSecondary} />
             </Pressable>
           </View>
@@ -125,7 +132,8 @@ function TopicPickerSheet({
               : 'Escolhe o tema. Depois de umas perguntas, um profissional responde-te em até 24h.'}
           </Text>
           <View style={[styles.topicList, twoColumns && styles.topicGrid]}>
-            {TOPICS.map((t) => (
+            {/* The five topics, then the catch-all "general" as "Outro assunto". */}
+            {[...TOPIC_CHOICES, OTHER_TOPIC].map((t) => (
               <Card
                 key={t.id}
                 testID={`topic-picker-${t.id}`}
@@ -135,7 +143,9 @@ function TopicPickerSheet({
               >
                 <TopicIcon color={t.color} icon={t.icon} size={36} />
                 <View style={styles.topicMeta}>
-                  <Text style={styles.topicLabel}>{t.label}</Text>
+                  <Text style={styles.topicLabel}>
+                    {t.id === OTHER_TOPIC.id ? 'Outro assunto' : t.label}
+                  </Text>
                   <Text style={styles.topicDesc}>{t.description}</Text>
                 </View>
                 <Icon
@@ -208,7 +218,13 @@ function AnonymousAiButton() {
           <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Pergunta anónima</Text>
-              <Pressable testID="anonymous-ai-close" onPress={close} hitSlop={8}>
+              <Pressable
+                testID="anonymous-ai-close"
+                accessibilityRole="button"
+                accessibilityLabel="Fechar"
+                onPress={close}
+                hitSlop={8}
+              >
                 <Icon name={{ sf: 'xmark', ion: 'close' }} size={22} color={theme.colors.textSecondary} />
               </Pressable>
             </View>
@@ -293,7 +309,7 @@ const styles = StyleSheet.create((theme) => ({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg },
   hero: { gap: theme.spacing.xs },
-  greeting: { fontFamily: fonts.displayExtraBold, fontSize: 28, color: theme.colors.ink },
+  greeting: { fontFamily: fonts.displayExtraBold, fontSize: 28, color: theme.colors.inkText },
   subtitle: { fontSize: 16, color: theme.colors.textSecondary },
   section: { gap: theme.spacing.md },
   // Topic picker / topic cards

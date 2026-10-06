@@ -22,6 +22,11 @@ export function Chip({ label, topic, selected, onPress, testID }: Props) {
       testID={testID}
       onPress={onPress}
       disabled={!onPress}
+      // Static chips are plain labels; interactive ones are toggle-like buttons.
+      accessibilityRole={onPress ? 'button' : 'text'}
+      accessibilityState={onPress ? { selected: !!selected } : undefined}
+      // Chips are ~34pt tall; extend the touch area to the 44pt minimum.
+      hitSlop={onPress ? 6 : undefined}
       style={({ pressed }) => [
         styles.chip,
         pressed && onPress ? styles.pressed : null,

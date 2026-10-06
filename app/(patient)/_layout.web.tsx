@@ -1,6 +1,7 @@
 import { Redirect } from 'expo-router';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { WebShell, type NavItem } from '@/components/ui/WebShell';
+import { TabBarProvider } from '@/contexts/TabBarContext';
 
 const ITEMS: NavItem[] = [
   {
@@ -33,5 +34,9 @@ export default function PatientLayoutWeb() {
   if (!role) return <Redirect href="/(auth)/onboarding" />;
   if (role === 'professional') return <Redirect href="/(professional)/queue" />;
   if (role === 'admin') return <Redirect href="/(admin)/" />;
-  return <WebShell items={ITEMS} />;
+  return (
+    <TabBarProvider>
+      <WebShell items={ITEMS} />
+    </TabBarProvider>
+  );
 }

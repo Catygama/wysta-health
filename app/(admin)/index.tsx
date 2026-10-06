@@ -34,7 +34,7 @@ export default function AdminPanel() {
   if (users === undefined) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color={theme.colors.ink} />
+        <ActivityIndicator color={theme.colors.inkText} />
       </View>
     );
   }
@@ -193,7 +193,7 @@ export default function AdminPanel() {
                     onPress={() => confirmRoleChange(item.userId, item.role, r)}
                     style={styles.rolePill}
                   >
-                    <Icon name={{ sf: 'arrow.right.circle.fill', ion: 'arrow-forward-circle' }} size={12} color={theme.colors.ink} />
+                    <Icon name={{ sf: 'arrow.right.circle.fill', ion: 'arrow-forward-circle' }} size={12} color={theme.colors.inkText} />
                     <Text style={styles.rolePillText}>{ROLE_LABELS[r]}</Text>
                   </Pressable>
                 ))}
@@ -219,7 +219,7 @@ const styles = StyleSheet.create((theme) => ({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.md, gap: theme.spacing.sm },
   header: { gap: theme.spacing.md, paddingBottom: theme.spacing.sm },
-  title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.ink },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.inkText },
   countRow: { flexDirection: 'row', gap: theme.spacing.sm },
   countCard: {
     flex: 1,
@@ -286,5 +286,5 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: 4,
   },
-  rolePillText: { fontSize: 12, fontWeight: '500', color: theme.colors.ink },
+  rolePillText: { fontSize: 12, fontWeight: '500', color: theme.colors.inkText },
 }));

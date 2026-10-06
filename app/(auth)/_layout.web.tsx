@@ -35,7 +35,7 @@ const styles = StyleSheet.create((theme) => ({
   brandBarMobile: { paddingTop: theme.spacing.lg, alignItems: 'flex-start' },
   brandBarDesktop: { paddingTop: theme.spacing.xl, alignItems: 'center' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
-  wordmark: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.ink, letterSpacing: -0.3 },
+  wordmark: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText, letterSpacing: -0.3 },
   center: { flex: 1, alignItems: 'center' },
   centerDesktop: { paddingVertical: theme.spacing.lg },
   panel: { flex: 1, width: '100%' },

@@ -145,7 +145,7 @@ function EndButton({ onPress }: { onPress: () => void }) {
       <Icon
         name={{ sf: 'xmark.circle', ion: 'close-circle-outline' }}
         size={compact ? 18 : 14}
-        color={theme.colors.ink}
+        color={theme.colors.inkText}
       />
       {!compact && <Text style={styles.endText}>Terminar</Text>}
     </Pressable>
@@ -160,7 +160,7 @@ function AiOnlyBanner() {
         <Icon
           name={{ sf: 'bubble.left.and.bubble.right', ion: 'chatbubbles-outline' }}
           size={17}
-          color={theme.colors.ink}
+          color={theme.colors.inkText}
         />
       </View>
       <View style={styles.body}>
@@ -178,7 +178,7 @@ function WaitingBanner() {
   const { theme } = useUnistyles();
   return (
     <View testID="waiting-professional-banner" style={[styles.banner, styles.waitingBanner]}>
-      <Icon name={{ sf: 'clock', ion: 'time-outline' }} size={18} color={theme.colors.ink} />
+      <Icon name={{ sf: 'clock', ion: 'time-outline' }} size={18} color={theme.colors.inkText} />
       <View style={styles.body}>
         <Text style={styles.title}>A aguardar resposta do profissional</Text>
         <Text style={styles.sub}>Vais receber uma notificação quando responder.</Text>
@@ -225,7 +225,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: 'center',
   },
   body: { flex: 1, gap: 2 },
-  title: { fontSize: 13, fontWeight: '500', color: theme.colors.ink },
+  title: { fontSize: 13, fontWeight: '500', color: theme.colors.inkText },
   sub: { fontSize: 12, color: theme.colors.textSecondary },
   cta: {
     paddingHorizontal: theme.spacing.md,
@@ -254,5 +254,5 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: 4,
   },
-  endText: { fontSize: 12, fontWeight: '500', color: theme.colors.ink },
+  endText: { fontSize: 12, fontWeight: '500', color: theme.colors.inkText },
 }));

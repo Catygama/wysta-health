@@ -95,7 +95,7 @@ export default function Wellbeing() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={theme.colors.ink} />
+        <ActivityIndicator color={theme.colors.inkText} />
         <Text style={styles.loadingText}>A preparar o teu espaço...</Text>
       </View>
     );
@@ -238,7 +238,7 @@ const styles = StyleSheet.create((theme) => ({
     width: 40, height: 40, borderRadius: 20, borderCurve: 'continuous',
     alignItems: 'center', justifyContent: 'center',
   },
-  title: { fontFamily: fonts.displayExtraBold, fontSize: 24, color: theme.colors.ink },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 24, color: theme.colors.inkText },
   section: { gap: theme.spacing.md },
   lead: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.textPrimary },
   sub: { fontSize: 14, color: theme.colors.textSecondary },

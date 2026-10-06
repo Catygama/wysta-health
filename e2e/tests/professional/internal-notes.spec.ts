@@ -19,7 +19,7 @@ test('Internal notes are visible to professional but hidden from patient', async
   });
 
   await loginAs(page, TEST_USERS.professionalA.email);
-  await page.goto(`/(professional)/conversations/${seeded.conversationId}`);
+  await page.goto(`/(professional)/cases/${seeded.conversationId}`);
   await expect(page.getByTestId('thread-tab-internal')).toBeVisible({
     timeout: 15_000,
   });

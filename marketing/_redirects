@@ -1,0 +1,4 @@
+# Stable download link for the Android app (wysta.health/android).
+# Point it at the newest APK when the deploy workflow makes a new native build
+# (JS-only changes ship over the air and keep the same APK).
+/android  https://expo.dev/artifacts/eas/Qu-Rm7okIMJNUBQB7CcHOgoAZCQBb3dSFN_M0hkXUvw.apk  302

@@ -18,6 +18,11 @@ export type Topic = {
   icon: IconName;
   description: string;
   color: TopicColor;
+  /**
+   * Catch-all for questions that fit no specific topic. Not offered as a
+   * topic choice; the UI shows a separate "ask anyway" entry point instead.
+   */
+  isCatchAll?: boolean;
 };
 
 export const TOPICS: Topic[] = [
@@ -50,25 +55,32 @@ export const TOPICS: Topic[] = [
     color: 'cycle',
   },
   {
-    id: 'general',
-    label: 'Saúde Geral',
-    icon: { sf: 'heart.text.square.fill', ion: 'heart' },
-    description: 'Outras questões de saúde',
-    color: 'general',
-  },
-  {
     id: 'sexual-wellbeing',
     label: 'Bem-estar sexual',
     icon: { sf: 'camera.macro', ion: 'flower' },
     description: 'Desejo, prazer, intimidade e autoconhecimento',
     color: 'wellbeing',
   },
+  {
+    id: 'general',
+    label: 'Outros assuntos',
+    icon: { sf: 'questionmark.bubble.fill', ion: 'help-circle' },
+    description: 'Não encaixa em nenhum dos temas',
+    color: 'general',
+    isCatchAll: true,
+  },
 ];
+
+/** Topics offered as choices when starting a conversation. */
+export const TOPIC_CHOICES: Topic[] = TOPICS.filter((t) => !t.isCatchAll);
 
 export const TOPIC_BY_ID: Record<TopicId, Topic> = TOPICS.reduce(
   (acc, t) => ({ ...acc, [t.id]: t }),
   {} as Record<TopicId, Topic>
 );
+
+/** Where questions that fit no topic go (the 'general' id, kept for existing data). */
+export const OTHER_TOPIC: Topic = TOPIC_BY_ID.general;
 
 export function topicLabel(id: string): string {
   return TOPIC_BY_ID[id as TopicId]?.label ?? id;

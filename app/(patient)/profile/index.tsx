@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -20,15 +20,9 @@ import { WellbeingTrend } from '@/components/WellbeingTrend';
 import { HistoryLink } from '@/components/HistoryLink';
 import { useTheme, type ThemeMode } from '@/lib/theme';
 import { fonts } from '@/lib/fonts';
+import { PREGNANCY_OPTIONS } from '@/constants/profile';
 
 const AGE_RANGES = ['<18', '18-25', '26-35', '36-45', '46-55', '>55'];
-const PREGNANCY_OPTIONS: { value: string; label: string }[] = [
-  { value: 'not-pregnant', label: 'Não estou grávida' },
-  { value: 'pregnant', label: 'Estou grávida' },
-  { value: 'trying', label: 'Estou a tentar engravidar' },
-  { value: 'postpartum', label: 'Pós-parto' },
-  { value: 'prefer-not-to-say', label: 'Prefiro não dizer' },
-];
 
 const PREGNANCY_LABELS: Record<string, string> = Object.fromEntries(
   PREGNANCY_OPTIONS.map((o) => [o.value, o.label])
@@ -52,16 +46,6 @@ export default function Profile() {
   const [medications, setMedications] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!user?.profile) return;
-    setDisplayName(user.profile.displayName ?? '');
-    setAgeRange(user.profile.ageRange ?? '');
-    setPregnancyStatus(user.profile.pregnancyStatus ?? '');
-    setLocation(user.profile.location ?? '');
-    setConditions(user.profile.conditions ?? []);
-    setMedications(user.profile.medications ?? []);
-  }, [user?.profile]);
-
   function resetForm() {
     setDisplayName(user?.profile?.displayName ?? '');
     setAgeRange(user?.profile?.ageRange ?? '');
@@ -81,7 +65,7 @@ export default function Profile() {
   if (user === undefined) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color={theme.colors.ink} />
+        <ActivityIndicator color={theme.colors.inkText} />
       </View>
     );
   }
@@ -131,7 +115,15 @@ export default function Profile() {
       <View style={styles.header}>
         <Text style={styles.title}>O meu perfil</Text>
         {!editing && (
-          <Pressable testID="profile-edit-button" onPress={() => setEditing(true)} hitSlop={8}>
+          <Pressable
+            testID="profile-edit-button"
+            // Load the saved profile into the form when editing starts.
+            onPress={() => {
+              resetForm();
+              setEditing(true);
+            }}
+            hitSlop={8}
+          >
             <Text style={styles.editLink}>Editar</Text>
           </Pressable>
         )}
@@ -263,7 +255,7 @@ export default function Profile() {
       <ThemeCard />
 
       <View style={styles.privacy}>
-        <Icon name={{ sf: 'lock.shield.fill', ion: 'lock-closed' }} size={20} color={theme.colors.ink} />
+        <Icon name={{ sf: 'lock.shield.fill', ion: 'lock-closed' }} size={20} color={theme.colors.inkText} />
         <View style={styles.privacyBody}>
           <Text style={styles.privacyTitle}>Privacidade dos dados</Text>
           <Text style={styles.privacyText}>
@@ -284,7 +276,7 @@ export default function Profile() {
           }
           style={styles.manageRow}
         >
-          <Icon name={{ sf: 'square.and.arrow.up', ion: 'cloud-download-outline' }} size={18} color={theme.colors.ink} />
+          <Icon name={{ sf: 'square.and.arrow.up', ion: 'cloud-download-outline' }} size={18} color={theme.colors.inkText} />
           <Text style={styles.manageLink}>Exportar os meus dados</Text>
         </Pressable>
         <Pressable
@@ -484,7 +476,7 @@ const styles = StyleSheet.create((theme) => ({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.ink },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.inkText },
   editLink: { fontSize: 14, color: theme.colors.accent, fontWeight: '500' },
   group: { gap: theme.spacing.lg },
   card: {
@@ -530,7 +522,7 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: 'row',
   },
   privacyBody: { flex: 1, gap: 2 },
-  privacyTitle: { fontSize: 14, fontWeight: '500', color: theme.colors.ink },
+  privacyTitle: { fontSize: 14, fontWeight: '500', color: theme.colors.inkText },
   privacyText: { fontSize: 12, color: theme.colors.textSecondary },
   manageCard: {
     backgroundColor: theme.colors.surface,
@@ -541,7 +533,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   manageTitle: { fontFamily: fonts.displayBold, fontSize: 14, color: theme.colors.textPrimary },
   manageRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  manageLink: { fontSize: 14, color: theme.colors.ink, fontWeight: '500' },
+  manageLink: { fontSize: 14, color: theme.colors.inkText, fontWeight: '500' },
   manageDanger: { fontSize: 14, color: theme.colors.danger, fontWeight: '500' },
   bootstrap: {
     backgroundColor: theme.colors.warningSurface,

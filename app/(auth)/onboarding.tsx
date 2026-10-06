@@ -7,14 +7,9 @@ import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { fonts } from '@/lib/fonts';
+import { PREGNANCY_OPTIONS } from '@/constants/profile';
 
 const AGE_RANGES = ['18-25', '26-35', '36-45', '46+'];
-const PREGNANCY_OPTIONS = [
-  { value: 'not-pregnant', label: 'Não estou grávida' },
-  { value: 'pregnant', label: 'Estou grávida' },
-  { value: 'trying', label: 'Estou a tentar engravidar' },
-  { value: 'prefer-not-to-say', label: 'Prefiro não dizer' },
-];
 
 export default function Onboarding() {
   const router = useRouter();
@@ -138,7 +133,7 @@ const styles = StyleSheet.create((theme) => ({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.lg, gap: theme.spacing.xl },
   hero: { gap: theme.spacing.sm },
-  title: { fontFamily: fonts.displayExtraBold, fontSize: 28, color: theme.colors.ink },
+  title: { fontFamily: fonts.displayExtraBold, fontSize: 28, color: theme.colors.inkText },
   sub: { fontSize: 16, color: theme.colors.textSecondary },
   section: { gap: theme.spacing.md },
   label: { fontFamily: fonts.displayBold, fontSize: 16, color: theme.colors.textPrimary },

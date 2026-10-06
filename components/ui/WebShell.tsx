@@ -7,6 +7,7 @@ import { Icon, type IconName } from '@/components/ui/Icon';
 import { BrandMark } from '@/components/ui/BrandMark';
 import { useTheme, type ThemeMode } from '@/lib/theme';
 import { fonts } from '@/lib/fonts';
+import { useTabBar } from '@/contexts/TabBarContext';
 
 export type NavItem = {
   label: string;
@@ -45,6 +46,9 @@ const MODE_LABEL: Record<ThemeMode, string> = {
 export function WebShell({ items, brandHref = '/', maxWidth = 1040 }: Props) {
   const { width } = useWindowDimensions();
   const isMobile = width < MOBILE_BREAKPOINT;
+  // Screens like a conversation hide the bottom nav to give the composer room.
+  const { isTabBarHidden } = useTabBar();
+  const showBottomNav = isMobile && !isTabBarHidden;
 
   return (
     <View style={styles.root}>
@@ -59,7 +63,7 @@ export function WebShell({ items, brandHref = '/', maxWidth = 1040 }: Props) {
       >
         <Slot />
       </ContentContainer>
-      {isMobile && <BottomNav items={items} />}
+      {showBottomNav && <BottomNav items={items} />}
     </View>
   );
 }
@@ -146,7 +150,7 @@ function BottomNav({ items }: { items: NavItem[] }) {
     <View style={styles.bottomNav}>
       {items.map((item) => {
         const active = item.match ? item.match(pathname) : isActive(pathname, item.href);
-        const color = active ? theme.colors.ink : theme.colors.textSecondary;
+        const color = active ? theme.colors.inkText : theme.colors.textSecondary;
         return (
           <Pressable
             key={item.href}
@@ -317,7 +321,7 @@ const styles = StyleSheet.create((theme) => ({
   wordmark: {
     fontFamily: fonts.displayBold,
     fontSize: 18,
-    color: theme.colors.ink,
+    color: theme.colors.inkText,
     letterSpacing: -0.3,
   },
   contentOuter: { flex: 1, alignItems: 'center', backgroundColor: theme.colors.background },

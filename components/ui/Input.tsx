@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TextInput, View, Text } from 'react-native';
+import { TextInput, View, Text, type TextInputProps } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 type Props = {
@@ -11,6 +11,12 @@ type Props = {
   error?: string;
   keyboardType?: 'default' | 'email-address';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  /**
+   * Input purpose for autofill and assistive tech (WCAG 1.3.5). Defaults to
+   * 'email' for email fields and 'current-password' for secure fields; pass
+   * 'new-password' on sign-up forms.
+   */
+  autoComplete?: TextInputProps['autoComplete'];
   testID?: string;
 };
 
@@ -23,16 +29,32 @@ export function Input({
   error,
   keyboardType = 'default',
   autoCapitalize = 'sentences',
+  autoComplete,
   testID,
 }: Props) {
   const [focused, setFocused] = useState(false);
   styles.useVariants({ state: error ? 'error' : focused ? 'focused' : 'idle' });
 
+  const resolvedAutoComplete =
+    autoComplete ??
+    (secureTextEntry
+      ? 'current-password'
+      : keyboardType === 'email-address'
+        ? 'email'
+        : undefined);
+
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>{label}</Text>
+      {/* The input carries the label itself, so the visual label is hidden
+          from screen readers to avoid reading it twice. */}
+      <Text style={styles.label} aria-hidden>
+        {label}
+      </Text>
       <TextInput
         testID={testID}
+        accessibilityLabel={label}
+        // Read the error after the label so it is heard when the field is focused.
+        accessibilityHint={error}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -40,6 +62,7 @@ export function Input({
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
+        autoComplete={resolvedAutoComplete}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={styles.field}
@@ -47,6 +70,8 @@ export function Input({
       {error ? (
         <Text
           testID={testID ? `${testID}-error` : undefined}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
           style={styles.error}
         >
           {error}
@@ -64,6 +89,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.textSecondary,
   },
   field: {
+    minHeight: 48,
     borderRadius: theme.radius.md,
     borderCurve: 'continuous',
     paddingVertical: theme.spacing.md,
