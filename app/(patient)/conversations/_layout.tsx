@@ -12,11 +12,12 @@ export default function ConversationsLayout() {
       <Stack.Screen name="index" options={{ title: 'Conversas' }} />
       <Stack.Screen
         name="[id]"
-        options={({ navigation }) => ({
+        options={{
           title: 'Conversa',
-          headerBackTitle: 'Voltar',
-          headerLeft: navigation.canGoBack() ? undefined : () => <HeaderBack fallback="/" />,
-        })}
+          // Always our own back button: on web the stack's default one doesn't
+          // show when the chat is opened from Home or straight after triage.
+          headerLeft: () => <HeaderBack fallback="/(patient)/conversations" />,
+        }}
       />
     </Stack>
   );
