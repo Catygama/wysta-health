@@ -77,14 +77,27 @@ export function MessageThread({
   const listRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
 
+  // Last height set by auto-grow; a different rendered height means the user
+  // dragged the resize handle, and their size wins until the input is cleared.
+  const autoHeightRef = useRef<number | null>(null);
+
   // Web: a textarea doesn't auto-grow and defaults to two rows. Size it to its
   // content (one line when empty) up to INPUT_MAX_HEIGHT, then it scrolls.
+  // It can also be resized by hand, up to INPUT_DRAG_MAX_HEIGHT.
   useLayoutEffect(() => {
     if (Platform.OS !== 'web') return;
     const el = inputRef.current as unknown as HTMLTextAreaElement | null;
     if (!el?.style) return;
+    el.style.resize = 'vertical';
+    el.style.maxHeight = `${INPUT_DRAG_MAX_HEIGHT}px`;
+    const manuallyResized =
+      autoHeightRef.current !== null &&
+      Math.abs(el.offsetHeight - autoHeightRef.current) > 1;
+    if (manuallyResized && text) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(Math.max(el.scrollHeight, INPUT_MIN_HEIGHT), INPUT_MAX_HEIGHT)}px`;
+    const next = Math.min(Math.max(el.scrollHeight, INPUT_MIN_HEIGHT), INPUT_MAX_HEIGHT);
+    el.style.height = `${next}px`;
+    autoHeightRef.current = el.offsetHeight;
   }, [text]);
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -547,6 +560,7 @@ const layout = { flex: { flex: 1 } } as const;
 
 const INPUT_MIN_HEIGHT = 44;
 const INPUT_MAX_HEIGHT = 140;
+const INPUT_DRAG_MAX_HEIGHT = 320;
 
 const styles = StyleSheet.create((theme) => ({
   list: { flex: 1, backgroundColor: theme.colors.background },
