@@ -42,10 +42,17 @@ export default function PatientHome() {
     user?.profile?.displayName?.trim().split(/s+/)[0] || user?.email?.split('@')[0] || 'utente';
   // Which path the patient chose on Home; the topic picker is open while set.
   const [pickerMode, setPickerMode] = useState<ConversationMode | null>(null);
+  const openByTopic = useQuery(api.conversations.openProfessionalByTopic) ?? {};
 
   function startTopic(topicId: string) {
     const mode = pickerMode ?? 'professional';
     setPickerMode(null);
+    // One open professional conversation per topic: go back to it.
+    const openId = mode === 'professional' ? openByTopic[topicId] : undefined;
+    if (openId) {
+      router.push({ pathname: '/(patient)/conversations/[id]', params: { id: openId } });
+      return;
+    }
     if (topicId === 'sexual-wellbeing') {
       router.push({ pathname: '/wellbeing', params: { mode } });
       return;
@@ -87,6 +94,7 @@ export default function PatientHome() {
       <TopicPickerSheet
         visible={pickerMode !== null}
         mode={pickerMode ?? 'professional'}
+        openTopics={pickerMode === 'professional' ? openByTopic : {}}
         onClose={() => setPickerMode(null)}
         onSelect={startTopic}
       />
@@ -97,11 +105,14 @@ export default function PatientHome() {
 function TopicPickerSheet({
   visible,
   mode,
+  openTopics,
   onClose,
   onSelect,
 }: {
   visible: boolean;
   mode: ConversationMode;
+  /** Topics with an open professional conversation (shown as "em curso"). */
+  openTopics: Record<string, string>;
   onClose: () => void;
   onSelect: (topicId: string) => void;
 }) {
@@ -146,7 +157,9 @@ function TopicPickerSheet({
                   <Text style={styles.topicLabel}>
                     {t.id === OTHER_TOPIC.id ? 'Outro assunto' : t.label}
                   </Text>
-                  <Text style={styles.topicDesc}>{t.description}</Text>
+                  <Text style={styles.topicDesc}>
+                    {openTopics[t.id] ? 'Já tens uma conversa em curso. Toca para continuar.' : t.description}
+                  </Text>
                 </View>
                 <Icon
                   name={{ sf: 'chevron.right', ion: 'chevron-forward' }}

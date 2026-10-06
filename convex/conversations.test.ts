@@ -185,3 +185,69 @@ describe('ending conversations', () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
+
+describe('one open professional conversation per topic', () => {
+  it('create returns the open professional conversation for the same topic', async () => {
+    const { patient, proConvId } = await setup();
+    const id = await patient.mutation(api.conversations.create, {
+      topic: 'contraception',
+      title: 'Contraceção — nova conversa',
+    });
+    expect(id).toBe(proConvId);
+  });
+
+  it('create starts a new one for another topic, after closing, or for AI', async () => {
+    const { t, patient, proConvId } = await setup();
+    const other = await patient.mutation(api.conversations.create, {
+      topic: 'sti',
+      title: 'IST — nova conversa',
+    });
+    expect(other).not.toBe(proConvId);
+
+    const ai = await patient.mutation(api.conversations.create, {
+      topic: 'contraception',
+      title: 'Contraceção — IA',
+      kind: 'ai-only',
+    });
+    expect(ai).not.toBe(proConvId);
+
+    await t.run((ctx) => ctx.db.patch(proConvId, { status: 'closed' }));
+    const fresh = await patient.mutation(api.conversations.create, {
+      topic: 'contraception',
+      title: 'Contraceção — nova conversa',
+    });
+    expect(fresh).not.toBe(proConvId);
+  });
+
+  it('openProfessionalByTopic maps topics to open professional conversations only', async () => {
+    const { patient, proConvId } = await setup();
+    await patient.mutation(api.conversations.create, {
+      topic: 'sti',
+      title: 'IST — IA',
+      kind: 'ai-only',
+    });
+    const map = await patient.query(api.conversations.openProfessionalByTopic, {});
+    expect(map).toEqual({ contraception: proConvId });
+  });
+});
+
+describe('switchMode to professional with an open professional conversation', () => {
+  it('returns the open one on the same topic instead of creating another', async () => {
+    const { t, patient, proConvId, patientId } = await setup();
+    const aiId = await t.run((ctx) =>
+      ctx.db.insert('conversations', {
+        patientId,
+        topic: 'contraception',
+        title: 'Conversa com AI',
+        priority: 'low',
+        status: 'active',
+        lastMessageAt: 0,
+        kind: 'ai-only',
+      })
+    );
+    const res = await patient.mutation(api.conversations.switchMode, { id: aiId });
+    expect(res).toEqual({ id: proConvId, created: false });
+    const ai = await t.run((ctx) => ctx.db.get(aiId));
+    expect(ai?.counterpartConversationId).toBe(proConvId);
+  });
+});

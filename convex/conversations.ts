@@ -1,4 +1,4 @@
-import { internalMutation, mutation, query, type MutationCtx } from './_generated/server';
+import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { getAuthUserId } from '@convex-dev/auth/server';
@@ -219,6 +219,41 @@ export const get = query({
   },
 });
 
+// A patient keeps at most one open professional conversation per topic.
+async function findOpenProfessionalConversation(
+  ctx: QueryCtx,
+  patientId: Id<'users'>,
+  topicId: string
+): Promise<Doc<'conversations'> | null> {
+  for await (const c of ctx.db
+    .query('conversations')
+    .withIndex('by_patient', (q) => q.eq('patientId', patientId))
+    .order('desc')) {
+    if (c.topic === topicId && c.status !== 'closed' && c.kind !== 'ai-only') return c;
+  }
+  return null;
+}
+
+// Topic → open professional conversation, so Home can send the patient back
+// to it instead of starting a second one.
+export const openProfessionalByTopic = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return {};
+    const byTopic: Record<string, Id<'conversations'>> = {};
+    for await (const c of ctx.db
+      .query('conversations')
+      .withIndex('by_patient', (q) => q.eq('patientId', userId))
+      .order('desc')) {
+      if (c.status !== 'closed' && c.kind !== 'ai-only' && !byTopic[c.topic]) {
+        byTopic[c.topic] = c._id;
+      }
+    }
+    return byTopic;
+  },
+});
+
 export const create = mutation({
   args: {
     topic,
@@ -237,6 +272,12 @@ export const create = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
 
+    const kind = args.kind ?? 'human-async';
+    if (kind === 'human-async') {
+      const existing = await findOpenProfessionalConversation(ctx, userId, args.topic);
+      if (existing) return existing._id;
+    }
+
     let riskLevel: 'low' | 'medium' | 'high' = 'low';
     if (args.triageData) {
       const triage = await ctx.db
@@ -250,7 +291,6 @@ export const create = mutation({
     }
 
     const priority = priorityFromRisk(riskLevel);
-    const kind = args.kind ?? 'human-async';
     const conversationId = await ctx.db.insert('conversations', {
       patientId: userId,
       topic: args.topic,
@@ -604,6 +644,16 @@ export const switchMode = mutation({
         (other.kind ?? 'human-async') === targetKind
       ) {
         return { id: other._id, created: false };
+      }
+    }
+
+    // Asking for a professional while one is already open on this topic: go
+    // back to it (one open professional conversation per topic).
+    if (targetKind === 'human-async') {
+      const existing = await findOpenProfessionalConversation(ctx, userId, conv.topic);
+      if (existing) {
+        await ctx.db.patch(conv._id, { counterpartConversationId: existing._id });
+        return { id: existing._id, created: false };
       }
     }
 
