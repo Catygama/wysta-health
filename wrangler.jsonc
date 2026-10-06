@@ -6,7 +6,10 @@
     "enabled": true
   },
   "assets": {
-    "directory": "dist"
+    "directory": "dist",
+    // Expo Router is a single-page app: unknown paths (/queue, /triage, ...)
+    // must serve index.html so reloads and deep links work.
+    "not_found_handling": "single-page-application"
   },
   "compatibility_flags": [
     "nodejs_compat"

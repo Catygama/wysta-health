@@ -78,7 +78,7 @@ docs/                           # ENGINEERING.md, TASKS.md, plans/
 - **Convex prod**: `bunx convex deploy` (ou via CF build com `CONVEX_DEPLOY_KEY`)
 - **App web** (`app.wysta.health`): CF Pages, build command `bun run build:cf` (= `convex deploy --cmd 'bun run build:web'`), output `dist/`
 - **Landing** (`wysta.health`): CF Pages, build command `exit 0`, output `marketing/`
-- SPA fallback: CF Pages auto-deteta (não há `404.html` em `dist/`)
+- SPA fallback: `wrangler.jsonc` → `assets.not_found_handling: "single-page-application"` (deploy é Workers static assets)
 
 ## Documentação de referência
 
