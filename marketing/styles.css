@@ -151,8 +151,29 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .hero .btn-ghost-dark:hover::after { background: rgba(80,0,13,0.06); }
 .lede { font-size: clamp(17px, 2.2vw, 21px); color: var(--text-2); max-width: 540px; margin-top: 22px; }
 .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
-.app-download { margin-top: 18px; font-size: 15px; color: var(--text-2); }
-.app-download a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+/* "Também no telemóvel": small phone drawing + platform links. iPhone has no
+   build yet, so it is plain text (not a link) until there is one. */
+.app-download {
+  margin-top: 28px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; line-height: 1.45; color: var(--ink);
+}
+.app-download strong { font-weight: 600; }
+.app-download a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.app-download .sep { color: var(--text-3); margin: 0 4px; }
+.app-download .soon { color: var(--text-2); }
+.phone-icon {
+  position: relative; flex: none;
+  width: 21px; height: 36px;
+  border: 1.5px solid var(--ink); border-radius: 5px;
+  background: var(--bg);
+}
+.phone-icon::after {
+  content: '';
+  position: absolute; inset: 3px 2.5px;
+  border-radius: 2.5px;
+  background: linear-gradient(var(--butter), var(--apricot));
+}
 /* Topics in the hero read as information (colour dot + text), not buttons. */
 .hero-topics {
   list-style: none; margin: 36px 0 0; padding: 0;
