@@ -76,7 +76,7 @@ describe('assistant streaming (respondAuto)', () => {
     vi.mocked(callLlmObject).mockReset();
   });
 
-  it('approved: streams draft then finalizes with disclaimer', async () => {
+  it('approved: streams draft then finalizes with the answer only', async () => {
     const t = convexTest(schema, modules);
     const { conversationId } = await seedChatChain(t);
     vi.mocked(callLlmStream).mockImplementation(async (a: any) => {
@@ -93,7 +93,7 @@ describe('assistant streaming (respondAuto)', () => {
 
     const msg = await aiMessage(t, conversationId);
     expect(msg?.content).toContain('Olá, aqui vai');
-    expect(msg?.content).toContain('não substitui consulta');
+    expect(msg?.content).toBe('Olá, aqui vai');
     expect(msg?.streaming).toBe(false);
     expect(vi.mocked(callLlmStream).mock.calls[0][0].onDelta).toBeTypeOf('function');
   });

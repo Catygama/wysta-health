@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { useConvexAuth, useMutation } from 'convex/react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Input } from '@/components/ui/Input';
@@ -27,6 +27,8 @@ type Doc = { picked: PickedImage; storageId?: string; uploading: boolean };
 export default function ProfessionalSignup() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
+  // The guest professional only exists where the deployment allows it.
+  const guestProfessionalEnabled = useQuery(api.users.guestProfessionalEnabled) === true;
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
   const submit = useMutation(api.users.submitProfessionalVerification);
   const router = useRouter();
@@ -261,7 +263,7 @@ export default function ProfessionalSignup() {
         </Text>
       </View>
 
-      {guestAuthEnabled && (
+      {guestAuthEnabled && guestProfessionalEnabled && (
         <View style={styles.guest}>
           <Divider label="testes internos" />
           <Button

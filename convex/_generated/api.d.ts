@@ -31,6 +31,7 @@ import type * as http from "../http.js";
 import type * as lib_alerts from "../lib/alerts.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_authProbe from "../lib/authProbe.js";
+import type * as lib_professional from "../lib/professional.js";
 import type * as lib_risk from "../lib/risk.js";
 import type * as lib_seedData from "../lib/seedData.js";
 import type * as lib_topics from "../lib/topics.js";
@@ -41,6 +42,7 @@ import type * as seed from "../seed.js";
 import type * as testing from "../testing.js";
 import type * as triage from "../triage.js";
 import type * as users from "../users.js";
+import type * as webPush from "../webPush.js";
 import type * as wellbeing from "../wellbeing.js";
 
 import type {
@@ -73,6 +75,7 @@ declare const fullApi: ApiFromModules<{
   "lib/alerts": typeof lib_alerts;
   "lib/auth": typeof lib_auth;
   "lib/authProbe": typeof lib_authProbe;
+  "lib/professional": typeof lib_professional;
   "lib/risk": typeof lib_risk;
   "lib/seedData": typeof lib_seedData;
   "lib/topics": typeof lib_topics;
@@ -83,6 +86,7 @@ declare const fullApi: ApiFromModules<{
   testing: typeof testing;
   triage: typeof triage;
   users: typeof users;
+  webPush: typeof webPush;
   wellbeing: typeof wellbeing;
 }>;
 

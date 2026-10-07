@@ -17,11 +17,10 @@ test('Patient sees own conversation list and can send a text message', async ({
   });
   await loginAs(page, TEST_USERS.patientA.email);
   await page.goto('/(patient)/conversations');
-  await expect(
-    page.getByTestId(`conversation-row-${seeded.conversationId}`),
-  ).toBeVisible({ timeout: 15_000 });
-  await page.getByTestId(`conversation-row-${seeded.conversationId}`).click();
-  await expect(page).toHaveURL(/\/conversations\//);
+  const card = page.getByTestId(`patient-conversation-${seeded.conversationId}`);
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  await card.click();
+  await expect(page).toHaveURL(new RegExp(`/conversations/${seeded.conversationId}`));
 
   await sendMessage(page, 'mensagem de teste');
   await expect(page.getByText('mensagem de teste').first()).toBeVisible({

@@ -51,6 +51,8 @@ type Props = {
   aiOnly?: boolean;
   /** Shown above the messages (e.g. the patient's AI chat for professionals). */
   header?: React.ReactElement | null;
+  /** Shown right above the text field (e.g. the professional's quick actions). */
+  aboveComposer?: React.ReactElement | null;
 };
 
 
@@ -65,6 +67,7 @@ export function MessageThread({
   onRequestEnd,
   aiOnly = false,
   header,
+  aboveComposer,
 }: Props) {
   const messages =
     useQuery(api.messages.list, { conversationId: conversationId as any }) ??
@@ -301,7 +304,12 @@ export function MessageThread({
         }}
       />
 
-      {!canSend && !closed && (
+      {/* A screen-supplied footer (e.g. "Atribuir a mim") replaces the notice. */}
+      {!canSend && !closed && aboveComposer ? (
+        <View style={styles.composer}>{aboveComposer}</View>
+      ) : null}
+
+      {!canSend && !closed && !aboveComposer && (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
             Para responder, atribui esta conversa a ti.
@@ -327,6 +335,7 @@ export function MessageThread({
             />
           ) : null}
           <View style={styles.composer}>
+            {aboveComposer}
 
             {pendingImage && (
               <View style={styles.pendingRow}>
@@ -397,7 +406,9 @@ export function MessageThread({
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <View style={styles.inputRow}>
-              {scope !== 'internal' && (
+              {/* Attachments only with professionals: for clinical safety and data
+                  protection the AI assistant doesn't analyse images or documents. */}
+              {scope !== 'internal' && !aiOnly && (
                 <>
                   <Pressable
                     testID="message-attach-image"
@@ -515,13 +526,18 @@ function SystemMessage({ content }: { content: string }) {
   );
 }
 
-function AiResponseMessage({
-  content,
+// Signature appended to AI answers until it was dropped; hidden on old messages.
+const OLD_AI_SIGNATURE = /\s*— Assistente AI\. Esta resposta é informativa, não substitui consulta clínica\.?\s*$/;
+
+// AI answer bubble. Also used by the anonymous chat (app/anonymous.tsx).
+export function AiResponseMessage({
+  content: raw,
   streaming,
 }: {
   content: string;
   streaming?: boolean;
 }) {
+  const content = raw.replace(OLD_AI_SIGNATURE, '');
   return (
     <View style={styles.ai}>
       <View style={styles.aiHeader}>

@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { useConvexAuth } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { strings } from '@/constants/strings';
+import { api } from '@/convex/_generated/api';
 import { guestAuthEnabled } from '@/lib/env';
 import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
@@ -15,6 +16,8 @@ import { AcademicNotice } from '@/components/AcademicNotice';
 export default function ProfessionalLogin() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
+  // The guest professional only exists where the deployment allows it.
+  const guestProfessionalEnabled = useQuery(api.users.guestProfessionalEnabled) === true;
   const router = useRouter();
   const { theme } = useUnistyles();
   const [email, setEmail] = useState('');
@@ -99,7 +102,7 @@ export default function ProfessionalLogin() {
         />
       </View>
 
-      {guestAuthEnabled && (
+      {guestAuthEnabled && guestProfessionalEnabled && (
         <View style={styles.guest}>
           <Divider label="ou" />
           <Button

@@ -4,6 +4,7 @@
 // data minimisation — input is reconstructable via conversationId + messages).
 
 import { action, internalAction, internalMutation, internalQuery } from '../_generated/server';
+import { hasProfessionalAccess } from '../lib/professional';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
@@ -51,7 +52,8 @@ export const assertAccess = internalQuery({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
     const isAdmin = profile?.role === 'admin';
-    const isAssigned = conversation.professionalId === userId;
+    // The assigned professional, as long as their account is still approved.
+    const isAssigned = conversation.professionalId === userId && hasProfessionalAccess(profile);
     if (!isAdmin && !isAssigned) return { allowed: false as const, messages: [] };
 
     const messages = await ctx.db

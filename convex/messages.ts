@@ -1,4 +1,5 @@
 import { mutation, query } from './_generated/server';
+import { hasProfessionalAccess } from './lib/professional';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
@@ -15,12 +16,10 @@ export const list = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    const isProfessional =
-      profile?.role === 'professional' || profile?.role === 'admin';
-    const hasAccess =
-      conv.patientId === userId ||
-      conv.professionalId === userId ||
-      isProfessional;
+    const isProfessional = hasProfessionalAccess(profile);
+    // The patient, or an admin / approved professional (a pending or rejected
+    // professional has no access, even to a case once assigned to them).
+    const hasAccess = conv.patientId === userId || isProfessional;
     if (!hasAccess) return [];
     if (
       conv.kind === 'ai-only' &&
@@ -79,7 +78,14 @@ export const send = mutation({
     if (args.isInternal && !isAssignedProfessional) {
       throw new Error('Só o profissional atribuído pode escrever notas internas.');
     }
-
+    // Clinical safety and data protection: the AI assistant doesn't analyse
+    // images or documents, so AI chats take text only.
+    if (
+      conv.kind === 'ai-only' &&
+      (args.messageType === 'image' || args.messageType === 'file')
+    ) {
+      throw new Error('A assistente IA não analisa imagens nem documentos.');
+    }
     await ctx.db.insert('messages', {
       conversationId: args.conversationId,
       senderId: userId,
@@ -129,17 +135,14 @@ export const send = mutation({
       throw new Error('Só a utente pode escrever na conversa com a assistente IA.');
     }
 
-    const preview =
-      args.messageType === 'image'
-        ? 'Enviou uma imagem'
-        : args.messageType === 'file'
-          ? `Enviou um documento${args.attachmentName ? `: ${args.attachmentName}` : ''}`
-          : args.content.slice(0, 200);
-
+    // Lock screens are visible to others: never put message content (or
+    // attachment names) in the notification.
+    const senderName = senderProfile?.displayName?.trim();
     await ctx.scheduler.runAfter(0, internal.notifications.sendToUser, {
       userId: conv.patientId,
-      title: senderProfile?.displayName ?? 'Profissional Wysta',
-      body: preview,
+      title: senderName
+        ? `Nova mensagem de ${senderName}`
+        : 'Nova mensagem de um profissional',
       data: { conversationId: args.conversationId },
     });
   },

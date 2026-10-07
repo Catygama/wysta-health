@@ -5,12 +5,10 @@ import {
   ScrollView,
   Pressable,
   Modal,
-  TextInput,
-  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery, useAction } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { TOPIC_CHOICES, OTHER_TOPIC, type TopicColor } from '@/constants/topics';
@@ -175,115 +173,26 @@ function TopicPickerSheet({
   );
 }
 
+// Opens the anonymous chat (app/anonymous.tsx): nothing is saved there.
 function AnonymousAiButton() {
   const { theme } = useUnistyles();
-  const respond = useAction(api.ai.assistant.respondAnonymous);
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [answer, setAnswer] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  function close() {
-    setOpen(false);
-    setQuery('');
-    setAnswer(null);
-    setError(null);
-  }
-
-  async function submit() {
-    setError(null);
-    if (query.trim().length < 5) {
-      setError('Escreve uma pergunta mais completa.');
-      return;
-    }
-    setBusy(true);
-    try {
-      const r = await respond({ query: query.trim() });
-      setAnswer(r.answer);
-    } catch (e: any) {
-      setError(e?.message ?? 'Falha');
-    } finally {
-      setBusy(false);
-    }
-  }
-
+  const router = useRouter();
   return (
-    <>
-      <Card
-        testID="anonymous-ai-open"
-        onPress={() => setOpen(true)}
-        tone="sunken"
-        style={styles.aiCard}
-      >
-        <View style={[styles.aiAvatar, styles.anonAvatar]}>
-          <Icon name={{ sf: 'lock', ion: 'lock-closed-outline' }} size={18} color={theme.colors.ink} />
-        </View>
-        <View style={styles.aiMeta}>
-          <Text style={styles.aiTitle}>Pergunta anónima</Text>
-          <Text style={styles.aiSub}>Uma pergunta rápida à IA, não fica guardada</Text>
-        </View>
-        <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={18} color={styles.chevron.color} />
-      </Card>
-
-      <Modal visible={open} animationType="slide" transparent onRequestClose={close}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.sheet}>
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Pergunta anónima</Text>
-              <Pressable
-                testID="anonymous-ai-close"
-                accessibilityRole="button"
-                accessibilityLabel="Fechar"
-                onPress={close}
-                hitSlop={8}
-              >
-                <Icon name={{ sf: 'xmark', ion: 'close' }} size={22} color={theme.colors.textSecondary} />
-              </Pressable>
-            </View>
-            <Text style={styles.sheetNote}>
-              Esta pergunta não é guardada na app, nem o teu histórico, nem é partilhada
-              com um profissional. A resposta passa pelos mesmos validadores de segurança
-              e é apenas informativa. Para casos urgentes liga 112 ou SNS 24 (808 24 24 24).
-            </Text>
-
-            {answer ? (
-              <ScrollView style={styles.answerScroll} contentContainerStyle={styles.answerBox}>
-                <Text style={styles.answerText} selectable>{answer}</Text>
-              </ScrollView>
-            ) : (
-              <TextInput
-                testID="anonymous-ai-input"
-                multiline
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Escreve a tua pergunta..."
-                placeholderTextColor={theme.colors.textTertiary as any}
-                style={styles.sheetInput}
-              />
-            )}
-
-            {error && <Text style={styles.errorText}>{error}</Text>}
-
-            {answer ? (
-              <Pressable testID="anonymous-ai-done" onPress={close} style={styles.sheetCta}>
-                <Text style={styles.sheetCtaText}>Fechar (apaga tudo)</Text>
-              </Pressable>
-            ) : (
-              <Pressable
-                testID="anonymous-ai-submit"
-                disabled={busy}
-                onPress={submit}
-                style={[styles.sheetCta, busy && styles.sheetCtaBusy]}
-              >
-                {busy && <ActivityIndicator color={theme.colors.onInk} size="small" />}
-                <Text style={styles.sheetCtaText}>{busy ? 'A processar...' : 'Enviar'}</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-      </Modal>
-    </>
+    <Card
+      testID="anonymous-ai-open"
+      onPress={() => router.push('/anonymous')}
+      tone="sunken"
+      style={styles.aiCard}
+    >
+      <View style={[styles.aiAvatar, styles.anonAvatar]}>
+        <Icon name={{ sf: 'lock', ion: 'lock-closed-outline' }} size={18} color={theme.colors.ink} />
+      </View>
+      <View style={styles.aiMeta}>
+        <Text style={styles.aiTitle}>Pergunta anónima</Text>
+        <Text style={styles.aiSub}>Conversa com a IA que não fica guardada</Text>
+      </View>
+      <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={18} color={styles.chevron.color} />
+    </Card>
   );
 }
 
@@ -382,34 +291,4 @@ const styles = StyleSheet.create((theme) => ({
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sheetTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.textPrimary },
   sheetNote: { fontSize: 12, color: theme.colors.textSecondary, lineHeight: 18 },
-  answerScroll: { maxHeight: 320 },
-  answerBox: {
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.md,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-  },
-  answerText: { fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 },
-  sheetInput: {
-    fontSize: 14,
-    color: theme.colors.textPrimary,
-    backgroundColor: theme.colors.surfaceSunken,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-    padding: theme.spacing.md,
-    minHeight: 120,
-    textAlignVertical: 'top',
-  },
-  errorText: { fontSize: 14, color: theme.colors.danger },
-  sheetCta: {
-    backgroundColor: theme.colors.ink,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: theme.spacing.xs,
-  },
-  sheetCtaBusy: { opacity: 0.7 },
-  sheetCtaText: { fontSize: 15, fontFamily: fonts.displayBold, color: theme.colors.onInk },
 }));

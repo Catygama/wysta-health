@@ -1,4 +1,8 @@
-import { mutation, query } from './_generated/server';
+import { internalMutation, mutation, query, type MutationCtx } from './_generated/server';
+import { internal } from './_generated/api';
+import { paginationOptsValidator } from 'convex/server';
+import type { Id } from './_generated/dataModel';
+import { requireAdmin } from './lib/auth';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 
@@ -17,15 +21,12 @@ export const currentUser = query({
   },
 });
 
+// Creates the caller's profile on first sign-in. Always a patient: the role is
+// never taken from the client. Professionals come in through
+// submitProfessionalVerification (pending until an admin approves) and admins
+// through setRole (admin only) or bootstrapAdmin (only while no admin exists).
 export const ensureProfile = mutation({
   args: {
-    role: v.optional(
-      v.union(
-        v.literal('patient'),
-        v.literal('professional'),
-        v.literal('admin')
-      )
-    ),
     isGuest: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -36,17 +37,10 @@ export const ensureProfile = mutation({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
     if (existing) return existing;
-    const role = args.role ?? 'patient';
     const id = await ctx.db.insert('userProfiles', {
       userId,
-      role,
+      role: 'patient',
       isGuest: args.isGuest,
-      // TODO: remove auto-verify before launching to real professionals.
-      // Guest professionals are auto-verified to keep the testing flow simple;
-      // real professional accounts must go through submitProfessionalVerification.
-      ...(role === 'professional'
-        ? { professionalVerificationStatus: 'verified' as const }
-        : {}),
     });
     return ctx.db.get(id);
   },
@@ -87,10 +81,13 @@ export const submitProfessionalVerification = mutation({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
 
-    // TODO: remove auto-verify — change to 'pending' once admin review UI
-    // is in place so accounts must be manually approved before granting
-    // professional access.
-    const professionalVerificationStatus = 'verified' as const;
+    // An admin account would lose its role (and possibly the last admin).
+    if (existing?.role === 'admin') {
+      throw new Error('Uma conta de administrador não pode pedir verificação de profissional.');
+    }
+
+    // An admin confirms the licence (Ordem dos Enfermeiros) before the account
+    // gets professional access: see approveProfessional / rejectProfessional.
 
     const data = {
       role: 'professional' as const,
@@ -100,7 +97,12 @@ export const submitProfessionalVerification = mutation({
       professionalVerificationDocuments: args.professionalVerificationDocuments,
       professionalVerificationNotes:
         args.professionalVerificationNotes?.trim() || undefined,
-      professionalVerificationStatus,
+      professionalVerificationStatus: 'pending' as const,
+      professionalVerificationRequestedAt: Date.now(),
+      // A resubmission starts a fresh review.
+      professionalVerificationReviewedBy: undefined,
+      professionalVerificationReviewedAt: undefined,
+      professionalVerificationRejectionReason: undefined,
     };
 
     if (existing) {
@@ -143,6 +145,9 @@ export const hasAnyAdmin = query({
   },
 });
 
+// First-run only: makes the caller admin while the deployment has no admin at
+// all. Once one exists this always fails, and setRole refuses to remove the
+// last admin, so it can't be reopened.
 export const bootstrapAdmin = mutation({
   args: {},
   handler: async (ctx) => {
@@ -194,7 +199,29 @@ export const setRole = mutation({
       .withIndex('by_user', (q) => q.eq('userId', args.targetUserId))
       .unique();
     if (!targetProfile) throw new Error('Target user profile not found');
-    await ctx.db.patch(targetProfile._id, { role: args.role });
+    // Never leave the deployment without an admin: that would reopen
+    // bootstrapAdmin to any signed-in account.
+    if (targetProfile.role === 'admin' && args.role !== 'admin') {
+      const otherAdmin = await ctx.db
+        .query('userProfiles')
+        .filter((q) =>
+          q.and(q.eq(q.field('role'), 'admin'), q.neq(q.field('_id'), targetProfile._id))
+        )
+        .first();
+      if (!otherAdmin) throw new Error('Não é possível remover o último administrador.');
+    }
+    // Promoting someone to professional is itself an admin decision, so the
+    // account is approved at the same time.
+    await ctx.db.patch(targetProfile._id, {
+      role: args.role,
+      ...(args.role === 'professional'
+        ? {
+            professionalVerificationStatus: 'verified' as const,
+            professionalVerificationReviewedBy: callerId,
+            professionalVerificationReviewedAt: Date.now(),
+          }
+        : {}),
+    });
   },
 });
 
@@ -216,4 +243,147 @@ export const listUsers = query({
       })
     );
   },
+});
+
+// ── Professional verification (admin review) ─────────────────────────────
+
+// Pending professional sign-ups, oldest first, with what the admin needs to
+// check the licence with the Ordem dos Enfermeiros.
+export const listPendingVerifications = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const pending = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_professionalVerificationStatus', (q) =>
+        q.eq('professionalVerificationStatus', 'pending')
+      )
+      .take(200);
+    const rows = await Promise.all(
+      pending
+        .filter((p) => p.role === 'professional')
+        .map(async (p) => {
+          const user = await ctx.db.get(p.userId);
+          const documents = await Promise.all(
+            (p.professionalVerificationDocuments ?? []).map(async (id) => ({
+              id,
+              url: await ctx.storage.getUrl(id),
+            }))
+          );
+          return {
+            userId: p.userId,
+            displayName: p.displayName ?? null,
+            email: user?.email ?? null,
+            licenseNumber: p.professionalLicenseNumber ?? null,
+            specialty: p.professionalSpecialty ?? null,
+            notes: p.professionalVerificationNotes ?? null,
+            requestedAt: p.professionalVerificationRequestedAt ?? p._creationTime,
+            documents,
+          };
+        })
+    );
+    return rows.sort((a, b) => a.requestedAt - b.requestedAt);
+  },
+});
+
+async function reviewProfessional(
+  ctx: MutationCtx,
+  targetUserId: Id<'users'>,
+  decision: 'verified' | 'rejected',
+  reason?: string
+) {
+  const { userId: adminId } = await requireAdmin(ctx);
+  const profile = await ctx.db
+    .query('userProfiles')
+    .withIndex('by_user', (q) => q.eq('userId', targetUserId))
+    .unique();
+  if (!profile || profile.role !== 'professional') {
+    throw new Error('Este utilizador não tem um pedido de verificação de profissional.');
+  }
+  if (profile.professionalVerificationStatus !== 'pending') {
+    throw new Error('Este pedido já foi analisado.');
+  }
+  const trimmed = reason?.trim() || undefined;
+  await ctx.db.patch(profile._id, {
+    professionalVerificationStatus: decision,
+    professionalVerificationReviewedBy: adminId,
+    professionalVerificationReviewedAt: Date.now(),
+    professionalVerificationRejectionReason: decision === 'rejected' ? trimmed : undefined,
+  });
+  await ctx.db.insert('auditLog', {
+    adminId,
+    targetUserId,
+    action: decision === 'verified' ? 'professional-approved' : 'professional-rejected',
+    details:
+      decision === 'verified'
+        ? `Cédula ${profile.professionalLicenseNumber ?? '—'} aprovada.`
+        : `Pedido recusado${trimmed ? `: ${trimmed}` : '.'}`,
+  });
+}
+
+// One-off migration: every professional account no admin ever reviewed
+// (guest demo sign-ins, old ensureProfile auto-verifications, promotions from
+// before setRole recorded a reviewer) goes back to pending, so it loses
+// access and shows up in the admin's "Pedidos de verificação".
+// Idempotent: reviewed, pending and rejected accounts are left alone.
+// Run it from the Convex dashboard (Functions → users:requireReviewForUnreviewedProfessionals,
+// args {}) or: bunx convex run --prod users:requireReviewForUnreviewedProfessionals
+export const requireReviewForUnreviewedProfessionals = internalMutation({
+  args: { paginationOpts: v.optional(paginationOptsValidator) },
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query('userProfiles')
+      .paginate(args.paginationOpts ?? { numItems: 200, cursor: null });
+    const now = Date.now();
+    let changed = 0;
+    for (const profile of page.page) {
+      if (profile.role !== 'professional') continue;
+      if (profile.professionalVerificationReviewedBy) continue;
+      const status = profile.professionalVerificationStatus;
+      if (status === 'pending' || status === 'rejected') continue;
+      await ctx.db.patch(profile._id, {
+        professionalVerificationStatus: 'pending',
+        professionalVerificationRequestedAt: now,
+      });
+      await ctx.db.insert('auditLog', {
+        targetUserId: profile.userId,
+        action: 'professional-review-required',
+        details: profile.isGuest
+          ? 'Conta de convidado sem revisão: acesso suspenso até aprovação.'
+          : 'Conta sem revisão registada: acesso suspenso até aprovação.',
+      });
+      changed++;
+    }
+    console.log(`requireReviewForUnreviewedProfessionals: ${changed} account(s) set to pending`);
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.users.requireReviewForUnreviewedProfessionals, {
+        paginationOpts: { numItems: 200, cursor: page.continueCursor },
+      });
+    }
+    return { changed, isDone: page.isDone };
+  },
+});
+
+export const approveProfessional = mutation({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    await reviewProfessional(ctx, args.userId, 'verified');
+    return null;
+  },
+});
+
+export const rejectProfessional = mutation({
+  args: { userId: v.id('users'), reason: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await reviewProfessional(ctx, args.userId, 'rejected', args.reason);
+    return null;
+  },
+});
+
+// Whether the "guest professional" demo sign-in is enabled on this deployment
+// (ALLOW_GUEST_PROFESSIONAL, see convex/auth.ts). The app hides the button
+// otherwise.
+export const guestProfessionalEnabled = query({
+  args: {},
+  handler: async () => process.env.ALLOW_GUEST_PROFESSIONAL === 'true',
 });

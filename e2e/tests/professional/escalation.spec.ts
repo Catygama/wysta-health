@@ -67,7 +67,7 @@ test.describe('Conversation escalation flows', () => {
     const messages = await listMessages(seeded.conversationId);
     const last = messages[messages.length - 1];
     expect(last?.content).toContain('SNS 24');
-    expect(last?.messageType).toBe('system');
+    expect(last?.messageType).toBe('text');
 
     await logoutViaBridge(page);
   });

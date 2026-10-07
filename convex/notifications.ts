@@ -1,42 +1,71 @@
 import { v } from 'convex/values';
 import {
   mutation,
+  query,
   internalAction,
   internalMutation,
   internalQuery,
 } from './_generated/server';
+import type { MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
-import { Id } from './_generated/dataModel';
+import type { Doc } from './_generated/dataModel';
 
 const MAX_TOKENS_PER_USER = 15;
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
-const platform = v.union(v.literal('ios'), v.literal('android'));
+const nativePlatform = v.union(v.literal('ios'), v.literal('android'));
+
+type PushEntry = NonNullable<Doc<'userProfiles'>['pushTokens']>[number];
+
+async function upsertPushEntry(
+  ctx: MutationCtx,
+  entry: Omit<PushEntry, 'addedAt'>
+) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) throw new Error('Not authenticated');
+  const profile = await ctx.db
+    .query('userProfiles')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .unique();
+  if (!profile) throw new Error('Profile not found');
+
+  const existing = profile.pushTokens ?? [];
+  const withoutDupe = existing.filter((t) => t.token !== entry.token);
+  const next = [...withoutDupe, { ...entry, addedAt: Date.now() }];
+  next.sort((a, b) => a.addedAt - b.addedAt);
+  const trimmed = next.slice(-MAX_TOKENS_PER_USER);
+
+  await ctx.db.patch(profile._id, { pushTokens: trimmed });
+}
 
 export const registerPushToken = mutation({
-  args: { token: v.string(), platform },
+  args: { token: v.string(), platform: nativePlatform },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
-    const profile = await ctx.db
-      .query('userProfiles')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .unique();
-    if (!profile) throw new Error('Profile not found');
-
-    const now = Date.now();
-    const existing = profile.pushTokens ?? [];
-    const withoutDupe = existing.filter((t) => t.token !== args.token);
-    const next = [
-      ...withoutDupe,
-      { token: args.token, platform: args.platform, addedAt: now },
-    ];
-    next.sort((a, b) => a.addedAt - b.addedAt);
-    const trimmed = next.slice(-MAX_TOKENS_PER_USER);
-
-    await ctx.db.patch(profile._id, { pushTokens: trimmed });
+    await upsertPushEntry(ctx, { token: args.token, platform: args.platform });
   },
+});
+
+export const registerWebPushSubscription = mutation({
+  args: {
+    endpoint: v.string(),
+    keys: v.object({ p256dh: v.string(), auth: v.string() }),
+  },
+  handler: async (ctx, args) => {
+    if (!args.endpoint.startsWith('https://')) {
+      throw new Error('Invalid push endpoint');
+    }
+    await upsertPushEntry(ctx, {
+      token: args.endpoint,
+      platform: 'web',
+      webKeys: args.keys,
+    });
+  },
+});
+
+export const webPushPublicKey = query({
+  args: {},
+  handler: async () => process.env.VAPID_PUBLIC_KEY ?? null,
 });
 
 export const removePushToken = mutation({
@@ -57,7 +86,7 @@ export const removePushToken = mutation({
 
 export const getProfileTokens = internalQuery({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<PushEntry[]> => {
     const profile = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -93,18 +122,39 @@ export const sendToUser = internalAction({
   args: {
     userId: v.id('users'),
     title: v.string(),
-    body: v.string(),
+    body: v.optional(v.string()),
     data: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const tokens: Array<{ token: string; platform: 'ios' | 'android' }> =
-      await ctx.runQuery(internal.notifications.getProfileTokens, {
-        userId: args.userId,
-      });
-    if (tokens.length === 0) return;
+    const tokens: PushEntry[] = await ctx.runQuery(
+      internal.notifications.getProfileTokens,
+      { userId: args.userId }
+    );
 
-    const payload = tokens.map((t) => ({
-      to: t.token,
+    const native: string[] = [];
+    const web: Array<{ endpoint: string; p256dh: string; auth: string }> = [];
+    for (const t of tokens) {
+      if (t.platform === 'web') {
+        if (t.webKeys) web.push({ endpoint: t.token, ...t.webKeys });
+      } else {
+        native.push(t.token);
+      }
+    }
+
+    if (web.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.webPush.send, {
+        userId: args.userId,
+        subscriptions: web,
+        title: args.title,
+        body: args.body,
+        data: args.data,
+      });
+    }
+
+    if (native.length === 0) return;
+
+    const payload = native.map((token) => ({
+      to: token,
       title: args.title,
       body: args.body,
       data: args.data ?? {},
@@ -141,7 +191,7 @@ export const sendToUser = internalAction({
 
     if (invalid.length > 0) {
       await ctx.runMutation(internal.notifications.removeTokensInternal, {
-        userId: args.userId as Id<'users'>,
+        userId: args.userId,
         tokens: invalid,
       });
     }
