@@ -21,15 +21,12 @@ export const currentUser = query({
   },
 });
 
+// Creates the caller's profile on first sign-in. Always a patient: the role is
+// never taken from the client. Professionals come in through
+// submitProfessionalVerification (pending until an admin approves) and admins
+// through setRole (admin only) or bootstrapAdmin (only while no admin exists).
 export const ensureProfile = mutation({
   args: {
-    role: v.optional(
-      v.union(
-        v.literal('patient'),
-        v.literal('professional'),
-        v.literal('admin')
-      )
-    ),
     isGuest: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -40,17 +37,10 @@ export const ensureProfile = mutation({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
     if (existing) return existing;
-    const role = args.role ?? 'patient';
     const id = await ctx.db.insert('userProfiles', {
       userId,
-      role,
+      role: 'patient',
       isGuest: args.isGuest,
-      // TODO: remove auto-verify before launching to real professionals.
-      // Guest professionals are auto-verified to keep the testing flow simple;
-      // real professional accounts must go through submitProfessionalVerification.
-      ...(role === 'professional'
-        ? { professionalVerificationStatus: 'verified' as const }
-        : {}),
     });
     return ctx.db.get(id);
   },
@@ -90,6 +80,11 @@ export const submitProfessionalVerification = mutation({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
+
+    // An admin account would lose its role (and possibly the last admin).
+    if (existing?.role === 'admin') {
+      throw new Error('Uma conta de administrador não pode pedir verificação de profissional.');
+    }
 
     // An admin confirms the licence (Ordem dos Enfermeiros) before the account
     // gets professional access: see approveProfessional / rejectProfessional.
@@ -150,6 +145,9 @@ export const hasAnyAdmin = query({
   },
 });
 
+// First-run only: makes the caller admin while the deployment has no admin at
+// all. Once one exists this always fails, and setRole refuses to remove the
+// last admin, so it can't be reopened.
 export const bootstrapAdmin = mutation({
   args: {},
   handler: async (ctx) => {
@@ -201,6 +199,17 @@ export const setRole = mutation({
       .withIndex('by_user', (q) => q.eq('userId', args.targetUserId))
       .unique();
     if (!targetProfile) throw new Error('Target user profile not found');
+    // Never leave the deployment without an admin: that would reopen
+    // bootstrapAdmin to any signed-in account.
+    if (targetProfile.role === 'admin' && args.role !== 'admin') {
+      const otherAdmin = await ctx.db
+        .query('userProfiles')
+        .filter((q) =>
+          q.and(q.eq(q.field('role'), 'admin'), q.neq(q.field('_id'), targetProfile._id))
+        )
+        .first();
+      if (!otherAdmin) throw new Error('Não é possível remover o último administrador.');
+    }
     // Promoting someone to professional is itself an admin decision, so the
     // account is approved at the same time.
     await ctx.db.patch(targetProfile._id, {
@@ -313,7 +322,7 @@ async function reviewProfessional(
 }
 
 // One-off migration: every professional account no admin ever reviewed
-// (guest demo sign-ins, ensureProfile auto-verifications, promotions from
+// (guest demo sign-ins, old ensureProfile auto-verifications, promotions from
 // before setRole recorded a reviewer) goes back to pending, so it loses
 // access and shows up in the admin's "Pedidos de verificação".
 // Idempotent: reviewed, pending and rejected accounts are left alone.
