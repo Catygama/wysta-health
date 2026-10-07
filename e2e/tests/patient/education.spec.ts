@@ -3,7 +3,7 @@ import { loginAs } from '../../helpers/auth';
 import { TEST_USERS } from '../../helpers/convex';
 
 test.describe('Education browsing', () => {
-  test('filters by chip and opens article + CTA navigates to triage', async ({
+  test('filters by topic and opens an article', async ({
     page,
   }) => {
     await loginAs(page, TEST_USERS.patientA.email);
@@ -21,12 +21,9 @@ test.describe('Education browsing', () => {
     await expect(article).toBeVisible({ timeout: 10_000 });
     await article.click();
 
-    await expect(page.getByTestId('article-start-conversation')).toBeVisible({
+    await expect(page.getByText('Quando procurar ajuda')).toBeVisible({
       timeout: 10_000,
     });
-    await page.getByTestId('article-start-conversation').click();
-    // CTA pushes to triage with the article's topic.
-    await expect(page).toHaveURL(/\/triage/);
   });
 
   test('search narrows results', async ({ page }) => {

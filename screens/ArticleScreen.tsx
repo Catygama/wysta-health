@@ -4,7 +4,6 @@ import { useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
-import { Button } from '@/components/ui/Button';
 import { TOPICS } from '@/constants/topics';
 import { fonts } from '@/lib/fonts';
 
@@ -27,9 +26,6 @@ export function ArticleScreen() {
   if (!article) return null;
 
   const topic = TOPICS.find((t) => t.id === article.topic);
-
-  const startConversation = () =>
-    router.push({ pathname: '/triage', params: { topic: article.topic, mode: 'professional' } });
 
   return (
     <ScrollView
@@ -102,33 +98,9 @@ export function ArticleScreen() {
               <Text style={styles.calloutBody}>{item}</Text>
             </View>
           ))}
-          {isPatient && (
-            <View style={styles.calloutAction}>
-              <Button
-                testID="article-start-conversation"
-                label="Falar com um profissional"
-                size="sm"
-                onPress={startConversation}
-              />
-            </View>
-          )}
         </View>
       )}
 
-      {isPatient && !article.whenToSeekHelp && (
-        <View style={styles.ctaCard}>
-          <Text style={styles.ctaTitle}>Precisas de apoio personalizado?</Text>
-          <Text style={styles.ctaSub}>
-            Fala com um profissional de saúde sobre{' '}
-            {topic?.label.toLowerCase() ?? 'este tema'}.
-          </Text>
-          <Button
-            testID="article-start-conversation"
-            label="Iniciar conversa"
-            onPress={startConversation}
-          />
-        </View>
-      )}
     </ScrollView>
   );
 }
@@ -224,14 +196,4 @@ const styles = StyleSheet.create((theme) => ({
   helpItem: { flexDirection: 'row', gap: theme.spacing.sm },
   bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.ink, marginTop: 10 },
   calloutBody: { flex: 1, fontSize: 16, color: theme.colors.textPrimary, lineHeight: 24 },
-  calloutAction: { alignItems: 'flex-start', marginTop: theme.spacing.xs },
-  ctaCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    borderCurve: 'continuous',
-    padding: theme.spacing.lg,
-    gap: theme.spacing.sm,
-  },
-  ctaTitle: { fontFamily: fonts.displayBold, fontSize: 16, color: theme.colors.textPrimary },
-  ctaSub: { fontSize: 14, color: theme.colors.textSecondary },
 }));
