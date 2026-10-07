@@ -5,7 +5,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
-import { PRIORITY_COLORS } from '@/constants/conversation';
+import { priorityColors } from '@/constants/conversation';
 
 // "Pedidos": requests for a professional that nobody has picked up yet. Once a
 // professional assigns one to themselves it moves to their "Conversas" tab.
@@ -43,11 +43,12 @@ export default function Requests() {
   );
 
   // From the theme so the dots stay legible in dark mode.
+  const colors = priorityColors(theme.name);
   const priorityColor: Record<Priority, string> = {
-    urgent: PRIORITY_COLORS.urgent,
-    high: PRIORITY_COLORS.high,
-    medium: PRIORITY_COLORS.medium,
-    low: PRIORITY_COLORS.low,
+    urgent: colors.urgent,
+    high: colors.high,
+    medium: colors.medium,
+    low: colors.low,
   };
 
   const count = requests?.length;

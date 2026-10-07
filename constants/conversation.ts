@@ -26,6 +26,18 @@ export const PRIORITY_COLORS: Record<string, string> = {
   low: '#829461',
 };
 
+// Same hues, lightened so they stay readable on the dark theme's plum page.
+export const PRIORITY_COLORS_DARK: Record<string, string> = {
+  urgent: '#FF8A9A',
+  high: '#E8966E',
+  medium: '#E2C45A',
+  low: '#B5C99A',
+};
+
+export function priorityColors(themeName: string): Record<string, string> {
+  return themeName === 'dark' ? PRIORITY_COLORS_DARK : PRIORITY_COLORS;
+}
+
 export const RISK_LABELS: Record<string, string> = {
   high: 'Alto',
   medium: 'Médio',

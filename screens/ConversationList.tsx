@@ -2,7 +2,7 @@ import { View, Text, FlatList, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { TOPICS } from '@/constants/topics';
-import { PRIORITY_LABELS, PRIORITY_COLORS } from '@/constants/conversation';
+import { PRIORITY_LABELS, priorityColors } from '@/constants/conversation';
 import { Icon } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Card';
 import { relativeTime } from '@/lib/format';
@@ -60,7 +60,7 @@ export function ConversationList({
       ListEmptyComponent={emptyComponent}
       renderItem={({ item }) => {
         const topic = TOPICS.find((t) => t.id === item.topic);
-        const priorityColor = PRIORITY_COLORS[item.priority] ?? theme.colors.textSecondary;
+        const priorityColor = priorityColors(theme.name)[item.priority] ?? theme.colors.textSecondary;
         return (
           <Card
             testID={`conversation-row-${item._id}`}
@@ -91,7 +91,7 @@ export function ConversationList({
                     <Text style={styles.topicText}>{topic?.label ?? item.topic}</Text>
                   </View>
                   {showPriority && item.priority ? (
-                    <View style={[styles.pill, { backgroundColor: priorityColor + '18' }]}>
+                    <View style={[styles.pill, { backgroundColor: priorityColor + (theme.name === 'dark' ? '29' : '18') }]}>
                       <Text style={[styles.pillText, { color: priorityColor }]}>
                         {PRIORITY_LABELS[item.priority] ?? item.priority}
                       </Text>

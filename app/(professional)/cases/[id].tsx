@@ -22,7 +22,7 @@ import { TOPICS } from '@/constants/topics';
 import { fonts } from '@/lib/fonts';
 import {
   PRIORITY_LABELS,
-  PRIORITY_COLORS,
+  priorityColors,
 } from '@/constants/conversation';
 import { useTabBar } from '@/contexts/TabBarContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -460,7 +460,7 @@ function MenuItem({
   testID?: string;
 }) {
   const { theme } = useUnistyles();
-  const color = danger ? PRIORITY_COLORS.urgent : theme.colors.textPrimary;
+  const color = danger ? priorityColors(theme.name).urgent : theme.colors.textPrimary;
   return (
     <Pressable
       testID={testID}
