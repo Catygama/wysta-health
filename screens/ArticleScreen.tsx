@@ -27,7 +27,6 @@ export function ArticleScreen() {
   if (!article) return null;
 
   const topic = TOPICS.find((t) => t.id === article.topic);
-  const pastel = theme.topic[topic?.color ?? 'general'];
 
   const startConversation = () =>
     router.push({ pathname: '/triage', params: { topic: article.topic, mode: 'professional' } });
@@ -40,13 +39,6 @@ export function ArticleScreen() {
     >
       <Stack.Screen options={{ title: topic?.label ?? 'Artigo' }} />
       <View style={styles.head}>
-        {topic && (
-          <View style={[styles.topicPill, { backgroundColor: pastel.fill }]}>
-            <Icon name={topic.icon} size={14} color={pastel.on} />
-            <Text style={[styles.topicPillText, { color: pastel.on }]}>{topic.label}</Text>
-          </View>
-        )}
-
         <Text style={styles.title}>{article.title}</Text>
 
         <View style={styles.metaRow}>
@@ -114,16 +106,6 @@ const styles = StyleSheet.create((theme) => ({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg },
   head: { gap: theme.spacing.sm },
-  topicPill: {
-    flexDirection: 'row',
-    alignSelf: 'flex-start',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radius.pill,
-  },
-  topicPillText: { fontSize: 12, fontWeight: '500' },
   title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.inkText, lineHeight: 30 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
   metaText: { fontSize: 14, color: theme.colors.textSecondary },
