@@ -15,6 +15,7 @@ export type TriageSeed = {
     options?: string[];
     isRedFlag?: boolean;
     required: boolean;
+    showIf?: { questionId: string; equals: string[] };
   }>;
   riskAssessment: {
     lowRisk: RiskBucket;
@@ -33,51 +34,62 @@ export type ArticleSeed = {
   readingTimeMinutes: number;
 };
 
+// Simplified triage, not clinically validated (academic prototype). Two alarm
+// levels: `isRedFlag` questions are emergency signs and open the 112 / SNS 24
+// alert on 'yes'; priority signs only raise the request to urgent through
+// riskAssessment.highRisk, without the alert.
 export const TRIAGE_SEEDS: TriageSeed[] = [
   {
     topic: 'menstrual-cycle',
     questions: [
       {
         id: 'pain-intensity',
-        question: 'Qual a intensidade da dor (1 a 10)?',
+        question: 'Qual a intensidade da dor, de 1 a 10?',
         type: 'scale',
         options: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
         required: true,
       },
       {
         id: 'heavy-bleeding',
-        question: 'Tem sangramento muito intenso (troca de penso a cada hora)?',
+        question:
+          'Tens sangramento muito intenso (trocas de penso a cada hora) ou sentes-te tonta, como se fosses desmaiar?',
+        type: 'yes-no',
+        isRedFlag: true,
+        required: true,
+      },
+      {
+        id: 'ectopic-signs',
+        question: 'A menstruação está atrasada e tens dor forte só de um lado da barriga?',
         type: 'yes-no',
         isRedFlag: true,
         required: true,
       },
       {
         id: 'duration',
-        question: 'Há quantos dias sente estes sintomas?',
+        question: 'Há quantos dias sentes estes sintomas?',
         type: 'multiple-choice',
         options: ['Menos de 24h', '1-3 dias', '4-7 dias', 'Mais de 1 semana'],
         required: true,
       },
       {
-        id: 'fever',
-        question: 'Tem febre (≥ 38°C)?',
+        id: 'fever-pain',
+        question: 'Tens febre (≥ 38 °C) com dor na barriga ou na zona pélvica?',
         type: 'yes-no',
-        isRedFlag: true,
         required: true,
       },
     ],
     riskAssessment: {
       lowRisk: {
-        criteria: ['!heavy-bleeding', '!fever'],
+        criteria: ['!heavy-bleeding', '!ectopic-signs', '!fever-pain'],
         guidance: 'Sintomas ligeiros podem ser acompanhados com medidas de conforto.',
       },
       mediumRisk: {
-        criteria: ['pain-intensity >= 6', "duration == '4-7 dias'"],
-        guidance: 'Se a dor persistir, considere avaliação clínica.',
+        criteria: ['pain-intensity >= 6', "duration == '4-7 dias'", "duration == 'Mais de 1 semana'"],
+        guidance: 'Se a dor persistir, considera uma avaliação clínica.',
       },
       highRisk: {
-        criteria: ['heavy-bleeding', 'fever', 'pain-intensity >= 9'],
-        guidance: 'Sintomas graves exigem atenção imediata. Contacte 112 ou SNS 24.',
+        criteria: ['heavy-bleeding', 'ectopic-signs', 'fever-pain', 'pain-intensity >= 9'],
+        guidance: 'Sintomas que precisam de avaliação rápida.',
       },
     },
   },
@@ -86,14 +98,14 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
     questions: [
       {
         id: 'current-method',
-        question: 'Está a utilizar algum método contracetivo?',
+        question: 'Estás a usar algum método contracetivo?',
         type: 'multiple-choice',
         options: ['Nenhum', 'Pílula', 'DIU', 'Implante', 'Preservativo', 'Outro'],
         required: true,
       },
       {
         id: 'main-concern',
-        question: 'Qual a sua principal dúvida?',
+        question: 'Qual é a tua principal dúvida?',
         type: 'multiple-choice',
         options: [
           'Efeitos secundários',
@@ -106,9 +118,8 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
       },
       {
         id: 'unprotected',
-        question: 'Teve relações sem proteção nos últimos dias?',
+        question: 'Tiveste relações sem proteção, ou com falha do método, nos últimos 5 dias?',
         type: 'yes-no',
-        isRedFlag: true,
         required: true,
       },
     ],
@@ -119,11 +130,11 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
       },
       mediumRisk: {
         criteria: ["main-concern == 'Efeitos secundários'"],
-        guidance: 'Pode ser necessário ajustar o método em conjunto com profissional.',
+        guidance: 'Pode ser necessário ajustar o método com um profissional.',
       },
       highRisk: {
         criteria: ["main-concern == 'Contraceção de emergência'", 'unprotected'],
-        guidance: 'Situação que pode requerer contraceção de emergência.',
+        guidance: 'Pode ser indicada contraceção de emergência: quanto mais cedo, mais eficaz.',
       },
     },
   },
@@ -132,43 +143,41 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
     questions: [
       {
         id: 'discharge',
-        question: 'Tem corrimento diferente do habitual?',
+        question: 'Tens corrimento diferente do habitual?',
         type: 'yes-no',
         required: true,
       },
       {
         id: 'lesions',
-        question: 'Tem feridas, verrugas ou lesões visíveis?',
+        question: 'Tens feridas, verrugas ou lesões visíveis?',
         type: 'yes-no',
-        isRedFlag: true,
         required: true,
       },
       {
         id: 'urination-pain',
-        question: 'Sente dor ou ardor ao urinar?',
+        question: 'Sentes dor ou ardor ao urinar?',
         type: 'yes-no',
         required: true,
       },
       {
-        id: 'fever',
-        question: 'Tem febre (≥ 38°C)?',
+        id: 'fever-pain',
+        question: 'Tens febre (≥ 38 °C) com dor na parte de baixo da barriga?',
         type: 'yes-no',
-        isRedFlag: true,
         required: true,
       },
     ],
     riskAssessment: {
       lowRisk: {
-        criteria: ['!lesions', '!fever'],
+        criteria: ['!lesions', '!fever-pain'],
         guidance: 'Sintomas ligeiros podem ser acompanhados; recomenda-se rastreio.',
       },
       mediumRisk: {
         criteria: ['discharge', 'urination-pain'],
-        guidance: 'Pode ser necessário avaliação clínica e testes.',
+        guidance: 'Pode ser necessária avaliação clínica e testes.',
       },
       highRisk: {
-        criteria: ['lesions', 'fever'],
-        guidance: 'Sintomas relevantes. Procure avaliação médica.',
+        criteria: ['lesions', 'fever-pain'],
+        guidance: 'Sintomas relevantes que justificam avaliação rápida.',
       },
     },
   },
@@ -177,50 +186,71 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
     questions: [
       {
         id: 'weeks',
-        question: 'Quantas semanas de gravidez?',
+        question: 'De quantas semanas estás?',
         type: 'multiple-choice',
         options: [
           'Não tenho a certeza',
           'Menos de 12 semanas',
-          '12-28 semanas',
-          'Mais de 28 semanas',
+          '12 a 23 semanas',
+          '24 semanas ou mais',
         ],
         required: true,
       },
       {
         id: 'bleeding',
-        question: 'Tem sangramento vaginal?',
+        question: 'Tens sangramento vaginal abundante (como uma menstruação ou mais)?',
         type: 'yes-no',
         isRedFlag: true,
         required: true,
       },
       {
         id: 'abdominal-pain',
-        question: 'Sente dor abdominal intensa?',
+        question: 'Sentes dor abdominal intensa?',
         type: 'yes-no',
         isRedFlag: true,
         required: true,
       },
       {
         id: 'reduced-movement',
-        question: 'Notou redução dos movimentos do bebé?',
+        question: 'Notaste menos movimentos do bebé?',
         type: 'yes-no',
         isRedFlag: true,
-        required: false,
+        required: true,
+        showIf: { questionId: 'weeks', equals: ['24 semanas ou mais'] },
+      },
+      {
+        id: 'preeclampsia-signs',
+        question: 'Tens dor de cabeça forte, visão turva ou inchaço repentino da cara ou das mãos?',
+        type: 'yes-no',
+        isRedFlag: true,
+        required: true,
+      },
+      {
+        id: 'fluid-loss',
+        question: 'Perdeste líquido pela vagina?',
+        type: 'yes-no',
+        isRedFlag: true,
+        required: true,
       },
     ],
     riskAssessment: {
       lowRisk: {
-        criteria: ['!bleeding', '!abdominal-pain', '!reduced-movement'],
-        guidance: 'Sem sinais de urgência. Continue o acompanhamento.',
+        criteria: [
+          '!bleeding',
+          '!abdominal-pain',
+          '!reduced-movement',
+          '!preeclampsia-signs',
+          '!fluid-loss',
+        ],
+        guidance: 'Sem sinais de urgência. Continua o acompanhamento habitual.',
       },
       mediumRisk: {
-        criteria: ["weeks == 'Menos de 12 semanas'"],
-        guidance: 'Monitorize sintomas e acompanhe com o profissional.',
+        criteria: [],
+        guidance: 'Monitoriza os sintomas e acompanha com o profissional.',
       },
       highRisk: {
-        criteria: ['bleeding', 'abdominal-pain', 'reduced-movement'],
-        guidance: 'Sintomas graves. Contacte 112 ou SNS 24.',
+        criteria: ['bleeding', 'abdominal-pain', 'reduced-movement', 'preeclampsia-signs', 'fluid-loss'],
+        guidance: 'Sinais de alarme. Contacta o 112 ou o SNS 24.',
       },
     },
   },
@@ -229,21 +259,22 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
     questions: [
       {
         id: 'reason',
-        question: 'Qual o motivo principal do contacto?',
+        question: 'Qual é o motivo principal do contacto?',
         type: 'multiple-choice',
         options: ['Sintomas gerais', 'Dúvidas de saúde', 'Seguimento', 'Outro'],
         required: true,
       },
       {
-        id: 'severe-symptoms',
-        question: 'Tem sintomas graves ou de início súbito?',
+        id: 'alarm-signs',
+        question:
+          'Tens algum destes sinais: dificuldade em respirar, dor no peito, desmaio ou sangramento abundante?',
         type: 'yes-no',
         isRedFlag: true,
         required: true,
       },
       {
         id: 'duration',
-        question: 'Há quanto tempo sente estes sintomas?',
+        question: 'Há quanto tempo sentes estes sintomas?',
         type: 'multiple-choice',
         options: ['Menos de 24h', '1-3 dias', '4-7 dias', 'Mais de 1 semana'],
         required: true,
@@ -251,7 +282,7 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
     ],
     riskAssessment: {
       lowRisk: {
-        criteria: ['!severe-symptoms'],
+        criteria: ['!alarm-signs'],
         guidance: 'Sintomas ligeiros podem ser acompanhados com orientação.',
       },
       mediumRisk: {
@@ -259,8 +290,8 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
         guidance: 'Pode ser necessária avaliação adicional.',
       },
       highRisk: {
-        criteria: ['severe-symptoms'],
-        guidance: 'Sintomas graves exigem atenção imediata. Contacte 112 ou SNS 24.',
+        criteria: ['alarm-signs'],
+        guidance: 'Sinais de alarme. Contacta o 112 ou o SNS 24.',
       },
     },
   },

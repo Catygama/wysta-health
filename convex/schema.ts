@@ -172,8 +172,12 @@ export default defineSchema({
           v.literal('text')
         ),
         options: v.optional(v.array(v.string())),
+        // Emergency sign: a 'yes' opens the 112 / SNS 24 alert. Priority-only
+        // signs live in riskAssessment.highRisk instead.
         isRedFlag: v.optional(v.boolean()),
         required: v.boolean(),
+        // Only asked when another question's answer is one of `equals`.
+        showIf: v.optional(v.object({ questionId: v.string(), equals: v.array(v.string()) })),
       })
     ),
     riskAssessment: v.optional(

@@ -1,4 +1,4 @@
-import { mutation } from './_generated/server';
+import { internalMutation, mutation } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { TRIAGE_SEEDS, ARTICLE_SEEDS, type TriageSeed, type ArticleSeed } from './lib/seedData';
@@ -77,6 +77,19 @@ export const seedAll = mutation({
         inserted: articleResults.filter((r) => r === 'inserted').length,
         updated: articleResults.filter((r) => r === 'updated').length,
       },
+    };
+  },
+});
+
+// Refreshes only the triage questionnaires (articles untouched). Internal: run
+// from the CLI, e.g. "bunx convex run seed:seedTriage" (add --prod for prod).
+export const seedTriage = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const results = await Promise.all(TRIAGE_SEEDS.map((t) => upsertTriage(ctx, t)));
+    return {
+      inserted: results.filter((r) => r === 'inserted').length,
+      updated: results.filter((r) => r === 'updated').length,
     };
   },
 });

@@ -26,7 +26,16 @@ type Question = {
   options?: string[];
   isRedFlag?: boolean;
   required: boolean;
+  showIf?: { questionId: string; equals: string[] };
 };
+
+// Questions that apply given the answers so far (e.g. baby movements only
+// from 24 weeks).
+function visibleQuestions(all: Question[], answers: Record<string, string | number>): Question[] {
+  return all.filter(
+    (q) => !q.showIf || q.showIf.equals.includes(String(answers[q.showIf.questionId] ?? '')),
+  );
+}
 
 // A 'yes' on a yes/no red flag, or 9+ on a 0–10 scale red flag.
 function isRedFlagAnswer(value: string | number | undefined): boolean {
@@ -61,7 +70,8 @@ export default function Triage() {
 
   const topicInfo = TOPICS.find((t) => t.id === topic);
   const pastel = theme.topic[topicInfo?.color ?? 'general'];
-  const questions = useMemo(() => (triage?.questions ?? []) as Question[], [triage]);
+  const allQuestions = useMemo(() => (triage?.questions ?? []) as Question[], [triage]);
+  const questions = useMemo(() => visibleQuestions(allQuestions, answers), [allQuestions, answers]);
   const total = questions.length;
   const current = questions[step];
   const isLast = step === total - 1;
@@ -74,12 +84,15 @@ export default function Triage() {
   // aren't in `answers` state until the next render.
   async function submit(responses: Record<string, string | number>) {
     if (!topic) return;
+    // Drop answers to questions that no longer apply (an earlier answer changed).
+    const shown = new Set(visibleQuestions(allQuestions, responses).map((q) => q.id));
+    const kept = Object.fromEntries(Object.entries(responses).filter(([k]) => shown.has(k)));
     setLoading(true);
     try {
       const id = await createConversation({
         topic,
         title: `${topicInfo?.label} — nova conversa`,
-        triageData: { responses },
+        triageData: { responses: kept },
         kind: kindForMode(mode),
       });
       router.replace({ pathname: '/(patient)/conversations/[id]', params: { id } });
@@ -88,11 +101,15 @@ export default function Triage() {
     }
   }
 
+  // Uses the visible list for these responses: answering one question can
+  // show or hide later ones.
   function advance(responses: Record<string, string | number>) {
-    if (isLast) {
+    const visible = visibleQuestions(allQuestions, responses);
+    const idx = visible.findIndex((q) => q.id === current?.id);
+    if (idx === -1 || idx >= visible.length - 1) {
       submit(responses);
     } else {
-      setStep((s) => s + 1);
+      setStep(idx + 1);
     }
   }
 

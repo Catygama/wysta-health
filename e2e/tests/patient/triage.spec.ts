@@ -62,10 +62,12 @@ test.describe('Triage flow (dynamic answers)', () => {
   }) => {
     await loginAs(page, TEST_USERS.patientA.email);
     await page.goto(`/triage?topic=pregnancy`);
+    // 'Não tenho a certeza' hides the baby-movements question (24+ weeks only).
     await page.getByTestId('triage-option-0').click(); // weeks
     await page.getByTestId('triage-option-no').click(); // bleeding
     await page.getByTestId('triage-option-no').click(); // abdominal-pain
-    await page.getByTestId('triage-option-yes').click(); // reduced-movement (last)
+    await page.getByTestId('triage-option-no').click(); // preeclampsia-signs
+    await page.getByTestId('triage-option-yes').click(); // fluid-loss (last)
 
     await expect(page.getByTestId('urgency-alert')).toBeVisible({ timeout: 5_000 });
     await expect(page).toHaveURL(/\/triage/);
