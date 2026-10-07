@@ -219,7 +219,7 @@ export function MessageThread({
             <View testID="thread-next-step" style={styles.nextStep}>
               <Text style={styles.nextStepTitle}>Agora, conta-nos o que se passa</Text>
               <Text style={styles.nextStepText}>
-                Escreve a tua dúvida em baixo. Uma profissional responde normalmente em 24h.
+                Escreve a tua dúvida em baixo. Um profissional responde normalmente em 24h.
               </Text>
             </View>
           ) : null
