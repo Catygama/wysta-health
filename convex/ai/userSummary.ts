@@ -91,11 +91,10 @@ export const storeSummary = internalMutation({
   },
 });
 
-function renderProfile(p: { ageRange?: string; pregnancyStatus?: string; conditions?: string[]; medications?: string[] } | null): string {
+function renderProfile(p: { ageRange?: string; conditions?: string[]; medications?: string[] } | null): string {
   if (!p) return 'Sem registo.';
   const parts: string[] = [];
   if (p.ageRange) parts.push(`Faixa etária: ${p.ageRange}`);
-  if (p.pregnancyStatus) parts.push(`Gravidez: ${p.pregnancyStatus}`);
   if (p.conditions?.length) parts.push(`Condições: ${p.conditions.join(', ')}`);
   if (p.medications?.length) parts.push(`Medicação: ${p.medications.join(', ')}`);
   return parts.length > 0 ? parts.join('\n') : 'Sem dados estruturados registados.';

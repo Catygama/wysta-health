@@ -26,7 +26,6 @@ import {
 } from '@/constants/conversation';
 import { useTabBar } from '@/contexts/TabBarContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { pregnancyClinicalLabel } from '@/constants/profile';
 import type { AlertLevel } from '@/convex/lib/alerts';
 
 // What the options panel shows: the menu, or one of the views it opens.
@@ -382,7 +381,6 @@ function OptionsPanel(p: OptionsPanelProps) {
               {c.patient.displayName ?? c.patient.email ?? 'Utente convidada'}
               {c.patient.ageRange ? ` • ${c.patient.ageRange}` : ''}
               {c.patient.location ? ` • ${c.patient.location}` : ''}
-              {c.patient.pregnancyStatus ? ` • ${pregnancyClinicalLabel(c.patient.pregnancyStatus)}` : ''}
             </Text>
             {(c.patient.conditions?.length ?? 0) > 0 && (
               <Text style={styles.patientMeta}>
