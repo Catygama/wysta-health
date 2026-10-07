@@ -49,7 +49,7 @@ export default function ProfessionalProfile() {
         <Row label="Email" value={user?.email ?? '—'} selectable />
       </Card>
 
-      <HistoryLink onPress={() => router.push('/(professional)/profile/history')} />
+      <HistoryLink onPress={() => router.push('/(professional)/account/history')} />
 
       <Card title="Dados profissionais">
         <Row label="Nome" value={profile?.displayName ?? '—'} />

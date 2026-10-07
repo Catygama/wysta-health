@@ -26,7 +26,7 @@ const ITEMS: NavItem[] = [
   },
   {
     label: 'Perfil',
-    href: '/profile',
+    href: '/account',
     icon: { sf: 'person', ion: 'person-outline' },
   },
 ];
