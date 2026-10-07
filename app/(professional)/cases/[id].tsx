@@ -134,18 +134,29 @@ export default function ProfessionalConversation() {
     </View>
   );
 
-  const aboveComposer = (
+  const aboveComposer = canAssign ? (
+    // Not mine yet: one clear, full-width action where the text field will be.
+    <View style={styles.assign}>
+      <Pressable
+        testID="conversation-assign-button"
+        accessibilityRole="button"
+        onPress={() => assign({ id: id as any })}
+        style={({ pressed }) => [styles.assignBtn, pressed && styles.dim]}
+      >
+        <Icon
+          name={{ sf: 'person.crop.circle.badge.checkmark', ion: 'person-add-outline' }}
+          size={18}
+          color={theme.colors.onInk}
+        />
+        <Text style={styles.assignText}>
+          {isAssignedToOther ? 'Assumir conversa e responder' : 'Atribuir a mim e responder'}
+        </Text>
+      </Pressable>
+      <Text style={styles.assignHint}>Ao atribuir, passas a ser o profissional deste caso.</Text>
+    </View>
+  ) : (
     <View style={styles.quick}>
       <View style={styles.quickRow}>
-        {canAssign && (
-          <QuickChip
-            testID="conversation-assign-button"
-            icon={{ sf: 'person.crop.circle.badge.checkmark', ion: 'person-add-outline' }}
-            label={isAssignedToOther ? 'Assumir conversa' : 'Atribuir a mim'}
-            primary
-            onPress={() => assign({ id: id as any })}
-          />
-        )}
         {canEscalate && (
           <QuickChip
             testID="conversation-recommend-in-person"
@@ -742,6 +753,19 @@ const styles = StyleSheet.create((theme) => ({
   threadHeader: { gap: theme.spacing.sm, marginBottom: theme.spacing.xs },
   // Above the composer
   quick: { gap: theme.spacing.sm },
+  assign: { gap: theme.spacing.xs, paddingBottom: theme.spacing.xs },
+  assignBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    minHeight: 48,
+    borderRadius: theme.radius.pill,
+    borderCurve: 'continuous',
+    backgroundColor: theme.colors.ink,
+  },
+  assignText: { fontFamily: fonts.displayBold, fontSize: 16, color: theme.colors.onInk },
+  assignHint: { fontSize: 12, color: theme.colors.textSecondary, textAlign: 'center' },
   quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
   chip: {
     flexDirection: 'row',

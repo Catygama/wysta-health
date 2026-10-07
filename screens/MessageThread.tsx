@@ -304,11 +304,12 @@ export function MessageThread({
         }}
       />
 
+      {/* A screen-supplied footer (e.g. "Atribuir a mim") replaces the notice. */}
       {!canSend && !closed && aboveComposer ? (
         <View style={styles.composer}>{aboveComposer}</View>
       ) : null}
 
-      {!canSend && !closed && (
+      {!canSend && !closed && !aboveComposer && (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
             Para responder, atribui esta conversa a ti.
