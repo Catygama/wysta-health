@@ -37,7 +37,8 @@ export function ArticleScreen() {
       contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
     >
-      <Stack.Screen options={{ title: topic?.label ?? 'Artigo' }} />
+      {/* Header names where the back arrow goes; the topic is in the meta line. */}
+      <Stack.Screen options={{ title: 'Explorar' }} />
       <View style={styles.head}>
         <Text style={styles.title}>{article.title}</Text>
 
