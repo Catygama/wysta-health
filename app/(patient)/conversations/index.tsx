@@ -63,7 +63,8 @@ export default function PatientConversations() {
 
 const styles = StyleSheet.create((theme) => ({
   list: { flex: 1, backgroundColor: theme.colors.background },
-  content: { padding: theme.spacing.lg, gap: theme.spacing.sm },
+  // Small top padding: the "Conversas" header already sits right above.
+  content: { padding: theme.spacing.lg, paddingTop: theme.spacing.xs, gap: theme.spacing.sm },
   empty: {
     flex: 1,
     justifyContent: 'center',
