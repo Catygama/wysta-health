@@ -190,15 +190,8 @@ const styles = StyleSheet.create((theme) => ({
   subheading: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText, marginTop: theme.spacing.xs },
   list: { gap: theme.spacing.sm },
   listText: { flex: 1, fontSize: 16, color: theme.colors.textPrimary, lineHeight: 26 },
-  callout: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1.5,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.lg,
-    borderCurve: 'continuous',
-    padding: theme.spacing.lg,
-    gap: theme.spacing.sm,
-  },
+  // Part of the article text, not a box: just a section with its own title.
+  callout: { gap: theme.spacing.sm },
   calloutTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText },
   helpItem: { flexDirection: 'row', gap: theme.spacing.sm },
   bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.ink, marginTop: 10 },
