@@ -348,7 +348,6 @@ export const gatherProfileOnly = internalQuery({
       .unique();
     const lines: string[] = [];
     if (profile?.ageRange) lines.push(`Faixa etária: ${profile.ageRange}`);
-    if (profile?.pregnancyStatus) lines.push(`Gravidez: ${profile.pregnancyStatus}`);
     if (profile?.conditions?.length) lines.push(`Condições: ${profile.conditions.join(', ')}`);
     if (profile?.medications?.length) lines.push(`Medicação: ${profile.medications.join(', ')}`);
     return {
@@ -469,8 +468,6 @@ export const gatherContext = internalQuery({
 
     const profileLines: string[] = [];
     if (profile?.ageRange) profileLines.push(`Faixa etária: ${profile.ageRange}`);
-    if (profile?.pregnancyStatus)
-      profileLines.push(`Gravidez: ${profile.pregnancyStatus}`);
     if (profile?.conditions?.length)
       profileLines.push(`Condições: ${profile.conditions.join(', ')}`);
     if (profile?.medications?.length)

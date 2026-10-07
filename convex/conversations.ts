@@ -207,7 +207,6 @@ export const get = query({
           displayName: patientProfile?.displayName,
           ageRange: patientProfile?.ageRange,
           location: patientProfile?.location,
-          pregnancyStatus: patientProfile?.pregnancyStatus,
           // Clinical fields only exposed to professionals/admins
           conditions: isProfessional ? patientProfile?.conditions : undefined,
           medications: isProfessional ? patientProfile?.medications : undefined,
