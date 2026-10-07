@@ -9,7 +9,8 @@ import { Icon } from '@/components/ui/Icon';
 // With `to`, always returns to that screen of the stack instead of the previous
 // route: a chat opened from Home then goes back to its list, so the tab doesn't
 // keep reopening the same chat.
-export function HeaderBack({ fallback, to }: { fallback?: Href; to?: Href }) {
+// With `home`, always goes to that screen (e.g. another tab), whatever came before.
+export function HeaderBack({ fallback, to, home }: { fallback?: Href; to?: Href; home?: Href }) {
   const router = useRouter();
   const { theme } = useUnistyles();
   return (
@@ -19,7 +20,8 @@ export function HeaderBack({ fallback, to }: { fallback?: Href; to?: Href }) {
       accessibilityLabel="Voltar"
       hitSlop={8}
       onPress={() => {
-        if (to) router.dismissTo(to);
+        if (home) router.navigate(home);
+        else if (to) router.dismissTo(to);
         else if (router.canGoBack()) router.back();
         else if (fallback) router.replace(fallback);
       }}
