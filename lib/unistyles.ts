@@ -81,14 +81,14 @@ const lightTheme = {
 const darkTheme = {
   ...shared,
   name: 'dark',
-  // Warm plum dark: deep plum-brown page, slightly lighter cards, soft pink
-  // primary buttons with dark text, light outlines and pinkish-white text.
+  // Warm plum dark: deep plum-brown page, slightly lighter cards, dusty-rose
+  // (brand #E3C7C7) primary buttons with dark text and accents.
   colors: {
-    ink: '#F08A9B',
-    inkText: '#F3A9B5',
-    inkPressed: '#E07688',
+    ink: '#E3C7C7',
+    inkText: '#E3C7C7',
+    inkPressed: '#D2B2B2',
     onInk: '#3A1520',
-    accent: '#F3A9B5',
+    accent: '#E3C7C7',
     butter: '#4A3038',
     background: '#2C2125',
     surface: '#382A2F',
@@ -106,7 +106,7 @@ const darkTheme = {
     divider: 'rgba(255,255,255,0.08)',
     border: 'rgba(255,255,255,0.16)',
     borderStrong: 'rgba(255,255,255,0.30)',
-    focusRing: 'rgba(240,138,155,0.25)',
+    focusRing: 'rgba(227,199,199,0.25)',
   },
   topic: topicsDark,
 } as const;
