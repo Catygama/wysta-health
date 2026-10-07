@@ -29,6 +29,9 @@ export function ArticleScreen() {
   const topic = TOPICS.find((t) => t.id === article.topic);
   const pastel = theme.topic[topic?.color ?? 'general'];
 
+  const startConversation = () =>
+    router.push({ pathname: '/triage', params: { topic: article.topic, mode: 'professional' } });
+
   return (
     <ScrollView
       style={styles.screen}
@@ -58,15 +61,23 @@ export function ArticleScreen() {
 
       {article.whenToSeekHelp && (
         <View style={styles.callout}>
-          <View style={styles.calloutHeader}>
-            <Icon
-              name={{ sf: 'exclamationmark.triangle.fill', ion: 'warning' }}
-              size={20}
-              color={theme.colors.danger}
-            />
-            <Text style={styles.calloutTitle}>Quando procurar ajuda</Text>
-          </View>
-          <Text style={styles.calloutBody}>{article.whenToSeekHelp}</Text>
+          <Text style={styles.calloutTitle}>Quando procurar ajuda</Text>
+          {helpItems(article.whenToSeekHelp).map((item, i) => (
+            <View key={i} style={styles.helpItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.calloutBody}>{item}</Text>
+            </View>
+          ))}
+          {isPatient && (
+            <View style={styles.calloutAction}>
+              <Button
+                testID="article-start-conversation"
+                label="Falar com um profissional"
+                size="sm"
+                onPress={startConversation}
+              />
+            </View>
+          )}
         </View>
       )}
 
@@ -80,7 +91,7 @@ export function ArticleScreen() {
         </View>
       )}
 
-      {isPatient && (
+      {isPatient && !article.whenToSeekHelp && (
         <View style={styles.ctaCard}>
           <Text style={styles.ctaTitle}>Precisas de apoio personalizado?</Text>
           <Text style={styles.ctaSub}>
@@ -90,14 +101,22 @@ export function ArticleScreen() {
           <Button
             testID="article-start-conversation"
             label="Iniciar conversa"
-            onPress={() =>
-              router.push({ pathname: '/triage', params: { topic: article.topic } })
-            }
+            onPress={startConversation}
           />
         </View>
       )}
     </ScrollView>
   );
+}
+
+// "Procure ajuda se:\n- a\n- b" → ['a', 'b']: drops the lead-in line, since
+// the section title already says it, and the dashes, drawn as bullets.
+function helpItems(text: string): string[] {
+  return text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.endsWith(':'))
+    .map((l) => l.replace(/^[-•]\s*/, ''));
 }
 
 const styles = StyleSheet.create((theme) => ({
@@ -121,15 +140,19 @@ const styles = StyleSheet.create((theme) => ({
   summary: { fontSize: 16, color: theme.colors.textSecondary, fontStyle: 'italic' },
   body: { fontSize: 16, color: theme.colors.textPrimary, lineHeight: 26 },
   callout: {
-    backgroundColor: theme.colors.dangerLight,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
     borderRadius: theme.radius.lg,
     borderCurve: 'continuous',
     padding: theme.spacing.lg,
     gap: theme.spacing.sm,
   },
-  calloutHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  calloutTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.danger },
-  calloutBody: { fontSize: 16, color: theme.colors.textPrimary, lineHeight: 24 },
+  calloutTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText },
+  helpItem: { flexDirection: 'row', gap: theme.spacing.sm },
+  bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.ink, marginTop: 10 },
+  calloutBody: { flex: 1, fontSize: 16, color: theme.colors.textPrimary, lineHeight: 24 },
+  calloutAction: { alignItems: 'flex-start', marginTop: theme.spacing.xs },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
   tag: {
     backgroundColor: theme.colors.surfaceSunken,
