@@ -15,7 +15,6 @@ import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
-import { WellbeingTrend } from '@/components/WellbeingTrend';
 import { HistoryLink } from '@/components/HistoryLink';
 import { AcademicNotice } from '@/components/AcademicNotice';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -132,8 +131,6 @@ export default function Profile() {
       </Card>
 
       <HistoryLink onPress={() => router.push('/(patient)/profile/history')} />
-
-      <WellbeingTrend />
 
       {editing ? (
         <View style={styles.group}>
