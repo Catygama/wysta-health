@@ -26,5 +26,7 @@ test('Professional sees patient context + summary in the options panel', async (
   ).toBeVisible();
 
   await page.getByTestId('thread-tab-summary').click();
-  await expect(page.getByText(/Mensagens nesta conversa/i)).toBeVisible();
+  // The summary's message count (the empty thread also says "Sem mensagens
+  // nesta conversa.", so anchor on the count line).
+  await expect(page.getByText(/^Mensagens nesta conversa: \d+$/)).toBeVisible();
 });
