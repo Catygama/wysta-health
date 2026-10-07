@@ -4,7 +4,8 @@ import { useStackHeaderOptions } from '@/hooks/useHeaderOptions';
 export default function EducationLayout() {
   return (
     <Stack screenOptions={useStackHeaderOptions()}>
-      <Stack.Screen name="index" options={{ title: 'Explorar' }} />
+      {/* The screen draws its own title, close to the search bar. */}
+      <Stack.Screen name="index" options={{ headerShown: false, title: 'Explorar' }} />
       <Stack.Screen name="[id]" options={{ title: 'Artigo', headerBackTitle: 'Voltar' }} />
     </Stack>
   );

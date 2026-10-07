@@ -7,6 +7,7 @@ import { api } from '@/convex/_generated/api';
 import { TOPICS, type TopicId } from '@/constants/topics';
 import { Icon } from '@/components/ui/Icon';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
+import { fonts } from '@/lib/fonts';
 import { Card } from '@/components/ui/Card';
 
 export function EducationScreen() {
@@ -41,6 +42,9 @@ export function EducationScreen() {
       contentInsetAdjustmentBehavior="automatic"
       ListHeaderComponent={
         <View style={styles.header}>
+          <Text style={styles.title} accessibilityRole="header">
+            Explorar
+          </Text>
           <View style={styles.searchBar}>
             <Icon
               name={{ sf: 'magnifyingglass', ion: 'search' }}
@@ -138,8 +142,8 @@ export function EducationScreen() {
 
 const styles = StyleSheet.create((theme) => ({
   list: { flex: 1, backgroundColor: theme.colors.background },
-  // Small top padding: the stack header ("Explorar") already sits right above.
-  content: { padding: theme.spacing.md, paddingTop: theme.spacing.xs, gap: theme.spacing.sm },
+  content: { padding: theme.spacing.md, gap: theme.spacing.sm },
+  title: { fontFamily: fonts.displayBold, fontSize: 22, color: theme.colors.textPrimary },
   header: { gap: theme.spacing.sm, paddingBottom: theme.spacing.xs },
   searchBar: {
     flexDirection: 'row',
