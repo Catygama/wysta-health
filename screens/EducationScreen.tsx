@@ -9,6 +9,17 @@ import { Icon } from '@/components/ui/Icon';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { Card } from '@/components/ui/Card';
 
+// Dark theme: a short rounded bar inside the card, in a clear colour per
+// topic (the pastel fills read as dark smudges on the plum page).
+const ARTICLE_BAR_DARK = {
+  cycle: '#E0707F',
+  contraception: '#7DB8C9',
+  intimate: '#B88AD6',
+  pregnancy: '#E8A86E',
+  general: '#C9B48A',
+  wellbeing: '#D97BB0',
+} as const;
+
 export function EducationScreen() {
   const [topicFilter, setTopicFilter] = useState<TopicId | null>(null);
   const [search, setSearch] = useState('');
@@ -110,20 +121,28 @@ export function EducationScreen() {
       renderItem={({ item }) => {
         const topic = TOPICS.find((t) => t.id === item.topic);
         const pastel = theme.topic[topic?.color ?? 'general'];
+        const dark = theme.name === 'dark';
         return (
           <Card
             testID={`edu-article-${item._id}`}
             onPress={() => router.push(`${basePath}/${item._id}`)}
-            style={styles.articleCard}
+            style={[styles.articleCard, dark && styles.articleCardDark]}
           >
-            {/* Topic shown quietly: a colour bar on the left and a dot in the footer. */}
-            <View style={[styles.topicBar, { backgroundColor: pastel.fill }]} />
+            {/* Topic shown quietly: a colour bar on the left and a dot in the footer
+                (dark: a rounded bar inside the card, no dot). */}
+            <View
+              style={
+                dark
+                  ? [styles.topicBarDark, { backgroundColor: ARTICLE_BAR_DARK[topic?.color ?? 'general'] }]
+                  : [styles.topicBar, { backgroundColor: pastel.fill }]
+              }
+            />
             <Text style={styles.articleTitle}>{item.title}</Text>
             <Text style={styles.articleSummary} numberOfLines={2}>
               {item.summary}
             </Text>
             <View style={styles.articleFooter}>
-              <View style={[styles.topicDot, { backgroundColor: pastel.fill }]} />
+              {!dark && <View style={[styles.topicDot, { backgroundColor: pastel.fill }]} />}
               <Text style={styles.articleMeta}>
                 {topic?.label ?? item.topic} · {item.readingTimeMinutes} min
               </Text>
@@ -168,6 +187,15 @@ const styles = StyleSheet.create((theme) => ({
   // overflow hidden clips the colour bar to the card's rounded corners.
   articleCard: { gap: theme.spacing.xs, overflow: 'hidden', paddingLeft: theme.spacing.md + 6 },
   topicBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 6 },
+  articleCardDark: { paddingLeft: theme.spacing.md + 14 },
+  topicBarDark: {
+    position: 'absolute',
+    left: theme.spacing.md,
+    top: theme.spacing.md,
+    bottom: theme.spacing.md,
+    width: 4,
+    borderRadius: 2,
+  },
   articleFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   topicDot: {
     width: 10,
