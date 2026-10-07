@@ -185,7 +185,7 @@ function AnonymousAiButton() {
       style={styles.aiCard}
     >
       <View style={[styles.aiAvatar, styles.anonAvatar]}>
-        <Icon name={{ sf: 'lock', ion: 'lock-closed-outline' }} size={18} color={theme.colors.ink} />
+        <Icon name={{ sf: 'lock', ion: 'lock-closed-outline' }} size={18} color={theme.colors.inkText} />
       </View>
       <View style={styles.aiMeta}>
         <Text style={styles.aiTitle}>Pergunta anónima</Text>
@@ -217,7 +217,7 @@ function PathCard({
     <Card testID={testID} onPress={onPress} style={styles.pathCard}>
       <View style={styles.pathBody}>
         <View style={[styles.pathIcon, { backgroundColor: iconFill }]}>
-          <Icon name={icon} size={20} color={theme.colors.ink} />
+          <Icon name={icon} size={20} color={theme.colors.inkText} />
         </View>
         <Text style={styles.pathTitle}>{title}</Text>
         <Text style={styles.pathDesc}>{description}</Text>

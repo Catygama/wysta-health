@@ -15,7 +15,7 @@ export function HistoryLink({ onPress }: { onPress: () => void }) {
       <Icon
         name={{ sf: 'clock.arrow.circlepath', ion: 'time-outline' }}
         size={20}
-        color={theme.colors.ink}
+        color={theme.colors.inkText}
       />
       <View style={styles.body}>
         <Text style={styles.title}>Histórico</Text>

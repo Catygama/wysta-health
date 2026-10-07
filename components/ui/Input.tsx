@@ -107,7 +107,7 @@ const styles = StyleSheet.create((theme) => ({
     variants: {
       state: {
         idle: { borderColor: theme.colors.border },
-        focused: { borderColor: theme.colors.ink, boxShadow: `0 0 0 4px ${theme.colors.focusRing}` },
+        focused: { borderColor: theme.colors.inkText, boxShadow: `0 0 0 4px ${theme.colors.focusRing}` },
         error: { borderColor: theme.colors.danger },
       },
     },

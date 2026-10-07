@@ -98,7 +98,7 @@ const styles = StyleSheet.create((theme) => ({
     variants: {
       level: {
         emergency: { borderColor: theme.colors.danger },
-        urgent: { borderColor: theme.colors.ink },
+        urgent: { borderColor: theme.colors.inkText },
         'time-sensitive': { borderColor: theme.colors.accent },
       },
     },

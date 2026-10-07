@@ -447,7 +447,7 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.pill,
     overflow: 'hidden',
   },
-  progressFill: { height: 6, backgroundColor: theme.colors.ink },
+  progressFill: { height: 6, backgroundColor: theme.colors.inkText },
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,

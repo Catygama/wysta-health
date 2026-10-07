@@ -194,6 +194,6 @@ const styles = StyleSheet.create((theme) => ({
   callout: { gap: theme.spacing.sm },
   calloutTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText },
   helpItem: { flexDirection: 'row', gap: theme.spacing.sm },
-  bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.ink, marginTop: 10 },
+  bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.inkText, marginTop: 10 },
   calloutBody: { flex: 1, fontSize: 16, color: theme.colors.textPrimary, lineHeight: 24 },
 }));
