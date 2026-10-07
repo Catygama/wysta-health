@@ -306,11 +306,13 @@ export function MessageThread({
 
       {/* A screen-supplied footer (e.g. "Atribuir a mim") replaces the notice. */}
       {!canSend && !closed && aboveComposer ? (
-        <View style={styles.composer}>{aboveComposer}</View>
+        <View style={[styles.composer, insets.bottom > 0 && { paddingBottom: theme.spacing.sm + insets.bottom }]}>
+          {aboveComposer}
+        </View>
       ) : null}
 
       {!canSend && !closed && !aboveComposer && (
-        <View style={styles.notice}>
+        <View style={[styles.notice, insets.bottom > 0 && { paddingBottom: theme.spacing.sm + insets.bottom }]}>
           <Text style={styles.noticeText}>
             {isInternalScope
               ? 'Atribui esta conversa a ti para poderes escrever notas internas.'
@@ -320,7 +322,7 @@ export function MessageThread({
       )}
 
       {closed && (
-        <View style={styles.notice}>
+        <View style={[styles.notice, insets.bottom > 0 && { paddingBottom: theme.spacing.sm + insets.bottom }]}>
           <Text style={styles.noticeText}>Conversa encerrada.</Text>
         </View>
       )}

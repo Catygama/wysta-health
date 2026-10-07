@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text } from 'react-native';
 import { useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
@@ -55,39 +56,43 @@ export default function Requests() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Text testID="queue-count" style={styles.count}>
-          {count === undefined
-            ? ' '
-            : count === 1
-              ? '1 pedido por atribuir'
-              : `${count} pedidos por atribuir`}
-        </Text>
-
-        <View style={styles.menus}>
-          <DropdownMenu
-            testID="queue-sort"
-            label={SORT_LABELS[sort]}
-            value={sort}
-            onChange={setSort}
-            options={(Object.keys(SORT_LABELS) as Sort[]).map((s) => ({
-              value: s,
-              label: SORT_LABELS[s],
-            }))}
-          />
-          <DropdownMenu
-            testID="queue-priority"
-            label={`Prioridade: ${PRIORITY_LABELS[priority].toLowerCase()}`}
-            value={priority}
-            onChange={setPriority}
-            options={(Object.keys(PRIORITY_LABELS) as PriorityFilter[]).map((p) => ({
-              value: p,
-              label: PRIORITY_LABELS[p],
-              dotColor: p === 'all' ? undefined : priorityColor[p],
-            }))}
-          />
+      {/* Clears the status bar on phones (0 on web). Plain inline style:
+          Unistyles styles are partly dropped on third-party components. */}
+      <SafeAreaView edges={['top']} style={{ backgroundColor: theme.colors.background }}>
+        <View style={styles.header}>
+          <Text testID="queue-count" style={styles.count}>
+            {count === undefined
+              ? ' '
+              : count === 1
+                ? '1 pedido por atribuir'
+                : `${count} pedidos por atribuir`}
+          </Text>
+  
+          <View style={styles.menus}>
+            <DropdownMenu
+              testID="queue-sort"
+              label={SORT_LABELS[sort]}
+              value={sort}
+              onChange={setSort}
+              options={(Object.keys(SORT_LABELS) as Sort[]).map((s) => ({
+                value: s,
+                label: SORT_LABELS[s],
+              }))}
+            />
+            <DropdownMenu
+              testID="queue-priority"
+              label={`Prioridade: ${PRIORITY_LABELS[priority].toLowerCase()}`}
+              value={priority}
+              onChange={setPriority}
+              options={(Object.keys(PRIORITY_LABELS) as PriorityFilter[]).map((p) => ({
+                value: p,
+                label: PRIORITY_LABELS[p],
+                dotColor: p === 'all' ? undefined : priorityColor[p],
+              }))}
+            />
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
 
       <ConversationList
         conversations={sorted as any}
