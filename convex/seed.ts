@@ -93,3 +93,16 @@ export const seedTriage = internalMutation({
     };
   },
 });
+
+// Refreshes only the educational articles (matched by topic + title). Internal:
+// run from the CLI, e.g. "bunx convex run seed:seedArticles" (add --prod for prod).
+export const seedArticles = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const results = await Promise.all(ARTICLE_SEEDS.map((a) => upsertArticle(ctx, a)));
+    return {
+      inserted: results.filter((r) => r === 'inserted').length,
+      updated: results.filter((r) => r === 'updated').length,
+    };
+  },
+});

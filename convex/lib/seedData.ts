@@ -312,10 +312,10 @@ Pontos-chave:
 - Dor leve a moderada pode ser controlada com calor local e analgésicos comuns.
 - Alterações súbitas (atraso significativo, sangramento entre ciclos, dor incapacitante) podem justificar avaliação.
 
-Se houver impacto significativo no dia-a-dia, fala com um profissional de saúde.`,
-    whenToSeekHelp: `Procure ajuda se:
-- A dor for intensa, persistente ou impedir as suas atividades.
-- Existir sangramento muito abundante (troca de penso a cada hora).
+Se houver impacto significativo no teu dia-a-dia, fala com um profissional de saúde.`,
+    whenToSeekHelp: `Procura ajuda se:
+- A dor for intensa, persistente ou te impedir de fazer as tuas atividades.
+- Tiveres sangramento muito abundante (trocas de penso a cada hora).
 - Surgirem sintomas como febre, tonturas ou desmaio.`,
   },
   {
@@ -325,18 +325,18 @@ Se houver impacto significativo no dia-a-dia, fala com um profissional de saúde
       'Visão geral dos métodos disponíveis, o que considerar e como decidir com apoio profissional.',
     tags: ['contraceção', 'planeamento', 'saúde sexual'],
     readingTimeMinutes: 5,
-    content: `Existem vários métodos contracetivos. A escolha depende do estado de saúde, estilo de vida e preferências pessoais.
+    content: `Existem vários métodos contracetivos. A escolha depende do teu estado de saúde, estilo de vida e preferências.
 
 Pontos-chave:
-- Alguns métodos também protegem contra IST (ex.: preservativo).
+- Alguns métodos também protegem contra IST (por exemplo, o preservativo).
 - A contraceção de emergência é eficaz em janelas curtas e tem indicações específicas.
-- O aconselhamento profissional ajuda a escolher o método mais adequado.
+- O aconselhamento profissional ajuda-te a escolher o método mais adequado.
 
-Cada método tem benefícios e limitações; o que funciona para alguém pode não ser ideal para outra pessoa.`,
-    whenToSeekHelp: `Procure ajuda se:
-- Teve relação sem proteção e está dentro da janela de contraceção de emergência.
-- Teve falha no método contracetivo (rutura de preservativo, esquecimento prolongado da pílula).
-- Tem efeitos secundários preocupantes que afetam o seu bem-estar.`,
+Cada método tem benefícios e limitações; o que funciona para uma pessoa pode não ser ideal para outra.`,
+    whenToSeekHelp: `Procura ajuda se:
+- Tiveste relações sem proteção e ainda estás dentro da janela da contraceção de emergência.
+- Houve uma falha no método (rutura do preservativo, esquecimento prolongado da pílula).
+- Tens efeitos secundários preocupantes que afetam o teu bem-estar.`,
   },
   {
     title: 'IST: prevenção e rastreio',
@@ -347,31 +347,31 @@ Cada método tem benefícios e limitações; o que funciona para alguém pode n�
     content: `As infeções sexualmente transmissíveis (IST) podem ser prevenidas e a maioria é tratável quando diagnosticada cedo.
 
 Pontos-chave:
-- O preservativo é a principal forma de prevenção em relações sexuais.
-- O rastreio regular é importante, sobretudo em novas relações ou após relações de risco.
-- Algumas IST são assintomáticas — a ausência de sintomas não exclui infeção.`,
-    whenToSeekHelp: `Procure ajuda se:
-- Tiver corrimento diferente do habitual ou dor ao urinar.
+- O preservativo é a principal forma de prevenção nas relações sexuais.
+- O rastreio regular é importante, sobretudo em novas relações ou depois de relações de risco.
+- Algumas IST não dão sintomas, por isso não ter sintomas não exclui uma infeção.`,
+    whenToSeekHelp: `Procura ajuda se:
+- Tiveres corrimento diferente do habitual ou dor ao urinar.
 - Surgirem feridas, verrugas ou lesões na zona genital.
-- Aparecer febre, dor pélvica intensa ou mal-estar associado.`,
+- Tiveres febre, dor pélvica intensa ou mal-estar associado.`,
   },
   {
     title: 'Sinais de alerta na gravidez',
     topic: 'pregnancy',
-    summary: 'Sintomas que requerem atenção imediata durante a gravidez.',
+    summary: 'Sintomas que pedem atenção imediata durante a gravidez.',
     tags: ['gravidez', 'sintomas', 'alerta'],
     readingTimeMinutes: 3,
-    content: `Durante a gravidez existem sinais que requerem atenção imediata. Saber identificá-los ajuda a proteger a mãe e o bebé.
+    content: `Durante a gravidez há sinais que pedem atenção imediata. Saber identificá-los ajuda a proteger-te a ti e ao bebé.
 
 Pontos-chave:
 - Sangramento vaginal e dor abdominal intensa não são considerados normais.
-- A redução dos movimentos do bebé deve ser sempre avaliada após o segundo trimestre.
-- Mantenha o acompanhamento pré-natal regular conforme orientação clínica.`,
-    whenToSeekHelp: `Procure ajuda se:
-- Tiver sangramento vaginal, com ou sem dor.
-- Sentir dor abdominal intensa ou contínua.
-- Notar redução dos movimentos do bebé.
-- Tiver dores de cabeça intensas, perturbações da visão ou inchaço súbito.`,
+- A redução dos movimentos do bebé deve ser sempre avaliada a partir do segundo trimestre.
+- Mantém o acompanhamento pré-natal regular, conforme a orientação clínica.`,
+    whenToSeekHelp: `Procura ajuda se:
+- Tiveres sangramento vaginal, com ou sem dor.
+- Sentires dor abdominal intensa ou contínua.
+- Notares redução dos movimentos do bebé.
+- Tiveres dores de cabeça intensas, alterações da visão ou inchaço súbito.`,
   },
   {
     title: 'Bem-estar e saúde geral',
@@ -383,30 +383,30 @@ Pontos-chave:
 
 Pontos-chave:
 - Alimentação equilibrada, sono regular e hidratação.
-- Atividade física moderada e adaptada à fase de vida.
+- Atividade física moderada e adaptada à tua fase de vida.
 - Gestão do stress e atenção à saúde mental.`,
-    whenToSeekHelp: `Procure ajuda se:
-- Tiver sintomas persistentes que afetam o dia-a-dia.
-- Se sentir ansiosa ou em baixo por longos períodos.
-- Tiver dúvidas que não consegue esclarecer com informação geral.`,
+    whenToSeekHelp: `Procura ajuda se:
+- Tiveres sintomas persistentes que afetam o teu dia-a-dia.
+- Te sentires ansiosa ou em baixo durante longos períodos.
+- Tiveres dúvidas que não consegues esclarecer com informação geral.`,
   },
   {
     title: 'Desejo sexual: o que é normal',
     topic: 'sexual-wellbeing',
-    summary: 'O desejo varia ao longo da vida — fatores que o influenciam e quando falar com alguém.',
+    summary: 'O desejo varia ao longo da vida: o que o influencia e quando falar com alguém.',
     tags: ['desejo', 'libido', 'bem-estar'],
     readingTimeMinutes: 5,
     content: `O desejo sexual é diferente de pessoa para pessoa e muda ao longo da vida. Não existe um número "certo" de vezes nem um nível "normal".
 
 Pontos-chave:
-- O desejo é influenciado por sono, stress, hormonas, relação, medicação e fase da vida.
+- O desejo é influenciado pelo sono, stress, hormonas, relação, medicação e fase da vida.
 - Desejo espontâneo e desejo responsivo (que surge com o estímulo) são ambos normais.
-- Variações temporárias são comuns; o que importa é se te causa mal-estar.
+- Variações temporárias são comuns; o que importa é se te causam mal-estar.
 
-Se a falta de desejo te incomoda de forma persistente, vale a pena conversar — com o par e, se quiseres, com um profissional.`,
+Se a falta de desejo te incomoda de forma persistente, vale a pena conversar com o par e, se quiseres, com um profissional.`,
     whenToSeekHelp: `Considera falar com um profissional se:
-- A ausência de desejo dura há meses e causa sofrimento.
-- Surgiu de forma súbita após começar uma medicação.
+- A falta de desejo dura há meses e te causa sofrimento.
+- Surgiu de forma súbita depois de começares uma medicação.
 - Vem acompanhada de dor, tristeza persistente ou problemas na relação.`,
   },
   {
@@ -420,7 +420,7 @@ Se a falta de desejo te incomoda de forma persistente, vale a pena conversar —
 Pontos-chave:
 - O clítoris é um órgão dedicado ao prazer, com muito mais estrutura do que a parte visível.
 - Não há um único tipo de orgasmo "certo"; a variabilidade é a norma.
-- Lubrificação e tempo de excitação variam — pressa é inimiga do prazer.
+- A lubrificação e o tempo de excitação variam, e a pressa é inimiga do prazer.
 - A masturbação é uma forma segura de te conheceres e descobrires o que gostas.
 
 Conhecer o teu corpo torna mais fácil comunicar o que te dá prazer.`,
@@ -432,17 +432,17 @@ Conhecer o teu corpo torna mais fácil comunicar o que te dá prazer.`,
   {
     title: 'Dor nas relações: quando procurar ajuda',
     topic: 'sexual-wellbeing',
-    summary: 'A dor sexual (dispareunia) é comum e tratável — não a normalizes em silêncio.',
+    summary: 'A dor sexual (dispareunia) é comum e tratável. Não a normalizes em silêncio.',
     tags: ['dor', 'dispareunia', 'saúde'],
     readingTimeMinutes: 5,
-    content: `Sentir dor nas relações (dispareunia) é frequente, mas NÃO é algo que tenhas de aceitar como normal. Tem causas tratáveis.
+    content: `Sentir dor nas relações (dispareunia) é frequente, mas não é algo que tenhas de aceitar como normal. Tem causas tratáveis.
 
 Pontos-chave:
 - Causas comuns: falta de lubrificação, tensão muscular, infeções, alterações hormonais, endometriose.
 - Lubrificante e mais tempo de excitação ajudam em muitos casos de desconforto ligeiro.
 - Dor persistente, intensa ou com sangramento merece avaliação clínica.
 
-Falar sobre isto não é exagero — é cuidar de ti.`,
+Falar sobre isto não é exagero. É cuidar de ti.`,
     whenToSeekHelp: `Procura ajuda se:
 - A dor é persistente, intensa ou impede as relações.
 - Há sangramento associado às relações.
@@ -451,21 +451,21 @@ Falar sobre isto não é exagero — é cuidar de ti.`,
   {
     title: 'Comunicar desejos com o par',
     topic: 'sexual-wellbeing',
-    summary: 'Falar sobre o que gostas (e o que não) aumenta a satisfação e a segurança.',
+    summary: 'Falar sobre o que gostas (e o que não gostas) aumenta a satisfação e a segurança.',
     tags: ['comunicação', 'relação', 'consentimento'],
     readingTimeMinutes: 4,
-    content: `A comunicação é uma das maiores aliadas do prazer e da intimidade. Pedir o que gostas não é exigente — é cuidar da relação.
+    content: `A comunicação é uma das maiores aliadas do prazer e da intimidade. Pedir o que gostas não é ser exigente, é cuidar da relação.
 
 Pontos-chave:
-- Escolhe um momento calmo, fora da cama, para conversas mais sensíveis.
-- Fala na primeira pessoa ("eu gosto de...", "apetece-me...") em vez de críticas.
+- Escolhe um momento calmo, fora da cama, para as conversas mais sensíveis.
+- Fala na primeira pessoa ("eu gosto de...", "apetece-me...") em vez de fazer críticas.
 - O consentimento é contínuo e pode ser retirado a qualquer momento.
 - Pequenos "sim" e "assim" durante o momento também são comunicação.
 
 Uma relação onde podes dizer "não" é também onde o "sim" tem mais valor.`,
-    whenToSeekHelp: `Considera apoio se:
+    whenToSeekHelp: `Considera pedir apoio se:
 - Sentes que não consegues dizer não ou que não és ouvida.
-- Há pressão, medo ou coação — isso nunca é aceitável.
+- Há pressão, medo ou coação. Isso nunca é aceitável.
 - A falta de comunicação está a causar sofrimento na relação.`,
   },
   {
@@ -478,11 +478,11 @@ Uma relação onde podes dizer "não" é também onde o "sim" tem mais valor.`,
 
 Pontos-chave:
 - A masturbação é segura e comum; não tem qualquer impacto negativo na saúde.
-- Explora sem pressa e sem objetivo de "desempenho" — o foco é o que sentes.
-- Lubrificante pode tornar a experiência mais confortável.
+- Explora sem pressa e sem objetivo de "desempenho": o foco é o que sentes.
+- O lubrificante pode tornar a experiência mais confortável.
 - Conhecer o teu corpo também te ajuda a notar alterações que mereçam atenção.
 
-Não há forma "certa" — há a que te faz sentir bem.`,
+Não há forma "certa", há a que te faz sentir bem.`,
     whenToSeekHelp: `Procura ajuda se:
 - Notas alterações (caroços, feridas, dor) que te preocupam.
 - Sentes culpa ou ansiedade persistentes ligadas à sexualidade.`,
@@ -490,21 +490,21 @@ Não há forma "certa" — há a que te faz sentir bem.`,
   {
     title: 'Sexualidade no pós-parto e na menopausa',
     topic: 'sexual-wellbeing',
-    summary: 'Transições da vida mudam a sexualidade — o que esperar e como cuidar de ti.',
+    summary: 'As transições da vida mudam a sexualidade: o que esperar e como cuidar de ti.',
     tags: ['pós-parto', 'menopausa', 'hormonas'],
     readingTimeMinutes: 5,
     content: `A sexualidade muda em fases como o pós-parto e a menopausa. São mudanças normais e há formas de as gerir com conforto.
 
 Pontos-chave:
-- No pós-parto, o cansaço, as hormonas e a recuperação afetam o desejo — dá tempo ao teu corpo.
+- No pós-parto, o cansaço, as hormonas e a recuperação afetam o desejo. Dá tempo ao teu corpo.
 - Na menopausa, a secura vaginal é comum; lubrificantes e hidratantes vaginais ajudam.
-- O desejo pode mudar de espontâneo para responsivo — normal, não um problema.
+- O desejo pode passar de espontâneo a responsivo, o que é normal e não um problema.
 - Há opções clínicas (incluindo hormonais locais) que um profissional pode avaliar.
 
-Estas fases não são o fim da tua vida sexual — são um novo capítulo.`,
+Estas fases não são o fim da tua vida sexual. São um novo capítulo.`,
     whenToSeekHelp: `Procura ajuda se:
-- A secura ou a dor tornam as relações desconfortáveis apesar de lubrificante.
-- O impacto no bem-estar ou na relação é significativo.
-- Há sangramento após a menopausa — isto merece sempre avaliação.`,
+- A secura ou a dor tornam as relações desconfortáveis, mesmo com lubrificante.
+- O impacto no teu bem-estar ou na relação é significativo.
+- Tens sangramento depois da menopausa. Isto merece sempre avaliação.`,
   },
 ];
