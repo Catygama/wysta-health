@@ -2,7 +2,7 @@ import { mutation, query } from './_generated/server';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
-import { convertAiToProfessional } from './conversations';
+import { professionalCanSeeAi } from './conversations';
 
 export const list = query({
   args: { conversationId: v.id('conversations') },
@@ -22,6 +22,13 @@ export const list = query({
       conv.professionalId === userId ||
       isProfessional;
     if (!hasAccess) return [];
+    if (
+      conv.kind === 'ai-only' &&
+      conv.patientId !== userId &&
+      !(await professionalCanSeeAi(ctx, conv, userId))
+    ) {
+      return [];
+    }
     const messages = await ctx.db
       .query('messages')
       .withIndex('by_conversation', (q) =>
@@ -113,12 +120,9 @@ export const send = mutation({
       senderProfile?.role === 'admin';
     if (!isProfessional) return;
 
-    // A professional writing in an AI chat takes it over.
+    // Chats with the AI are read-only for professionals.
     if (conv.kind === 'ai-only') {
-      await convertAiToProfessional(ctx, conv, {
-        professionalId: userId,
-        reason: 'professional-joined',
-      });
+      throw new Error('Só a utente pode escrever na conversa com a assistente IA.');
     }
 
     const preview =

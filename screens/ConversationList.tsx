@@ -20,6 +20,8 @@ type Conversation = {
   priority: string;
   lastMessageAt: number;
   professionalId?: string;
+  /** Professional request that started as a chat with the AI assistant. */
+  fromAi?: boolean;
 };
 
 type Props = {
@@ -87,6 +89,12 @@ export function ConversationList({
               <Text style={styles.subtitle} numberOfLines={1}>
                 {item.title}
               </Text>
+              {item.fromAi ? (
+                <View style={styles.fromAi}>
+                  <Icon name={{ sf: 'sparkles', ion: 'sparkles-outline' }} size={12} color={theme.colors.textSecondary} />
+                  <Text style={styles.fromAiText}>Vem de uma conversa com IA</Text>
+                </View>
+              ) : null}
               <View style={styles.metaRow}>
                 {showPriority && item.priority ? (
                   <View style={[styles.badge, { backgroundColor: priorityColor + '15' }]}>
@@ -140,4 +148,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   badgeText: { fontSize: 12, fontWeight: '500' },
   time: { fontSize: 12, color: theme.colors.textTertiary },
+  fromAi: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  fromAiText: { fontSize: 12, color: theme.colors.textSecondary },
 }));

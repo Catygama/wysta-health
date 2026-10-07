@@ -60,7 +60,7 @@ const BLOCKED_AUTO =
 const BLOCKED_RESPOND =
   'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um profissional.';
 const BLOCKED_ESCALATE =
-  'Esta pergunta precisa de um profissional. Encaminhei esta conversa para a equipa clínica — vais receber resposta aqui.';
+  'Esta pergunta precisa de um profissional. Encaminhei-a para a tua conversa com o profissional, que te vai responder lá.';
 
 type StreamVars = {
   query: string;
@@ -307,8 +307,8 @@ export const respondAuto = internalAction({
       topic: ctxData.topic,
       blockedMessage: ctxData.escalatesOnBlock ? BLOCKED_ESCALATE : BLOCKED_AUTO,
     });
-    // An AI side chat of an open professional conversation becomes the
-    // professional conversation when the AI asks for a professional.
+    // In an AI side chat of an open professional conversation, a question the
+    // AI can't answer is forwarded to that professional conversation.
     if (blocked && ctxData.escalatesOnBlock) {
       await ctx.runMutation(internal.conversations.escalateAiConversation, {
         conversationId,

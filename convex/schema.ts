@@ -96,8 +96,8 @@ export default defineSchema({
       v.union(
         v.literal('resolved'),
         v.literal('redirected-to-in-person'),
-        // Superseded by its AI side chat, which became the professional
-        // conversation (see conversations.convertAiToProfessional).
+        // Superseded by another conversation (legacy: AI chats used to be
+        // converted into the professional conversation).
         v.literal('continued-elsewhere'),
       )
     ),

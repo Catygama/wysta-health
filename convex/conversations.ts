@@ -1,4 +1,4 @@
-import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
+import { internalMutation, mutation, query, type QueryCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { getAuthUserId } from '@convex-dev/auth/server';
@@ -121,12 +121,10 @@ export const listForProfessional = query({
           .collect()
       : await ctx.db.query('conversations').collect();
 
-    // The queue only lists open conversations (closed ones live in the
-    // professional's Histórico), and hides ai-only conversations unless the
-    // patient has requested human handoff.
-    conversations = conversations.filter(
-      (c) => c.status !== 'closed' && (c.kind !== 'ai-only' || c.aiHandoffRequestedAt)
-    );
+    // Only open professional conversations: closed ones live in the
+    // professional's Histórico, and chats with the AI are never listed (a
+    // professional reads them only inside the linked case, see aiContext).
+    conversations = conversations.filter((c) => c.status !== 'closed' && c.kind !== 'ai-only');
 
     if (args.scope === 'mine') {
       conversations = conversations.filter((c) => c.professionalId === userId);
@@ -140,7 +138,13 @@ export const listForProfessional = query({
       conversations = conversations.filter((c) => c.priority === args.priority);
     }
 
-    return sortByPriorityThenRecency(conversations);
+    // fromAi: the request came from a chat with the assistant (shown in the list).
+    return Promise.all(
+      sortByPriorityThenRecency(conversations).map(async (c) => {
+        const context = c.contextConversationId ? await ctx.db.get(c.contextConversationId) : null;
+        return { ...c, fromAi: context?.kind === 'ai-only' };
+      })
+    );
   },
 });
 
@@ -155,7 +159,7 @@ export const queueStats = query({
       .unique();
     if (profile?.role !== 'professional' && profile?.role !== 'admin') return null;
     const all = (await ctx.db.query('conversations').collect()).filter(
-      (c) => c.kind !== 'ai-only' || c.aiHandoffRequestedAt
+      (c) => c.kind !== 'ai-only'
     );
     return {
       mine: all.filter((c) => c.professionalId === userId && c.status !== 'closed').length,
@@ -185,6 +189,13 @@ export const get = query({
     if (!hasAccess) return null;
     const isProfessional =
       profile?.role === 'professional' || profile?.role === 'admin';
+    if (
+      conv.kind === 'ai-only' &&
+      conv.patientId !== userId &&
+      !(await professionalCanSeeAi(ctx, conv, userId))
+    ) {
+      return null;
+    }
     const patient = await ctx.db.get(conv.patientId);
     const patientProfile = await ctx.db
       .query('userProfiles')
@@ -347,20 +358,9 @@ export const assign = mutation({
       throw new Error('Conversa fechada não pode ser reatribuída');
     }
     if (conv.professionalId === userId) return; // already mine, no-op
-    // Taking an AI chat means the professional is intervening: it becomes
-    // the professional conversation (and supersedes the previous one).
+    // Chats with the AI are read-only context for professionals.
     if (conv.kind === 'ai-only') {
-      await convertAiToProfessional(ctx, conv, {
-        professionalId: userId,
-        reason: 'professional-joined',
-      });
-      await ctx.db.insert('auditLog', {
-        conversationId: args.id,
-        professionalId: userId,
-        action: 'assigned',
-        details: 'Profissional interveio na conversa com AI',
-      });
-      return;
+      throw new Error('As conversas com a assistente IA não podem ser atribuídas.');
     }
     const wasAssignedToOther = !!conv.professionalId;
     await ctx.db.patch(args.id, {
@@ -702,84 +702,91 @@ export const switchMode = mutation({
   },
 });
 
-// Turns an ai-only conversation into the professional conversation. If the
-// patient still has an open professional conversation paired with it, that
-// one is closed and its professional (if any) carries over. Used when the AI
-// escalates (judge blocks) or a professional intervenes in the AI chat.
-export async function convertAiToProfessional(
-  ctx: MutationCtx,
-  aiConv: Doc<'conversations'>,
-  opts: { professionalId?: Id<'users'>; reason: 'ai-escalated' | 'professional-joined' }
-) {
-  if (aiConv.kind !== 'ai-only' || aiConv.status === 'closed') return;
-  const now = Date.now();
-
-  let previous = aiConv.counterpartConversationId
-    ? await ctx.db.get(aiConv.counterpartConversationId)
-    : null;
-  if (previous && (previous.status === 'closed' || previous.kind === 'ai-only')) {
-    previous = null;
-  }
-
-  const professionalId = opts.professionalId ?? previous?.professionalId;
-  const priority =
-    previous && (PRIORITY_RANK[previous.priority] ?? 0) > (PRIORITY_RANK[aiConv.priority] ?? 0)
-      ? previous.priority
-      : aiConv.priority;
-
-  await ctx.db.patch(aiConv._id, {
-    kind: 'human-async',
-    status: professionalId ? 'active' : 'waiting',
-    professionalId,
-    priority,
-    aiHandoffRequestedAt: now,
-    lastMessageAt: now,
-    counterpartConversationId: undefined,
-    // Keep the superseded professional conversation reachable as context.
-    contextConversationId: aiConv.contextConversationId ?? previous?._id,
-  });
-  await ctx.db.insert('messages', {
-    conversationId: aiConv._id,
-    senderId: aiConv.patientId,
-    content:
-      opts.reason === 'professional-joined'
-        ? 'Um profissional juntou-se a esta conversa e vai continuar a acompanhar-te aqui.'
-        : 'A assistente encaminhou esta conversa para um profissional. Vais receber resposta aqui.',
-    messageType: 'system',
-  });
-
-  if (previous) {
-    await ctx.db.patch(previous._id, {
-      status: 'closed',
-      closureReason: 'continued-elsewhere',
-      counterpartConversationId: undefined,
-      lastMessageAt: now,
-    });
-    await ctx.db.insert('messages', {
-      conversationId: previous._id,
-      senderId: aiConv.patientId,
-      content:
-        'Esta conversa foi encerrada: o acompanhamento continua na tua conversa com a assistente, que passou para um profissional.',
-      messageType: 'system',
-    });
-    if (previous.professionalId) {
-      await ctx.db.insert('auditLog', {
-        conversationId: previous._id,
-        professionalId: previous.professionalId,
-        action: 'closure',
-        details: 'Encerrada: acompanhamento continua na conversa com AI convertida',
-      });
-    }
-  }
-}
-
 // Called by the assistant when the judge blocks a draft in an ai-only chat
-// that is paired with an open professional conversation.
+// that is paired with an open professional conversation: the question goes to
+// that professional conversation (raised to at least high priority). The AI
+// chat stays as it is; the professional reads it at the top of the case.
 export const escalateAiConversation = internalMutation({
   args: { conversationId: v.id('conversations') },
   handler: async (ctx, { conversationId }) => {
-    const conv = await ctx.db.get(conversationId);
-    if (!conv) return;
-    await convertAiToProfessional(ctx, conv, { reason: 'ai-escalated' });
+    const aiConv = await ctx.db.get(conversationId);
+    if (!aiConv || aiConv.kind !== 'ai-only' || !aiConv.counterpartConversationId) return;
+    const pro = await ctx.db.get(aiConv.counterpartConversationId);
+    if (!pro || pro.status === 'closed' || pro.kind === 'ai-only') return;
+    const now = Date.now();
+    await ctx.db.patch(pro._id, {
+      priority: (PRIORITY_RANK[pro.priority] ?? 0) < PRIORITY_RANK.high ? 'high' : pro.priority,
+      lastMessageAt: now,
+    });
+    await ctx.db.insert('messages', {
+      conversationId: pro._id,
+      senderId: pro.patientId,
+      content: 'A tua pergunta à assistente IA foi encaminhada para o profissional.',
+      messageType: 'system',
+    });
+  },
+});
+
+// A professional may read a patient's AI chat only through a professional
+// conversation linked to it (AI first then a professional, or an AI side chat
+// opened while waiting) that is assigned to them, or still unassigned in the
+// queue (so whoever picks the request up can read it). Nobody else.
+export async function professionalCanSeeAi(
+  ctx: QueryCtx,
+  aiConv: Doc<'conversations'>,
+  userId: Id<'users'>
+): Promise<boolean> {
+  for (const linkedId of [aiConv.contextConversationId, aiConv.counterpartConversationId]) {
+    if (!linkedId) continue;
+    const linked = await ctx.db.get(linkedId);
+    if (!linked || linked.kind === 'ai-only') continue;
+    if (linked.professionalId === userId) return true;
+    if (!linked.professionalId && linked.status !== 'closed') return true;
+  }
+  return false;
+}
+
+// The patient's chats with the AI linked to a professional conversation, for
+// the collapsible block at the top of the case: 'before' = started with the AI
+// and then asked for a professional; 'during' = opened while waiting.
+export const aiContext = query({
+  args: { id: v.id('conversations') },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const profile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+    if (profile?.role !== 'professional' && profile?.role !== 'admin') return [];
+    const conv = await ctx.db.get(args.id);
+    if (!conv || conv.kind === 'ai-only') return [];
+    if (conv.professionalId && conv.professionalId !== userId) return [];
+
+    const seen = new Set<string>();
+    const out = [];
+    for (const linkedId of [conv.contextConversationId, conv.counterpartConversationId]) {
+      if (!linkedId || seen.has(linkedId)) continue;
+      seen.add(linkedId);
+      const ai = await ctx.db.get(linkedId);
+      if (!ai || ai.kind !== 'ai-only') continue;
+      const messages = await ctx.db
+        .query('messages')
+        .withIndex('by_conversation', (q) => q.eq('conversationId', ai._id))
+        .take(200);
+      out.push({
+        conversationId: ai._id,
+        relation: ai._creationTime < conv._creationTime ? ('before' as const) : ('during' as const),
+        messages: messages
+          .filter((m) => !m.isInternal && (m.messageType === 'text' || m.messageType === 'ai-response'))
+          .map((m) => ({
+            _id: m._id,
+            fromPatient: m.senderId === ai.patientId && m.messageType === 'text',
+            content: m.content,
+            at: m._creationTime,
+          })),
+      });
+    }
+    return out;
   },
 });

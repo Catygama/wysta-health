@@ -16,6 +16,7 @@ import { useQuery, useMutation, useAction } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { MessageThread } from '@/screens/MessageThread';
+import { AiContextBlock } from '@/screens/AiContextBlock';
 import { TriageSummary } from '@/screens/TriageSummary';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { TOPICS } from '@/constants/topics';
@@ -96,11 +97,12 @@ export default function ProfessionalConversation() {
   const triageMessage = messages?.find((m) => m.metadata?.triageData);
   const isMine = conversation.professionalId === user._id;
   const isClosed = conversation.status === 'closed';
-  const canAssign = !isMine && !isClosed;
+  const isAiOnly = conversation.kind === 'ai-only';
+  // Chats with the AI are read-only context, never assigned.
+  const canAssign = !isMine && !isClosed && !isAiOnly;
   const isAssignedToOther = !!conversation.professionalId && !isMine;
   const canClose = isMine && !isClosed;
   const canEscalate = isMine && !isClosed;
-  const isAiOnly = conversation.kind === 'ai-only';
   const openRelated = (relatedId: string) =>
     router.push({ pathname: '/(professional)/cases/[id]', params: { id: relatedId } });
 
@@ -185,13 +187,7 @@ export default function ProfessionalConversation() {
           {canAssign && (
             <ActionButton
               testID="conversation-assign-button"
-              label={
-                isAiOnly
-                  ? 'Intervir nesta conversa'
-                  : isAssignedToOther
-                    ? 'Assumir conversa'
-                    : 'Atribuir a mim'
-              }
+              label={isAssignedToOther ? 'Assumir conversa' : 'Atribuir a mim'}
               variant="primary"
               onPress={() => assign({ id: id as any })}
             />
@@ -243,32 +239,11 @@ export default function ProfessionalConversation() {
             <Text style={styles.reviewBannerText}>{conversation.reviewQuestion}</Text>
           </View>
         )}
-        {isAiOnly && !isClosed && (
-          <View testID="ai-conversation-notice" style={styles.relatedBanner}>
-            <Text style={styles.relatedTitle}>Conversa da utente com a assistente AI</Text>
-            <Text style={styles.relatedText}>
-              Se intervieres, esta passa a ser a conversa com profissional e a conversa com
-              profissional anterior é encerrada.
-            </Text>
-          </View>
-        )}
-        {conversation.counterpartConversation?.kind === 'ai-only' &&
-          conversation.counterpartConversation.status !== 'closed' && (
-            <RelatedLink
-              testID="related-ai-conversation"
-              text="A utente está também a conversar com a assistente AI."
-              action="Ver conversa com AI"
-              onPress={() => openRelated(conversation.counterpartConversation!._id)}
-            />
-          )}
-        {conversation.contextConversation && (
+        {/* Chats with the AI show inside the chat tab (AiContextBlock). */}
+        {conversation.contextConversation && conversation.contextConversation.kind !== 'ai-only' && (
           <RelatedLink
             testID="related-context-conversation"
-            text={
-              conversation.contextConversation.kind === 'ai-only'
-                ? 'Esta conversa começou a partir de uma conversa com a assistente AI.'
-                : 'Esta conversa tem contexto de uma conversa anterior com profissional.'
-            }
+            text="Esta conversa tem contexto de uma conversa anterior com profissional."
             action="Ver conversa anterior"
             onPress={() => openRelated(conversation.contextConversation!._id)}
           />
@@ -310,6 +285,7 @@ export default function ProfessionalConversation() {
             scope={tab === 'internal' ? 'internal' : 'chat'}
             canSend={isMine}
             closed={isClosed}
+            header={tab === 'chat' ? <AiContextBlock conversationId={id} /> : null}
           />
         )}
       </View>

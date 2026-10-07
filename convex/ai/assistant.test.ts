@@ -118,7 +118,7 @@ describe('assistant streaming (respondAuto)', () => {
     expect(msg?.streaming).toBe(false);
   });
 
-  it('blocked in an AI side chat: escalates it to the professional conversation', async () => {
+  it('blocked in an AI side chat: forwards the question to the professional conversation', async () => {
     const t = convexTest(schema, modules);
     const { userId, conversationId } = await seedChatChain(t);
     const proConvId = await t.run(async (ctx) => {
@@ -160,13 +160,14 @@ describe('assistant streaming (respondAuto)', () => {
     await t.action(internal.ai.assistant.respondAuto, { conversationId, query: 'olá' });
 
     const msg = await aiMessage(t, conversationId);
-    expect(msg?.content).toContain('Encaminhei esta conversa');
+    expect(msg?.content).toContain('Encaminhei-a');
     const [ai, pro] = await t.run(async (ctx) => [
       await ctx.db.get(conversationId),
       await ctx.db.get(proConvId),
     ]);
-    expect(ai?.kind).toBe('human-async');
-    expect(pro?.status).toBe('closed');
+    // The AI chat stays an AI chat; the professional chat gets the question.
+    expect(ai?.kind).toBe('ai-only');
+    expect(pro).toMatchObject({ status: 'waiting', priority: 'high' });
   });
 
   it('error: finalizes with a fallback message', async () => {

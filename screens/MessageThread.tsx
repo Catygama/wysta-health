@@ -49,6 +49,8 @@ type Props = {
   onRequestEnd?: () => void;
   /** Conversation with the AI assistant (not a professional): adjusts the copy. */
   aiOnly?: boolean;
+  /** Shown above the messages (e.g. the patient's AI chat for professionals). */
+  header?: React.ReactElement | null;
 };
 
 
@@ -62,6 +64,7 @@ export function MessageThread({
   closed = false,
   onRequestEnd,
   aiOnly = false,
+  header,
 }: Props) {
   const messages =
     useQuery(api.messages.list, { conversationId: conversationId as any }) ??
@@ -218,6 +221,7 @@ export function MessageThread({
         contentContainerStyle={styles.listContent}
         contentInsetAdjustmentBehavior="automatic"
         onContentSizeChange={() => listRef.current?.scrollToEnd()}
+        ListHeaderComponent={header ?? null}
         ListFooterComponent={
           awaitingFirstQuestion ? (
             <View testID="thread-next-step" style={styles.nextStep}>

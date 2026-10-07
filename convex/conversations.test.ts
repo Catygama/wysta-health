@@ -103,45 +103,114 @@ describe('switchMode', () => {
   });
 });
 
-describe('AI chat conversion', () => {
-  it('AI escalation converts the side chat and closes the professional chat', async () => {
+describe('AI chats are read-only context for professionals', () => {
+  it('AI escalation forwards to the professional chat and leaves the AI chat as is', async () => {
     const { t, patient, proConvId } = await setup();
+    await t.run((ctx) => ctx.db.patch(proConvId, { priority: 'low' }));
     const { id: aiId } = await patient.mutation(api.conversations.switchMode, { id: proConvId });
 
     await t.mutation(internal.conversations.escalateAiConversation, { conversationId: aiId });
 
-    const [ai, old] = await t.run(async (ctx) => [await ctx.db.get(aiId), await ctx.db.get(proConvId)]);
-    expect(ai).toMatchObject({
-      kind: 'human-async',
-      status: 'waiting',
-      priority: 'high', // carried from the professional chat
-      contextConversationId: proConvId,
+    const [ai, pro] = await t.run(async (ctx) => [await ctx.db.get(aiId), await ctx.db.get(proConvId)]);
+    expect(ai).toMatchObject({ kind: 'ai-only', status: 'active' });
+    expect(pro).toMatchObject({ kind: 'human-async', status: 'waiting', priority: 'high' });
+    const proMessages = await t.run((ctx) =>
+      ctx.db
+        .query('messages')
+        .withIndex('by_conversation', (q) => q.eq('conversationId', proConvId))
+        .collect()
+    );
+    expect(proMessages.some((m) => m.messageType === 'system' && m.content.includes('encaminhada'))).toBe(true);
+  });
+
+  it('professionals cannot take over or write in an AI chat', async () => {
+    const { patient, pro, proConvId } = await setup();
+    const { id: aiId } = await patient.mutation(api.conversations.switchMode, { id: proConvId });
+    await expect(pro.mutation(api.conversations.assign, { id: aiId })).rejects.toThrow();
+    await expect(
+      pro.mutation(api.messages.send, { conversationId: aiId, content: 'Olá' })
+    ).rejects.toThrow();
+  });
+
+  it('AI chats never appear in the queue; requests from AI chats are flagged', async () => {
+    const { t, patient, pro, patientId } = await setup();
+    const aiId = await t.run((ctx) =>
+      ctx.db.insert('conversations', {
+        patientId,
+        topic: 'sti',
+        title: 'Conversa com AI',
+        priority: 'low',
+        status: 'active',
+        lastMessageAt: 0,
+        kind: 'ai-only',
+      })
+    );
+    const { id: requestId } = await patient.mutation(api.conversations.switchMode, { id: aiId });
+
+    const queue = await pro.query(api.conversations.listForProfessional, { scope: 'unassigned' });
+    expect(queue.some((c) => c._id === aiId)).toBe(false);
+    expect(queue.find((c) => c._id === requestId)?.fromAi).toBe(true);
+  });
+
+  it('only the assigned professional (or anyone while unassigned) reads the linked AI chat', async () => {
+    const { t, patient, pro, proId, patientId } = await setup();
+    const otherId = await t.run(async (ctx) => {
+      const id = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
+      await ctx.db.insert('userProfiles', { userId: id, role: 'professional' });
+      return id;
     });
-    expect(ai?.counterpartConversationId).toBeUndefined();
-    expect(old).toMatchObject({ status: 'closed', closureReason: 'continued-elsewhere' });
+    const other = t.withIdentity({ subject: `${otherId}|s3` });
+    const aiId = await t.run((ctx) =>
+      ctx.db.insert('conversations', {
+        patientId,
+        topic: 'sti',
+        title: 'Conversa com AI',
+        priority: 'low',
+        status: 'active',
+        lastMessageAt: 0,
+        kind: 'ai-only',
+      })
+    );
+    await t.run((ctx) =>
+      ctx.db.insert('messages', {
+        conversationId: aiId,
+        senderId: patientId,
+        content: 'Tenho ardor ao urinar',
+        messageType: 'text',
+      })
+    );
+    const { id: requestId } = await patient.mutation(api.conversations.switchMode, { id: aiId });
+
+    // Unassigned request: any professional can read the AI context.
+    expect((await other.query(api.messages.list, { conversationId: aiId })).length).toBeGreaterThan(0);
+
+    await pro.mutation(api.conversations.assign, { id: requestId });
+    const context = await pro.query(api.conversations.aiContext, { id: requestId });
+    expect(context).toHaveLength(1);
+    expect(context[0]).toMatchObject({ conversationId: aiId, relation: 'before' });
+    expect(context[0].messages.map((m) => m.content)).toContain('Tenho ardor ao urinar');
+
+    // Assigned to someone else: no access.
+    expect(await other.query(api.messages.list, { conversationId: aiId })).toEqual([]);
+    expect(await other.query(api.conversations.get, { id: aiId })).toBeNull();
+    expect(await other.query(api.conversations.aiContext, { id: requestId })).toEqual([]);
+    expect(proId).toBeDefined();
   });
 
-  it('a professional intervening (assign) takes over the AI chat', async () => {
-    const { t, patient, pro, proId, proConvId } = await setup();
-    const { id: aiId } = await patient.mutation(api.conversations.switchMode, { id: proConvId });
-
-    await pro.mutation(api.conversations.assign, { id: aiId });
-
-    const [ai, old] = await t.run(async (ctx) => [await ctx.db.get(aiId), await ctx.db.get(proConvId)]);
-    expect(ai).toMatchObject({ kind: 'human-async', status: 'active', professionalId: proId });
-    expect(old?.status).toBe('closed');
-  });
-
-  it('a professional message in the AI chat takes it over', async () => {
-    const { t, patient, pro, proId, proConvId } = await setup();
-    const { id: aiId } = await patient.mutation(api.conversations.switchMode, { id: proConvId });
-
-    await pro.mutation(api.messages.send, { conversationId: aiId, content: 'Olá, sou a Dra. Ana.' });
-
-    const ai = await t.run((ctx) => ctx.db.get(aiId));
-    expect(ai).toMatchObject({ kind: 'human-async', professionalId: proId });
-    // Run the scheduled push notification before teardown.
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  it("an AI chat that isn't linked to any professional conversation stays private", async () => {
+    const { t, pro, patientId } = await setup();
+    const aiId = await t.run((ctx) =>
+      ctx.db.insert('conversations', {
+        patientId,
+        topic: 'general',
+        title: 'Conversa com AI',
+        priority: 'low',
+        status: 'active',
+        lastMessageAt: 0,
+        kind: 'ai-only',
+      })
+    );
+    expect(await pro.query(api.conversations.get, { id: aiId })).toBeNull();
   });
 });
 
