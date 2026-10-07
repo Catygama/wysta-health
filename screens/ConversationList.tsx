@@ -60,6 +60,7 @@ export function ConversationList({
       ListEmptyComponent={emptyComponent}
       renderItem={({ item }) => {
         const topic = TOPICS.find((t) => t.id === item.topic);
+        const pastel = theme.topic[topic?.color ?? 'general'];
         const priorityColor = priorityColors(theme.name)[item.priority] ?? theme.colors.textSecondary;
         return (
           <Card
@@ -73,6 +74,10 @@ export function ConversationList({
             style={styles.card}
           >
             <View style={styles.cardRow}>
+              {/* Same topic icon as the patient's conversation list. */}
+              <View style={[styles.topicIcon, { backgroundColor: pastel.fill }]}>
+                {topic && <Icon name={topic.icon} size={18} color={pastel.on} />}
+              </View>
               <View style={styles.cardBody}>
                 <View style={styles.top}>
                   <Text style={styles.name} numberOfLines={1}>
@@ -132,6 +137,14 @@ const styles = StyleSheet.create((theme) => ({
   card: { gap: 4 },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   cardBody: { flex: 1, gap: 4 },
+  topicIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   endBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.6 },
   top: {
