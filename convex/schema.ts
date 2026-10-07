@@ -60,6 +60,11 @@ export default defineSchema({
     ),
     professionalVerificationDocuments: v.optional(v.array(v.id('_storage'))),
     professionalVerificationNotes: v.optional(v.string()),
+    // Manual review by an admin (users.approveProfessional / rejectProfessional).
+    professionalVerificationRequestedAt: v.optional(v.number()),
+    professionalVerificationReviewedBy: v.optional(v.id('users')),
+    professionalVerificationReviewedAt: v.optional(v.number()),
+    professionalVerificationRejectionReason: v.optional(v.string()),
     // Guest sessions (Anonymous provider) — for testing only
     isGuest: v.optional(v.boolean()),
     // Push destinations (max 15, oldest evicted on overflow). Native entries
@@ -77,7 +82,9 @@ export default defineSchema({
     ),
     aiSummary: v.optional(v.string()),
     aiSummaryAt: v.optional(v.number()),
-  }).index('by_user', ['userId']),
+  })
+    .index('by_user', ['userId'])
+    .index('by_professionalVerificationStatus', ['professionalVerificationStatus']),
 
   conversations: defineTable({
     patientId: v.id('users'),
@@ -230,8 +237,12 @@ export default defineSchema({
   }).index('by_user', ['userId']),
 
   auditLog: defineTable({
-    conversationId: v.id('conversations'),
-    professionalId: v.id('users'),
+    // Conversation actions set conversationId + professionalId; account
+    // reviews (professional-approved/-rejected) set adminId + targetUserId.
+    conversationId: v.optional(v.id('conversations')),
+    professionalId: v.optional(v.id('users')),
+    adminId: v.optional(v.id('users')),
+    targetUserId: v.optional(v.id('users')),
     action: v.union(
       v.literal('escalation'),
       v.literal('closure'),
@@ -241,7 +252,9 @@ export default defineSchema({
       v.literal('unassigned'),
       v.literal('review-requested'),
       v.literal('review-cleared'),
-      v.literal('redirect-recommended')
+      v.literal('redirect-recommended'),
+      v.literal('professional-approved'),
+      v.literal('professional-rejected')
     ),
     details: v.string(),
   }).index('by_conversation', ['conversationId']),

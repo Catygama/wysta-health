@@ -11,10 +11,12 @@ bunx playwright install chromium
 
 # 2. Enable the test-only Convex module on your dev deployment
 bunx convex env set CONVEX_E2E_ENABLED true
+# …and the auto-verified guest professional used by the auth specs
+bunx convex env set ALLOW_GUEST_PROFESSIONAL true
 ```
 
 `CONVEX_E2E_ENABLED=true` unlocks `convex/testing.*` (reset, seed, etc.) on
-the targeted deployment. **Never set this on the production deployment.**
+the targeted deployment. **Never set this (or `ALLOW_GUEST_PROFESSIONAL`) on the production deployment.**
 
 ## Running the suite
 
