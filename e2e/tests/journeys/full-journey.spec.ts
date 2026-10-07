@@ -53,7 +53,8 @@ test('Full journey: triage → professional answer → patient reads it', async 
   await test.step('3. Utente lê a resposta', async () => {
     await loginAs(page, patient.email, patient.password);
     await page.goto(`/(patient)/conversations/${conversationId}`);
-    await expectMessageVisible(page, answer);
-    await expectMessageVisible(page, question);
+    await expect(page.getByTestId('message-input')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(answer).filter({ visible: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(question).filter({ visible: true })).toBeVisible({ timeout: 10_000 });
   });
 });
