@@ -9,7 +9,6 @@ import {
 
 // Tests the new escalation flows that replaced the old escalate dialog:
 // - Aumentar prioridade (markUrgent)
-// - Pedir 2ª opinião (requestReview + clearReview)
 // - Recomendar consulta presencial (recommendInPerson, with optional close)
 test.describe('Conversation escalation flows', () => {
   test('Aumentar prioridade para urgente', async ({ page }) => {
@@ -35,54 +34,6 @@ test.describe('Conversation escalation flows', () => {
         timeout: 5_000,
       })
       .toBe('urgent');
-
-    await logoutViaBridge(page);
-  });
-
-  test('Pedir 2ª opinião + filtro Para revisão + marcar concluída', async ({ page }) => {
-    const seeded = await seedConversation({
-      patientEmail: TEST_USERS.patientA.email,
-      professionalEmail: TEST_USERS.professionalA.email,
-      topic: 'menstrual-cycle',
-      title: 'Esc — review',
-      priority: 'medium',
-      status: 'active',
-      initialMessage: 'Olá doutora.',
-    });
-    await loginAs(page, TEST_USERS.professionalA.email);
-    await page.goto(`/(professional)/cases/${seeded.conversationId}`);
-
-    await page.getByTestId('conversation-request-review').click({ timeout: 15_000 });
-    await page.getByTestId('review-question-input').fill(
-      'Esta utente tem dor pélvica. Como interpretar com pílula em curso?',
-    );
-    await page.getByTestId('review-submit').click();
-
-    // Banner com a pergunta
-    await expect(page.getByText('Pedido de 2ª opinião')).toBeVisible();
-
-    // needsReview persistido
-    await expect
-      .poll(async () => (await getConversation(seeded.conversationId))?.needsReview, {
-        timeout: 5_000,
-      })
-      .toBe(true);
-
-    // Filtro em Conversas
-    await page.goto('/(professional)/ongoing');
-    await page.getByTestId('ongoing-scope-review').click();
-    await expect(page.getByText('Esc — review').first()).toBeVisible();
-
-    // Marcar concluída
-    await page.goto(`/(professional)/cases/${seeded.conversationId}`);
-    await page.getByTestId('conversation-clear-review').click({ timeout: 15_000 });
-    await expect(page.getByTestId('conversation-request-review')).toBeVisible();
-
-    await expect
-      .poll(async () => (await getConversation(seeded.conversationId))?.needsReview, {
-        timeout: 5_000,
-      })
-      .toBe(false);
 
     await logoutViaBridge(page);
   });

@@ -92,8 +92,7 @@ export const listForProfessional = query({
       v.union(
         v.literal('all'),
         v.literal('mine'),
-        v.literal('unassigned'),
-        v.literal('review')
+        v.literal('unassigned')
       )
     ),
     priority: v.optional(
@@ -130,8 +129,6 @@ export const listForProfessional = query({
       conversations = conversations.filter((c) => c.professionalId === userId);
     } else if (args.scope === 'unassigned') {
       conversations = conversations.filter((c) => !c.professionalId);
-    } else if (args.scope === 'review') {
-      conversations = conversations.filter((c) => c.needsReview === true);
     }
 
     if (args.priority) {
@@ -164,7 +161,6 @@ export const queueStats = query({
     return {
       mine: all.filter((c) => c.professionalId === userId && c.status !== 'closed').length,
       unassigned: all.filter((c) => !c.professionalId && c.status === 'waiting').length,
-      review: all.filter((c) => c.needsReview === true && c.status !== 'closed').length,
       urgent: all.filter((c) => c.priority === 'urgent' && c.status !== 'closed').length,
     };
   },
@@ -496,66 +492,6 @@ export const markUrgent = mutation({
       professionalId: userId,
       action: 'priority-change',
       details: `${conv.priority} → urgent`,
-    });
-  },
-});
-
-// Flags a conversation for second-opinion review by another professional.
-// Question is stored on the conversation + posted as an internal note so
-// the back-and-forth lives with the rest of the conversation context.
-export const requestReview = mutation({
-  args: { id: v.id('conversations'), question: v.string() },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
-    await requireProfessional(ctx, userId);
-    const trimmed = args.question.trim();
-    if (trimmed.length < 5) throw new Error('Pergunta demasiado curta');
-    const conv = await ctx.db.get(args.id);
-    if (!conv) throw new Error('Conversation not found');
-    if (conv.status === 'closed') throw new Error('Conversa fechada');
-    await ctx.db.patch(args.id, {
-      needsReview: true,
-      reviewQuestion: trimmed,
-      reviewRequestedBy: userId,
-    });
-    await ctx.db.insert('messages', {
-      conversationId: args.id,
-      senderId: userId,
-      content: `Pedido de 2ª opinião: ${trimmed}`,
-      messageType: 'text',
-      isInternal: true,
-    });
-    await ctx.db.insert('auditLog', {
-      conversationId: args.id,
-      professionalId: userId,
-      action: 'review-requested',
-      details: trimmed,
-    });
-  },
-});
-
-// Clears the review flag (after another professional has responded
-// internally, or the original requester decides it's resolved).
-export const clearReview = mutation({
-  args: { id: v.id('conversations') },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
-    await requireProfessional(ctx, userId);
-    const conv = await ctx.db.get(args.id);
-    if (!conv) throw new Error('Conversation not found');
-    if (!conv.needsReview) return;
-    await ctx.db.patch(args.id, {
-      needsReview: false,
-      reviewQuestion: undefined,
-      reviewRequestedBy: undefined,
-    });
-    await ctx.db.insert('auditLog', {
-      conversationId: args.id,
-      professionalId: userId,
-      action: 'review-cleared',
-      details: 'Pedido de revisão resolvido',
     });
   },
 });

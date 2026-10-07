@@ -89,6 +89,7 @@ export default defineSchema({
     // needsReview + priority bump + closureReason instead.
     escalationLevel: v.optional(escalationLevel),
     escalationNotes: v.optional(v.string()),
+    // Legacy "2ª opinião" feature (removed); kept so existing documents validate.
     needsReview: v.optional(v.boolean()),
     reviewQuestion: v.optional(v.string()),
     reviewRequestedBy: v.optional(v.id('users')),

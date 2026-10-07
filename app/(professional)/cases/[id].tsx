@@ -42,11 +42,8 @@ export default function ProfessionalConversation() {
   const assign = useMutation(api.conversations.assign);
   const close = useMutation(api.conversations.close);
   const markUrgent = useMutation(api.conversations.markUrgent);
-  const requestReview = useMutation(api.conversations.requestReview);
-  const clearReview = useMutation(api.conversations.clearReview);
   const recommendInPerson = useMutation(api.conversations.recommendInPerson);
   const { setIsTabBarHidden } = useTabBar();
-  const [reviewOpen, setReviewOpen] = useState(false);
   const [redirectOpen, setRedirectOpen] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [tab, setTab] = useState<Tab>('chat');
@@ -139,7 +136,6 @@ export default function ProfessionalConversation() {
             label={`Prioridade ${PRIORITY_LABELS[conversation.priority] ?? conversation.priority}`}
             color={priorityColor}
           />
-          {conversation.needsReview && <Badge label="Para revisão" color={theme.colors.warning} />}
           <Badge
             label={isMine ? 'Atribuída a si' : 'Não atribuída a si'}
             color={isMine ? theme.colors.success : theme.colors.textTertiary}
@@ -200,22 +196,6 @@ export default function ProfessionalConversation() {
               onPress={() => markUrgent({ id: id as any })}
             />
           )}
-          {canEscalate && !conversation.needsReview && (
-            <ActionButton
-              testID="conversation-request-review"
-              label="Pedir 2ª opinião"
-              variant="secondary"
-              onPress={() => setReviewOpen(true)}
-            />
-          )}
-          {canEscalate && conversation.needsReview && (
-            <ActionButton
-              testID="conversation-clear-review"
-              label="Marcar revisão concluída"
-              variant="secondary"
-              onPress={() => clearReview({ id: id as any })}
-            />
-          )}
           {canEscalate && (
             <ActionButton
               testID="conversation-recommend-in-person"
@@ -233,12 +213,6 @@ export default function ProfessionalConversation() {
             />
           )}
         </View>
-        {conversation.needsReview && conversation.reviewQuestion && (
-          <View style={styles.reviewBanner}>
-            <Text style={styles.reviewBannerTitle}>Pedido de 2ª opinião</Text>
-            <Text style={styles.reviewBannerText}>{conversation.reviewQuestion}</Text>
-          </View>
-        )}
         {/* Chats with the AI show inside the chat tab (AiContextBlock). */}
         {conversation.contextConversation && conversation.contextConversation.kind !== 'ai-only' && (
           <RelatedLink
@@ -290,13 +264,6 @@ export default function ProfessionalConversation() {
         )}
       </View>
 
-      <RequestReviewSheet
-        visible={reviewOpen}
-        onClose={() => setReviewOpen(false)}
-        onSubmit={async (question) => {
-          await requestReview({ id: id as any, question });
-        }}
-      />
       <ConfirmDialog
         testID="close-conversation-dialog"
         visible={confirmClose}
@@ -519,67 +486,6 @@ function SheetHeader({ title, onClose, closeTestID }: { title: string; onClose: 
   );
 }
 
-function RequestReviewSheet({
-  visible,
-  onClose,
-  onSubmit,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onSubmit: (question: string) => Promise<void>;
-}) {
-  const { theme } = useUnistyles();
-  const [question, setQuestion] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submit() {
-    setError(null);
-    if (question.trim().length < 5) {
-      setError('Descreve a dúvida em pelo menos 5 caracteres.');
-      return;
-    }
-    setBusy(true);
-    try {
-      await onSubmit(question.trim());
-      setQuestion('');
-      onClose();
-    } catch (e: any) {
-      setError(e?.message ?? 'Falha');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <SheetHeader title="Pedir 2ª opinião" onClose={onClose} closeTestID="review-close" />
-          <Text style={styles.sheetNote}>
-            Descreve a dúvida clínica. A pergunta vai para notas internas e a conversa
-            aparece no filtro «Para revisão» para os colegas.
-          </Text>
-          <TextInput
-            testID="review-question-input"
-            multiline
-            value={question}
-            onChangeText={setQuestion}
-            placeholder="Qual é a dúvida? Que tipo de input procuras?"
-            placeholderTextColor={theme.colors.textTertiary as any}
-            style={styles.sheetInput}
-          />
-          {error && <Text style={styles.error}>{error}</Text>}
-          <Pressable testID="review-submit" disabled={busy} onPress={submit} style={[styles.sheetCta, busy && styles.dim]}>
-            {busy && <ActivityIndicator color={theme.colors.onInk} size="small" />}
-            <Text style={styles.sheetCtaText}>{busy ? 'A pedir...' : 'Pedir revisão'}</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
 function RecommendInPersonSheet({
   visible,
   onClose,
@@ -692,15 +598,6 @@ const styles = StyleSheet.create((theme) => ({
   patientMeta: { fontSize: 12, color: theme.colors.textSecondary },
   patientMetaStrong: { fontWeight: '500' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
-  reviewBanner: {
-    backgroundColor: theme.colors.warningSurface,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-    padding: theme.spacing.sm,
-    gap: 2,
-  },
-  reviewBannerTitle: { fontSize: 12, fontWeight: '500', color: theme.colors.warning },
-  reviewBannerText: { fontSize: 14, color: theme.colors.textPrimary },
   relatedBanner: {
     backgroundColor: theme.colors.surfaceSunken,
     borderRadius: theme.radius.md,
