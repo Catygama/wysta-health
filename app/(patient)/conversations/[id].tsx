@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -60,6 +60,7 @@ export default function PatientConversation() {
       <Stack.Screen
         options={{
           title: topic?.label ?? 'Conversa',
+          ...WEB_HEADER_FIT,
           headerRight:
             conversation && !closed
               ? () => (
@@ -98,6 +99,22 @@ export default function PatientConversation() {
   );
 }
 
+// Web header (react-navigation's JS header): the title keeps its full width and
+// the actions get what's left, so on a phone they spilled over the title and
+// off the right edge. Let the title shrink (it ellipsizes) and keep the actions
+// at their natural size. Native headers lay this out themselves.
+// Below this width the header buttons use short labels (larger phones in
+// landscape and tablets get the full ones).
+const COMPACT_HEADER_WIDTH = 480;
+
+const WEB_HEADER_FIT =
+  Platform.OS === 'web'
+    ? ({
+        headerTitleContainerStyle: { flexShrink: 1 },
+        headerRightContainerStyle: { flexGrow: 1, flexShrink: 0, flexBasis: 'auto' },
+      } as object)
+    : {};
+
 function SwitchButton({
   toAi,
   busy,
@@ -108,12 +125,17 @@ function SwitchButton({
   onPress: () => void;
 }) {
   const { theme } = useUnistyles();
+  // Narrow phones: short label, so the topic title keeps its room.
+  const compact = useWindowDimensions().width < COMPACT_HEADER_WIDTH;
+  const label = toAi ? 'Conversar com IA' : 'Falar com profissional';
   return (
     <Pressable
       testID={toAi ? 'conversation-switch-to-ai' : 'conversation-switch-to-professional'}
       onPress={onPress}
       disabled={busy}
       hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => [styles.cta, (pressed || busy) && styles.ctaBusy]}
     >
       {busy ? (
@@ -125,7 +147,7 @@ function SwitchButton({
           color={theme.colors.onInk}
         />
       )}
-      <Text style={styles.ctaText}>{toAi ? 'Conversar com IA' : 'Falar com profissional'}</Text>
+      <Text style={styles.ctaText}>{compact ? (toAi ? 'IA' : 'Profissional') : label}</Text>
     </Pressable>
   );
 }
@@ -133,7 +155,7 @@ function SwitchButton({
 function EndButton({ onPress }: { onPress: () => void }) {
   const { theme } = useUnistyles();
   // Narrow phones: icon only, so the topic title keeps its room.
-  const compact = useWindowDimensions().width < 420;
+  const compact = useWindowDimensions().width < COMPACT_HEADER_WIDTH;
   return (
     <Pressable
       testID="conversation-end-button"
