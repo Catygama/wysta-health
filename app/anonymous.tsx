@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Platform,
   Pressable,
@@ -19,6 +18,8 @@ import { Icon } from '@/components/ui/Icon';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fonts } from '@/lib/fonts';
+import { ChatMessage } from '@/components/chat/ChatMessage';
+import { AiResponseMessage } from '@/screens/MessageThread';
 
 type Turn = { id: number; fromPatient: boolean; content: string };
 
@@ -127,19 +128,16 @@ export default function AnonymousChat() {
               </Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={[styles.bubble, item.fromPatient ? styles.mine : styles.ai]}>
-              <Text style={[styles.bubbleText, item.fromPatient && styles.mineText]} selectable>
-                {item.content}
-              </Text>
-            </View>
-          )}
+          renderItem={({ item }) =>
+            item.fromPatient ? (
+              <ChatMessage side="own" content={item.content} messageType="text" />
+            ) : (
+              <AiResponseMessage content={item.content} />
+            )
+          }
           ListFooterComponent={
             busy ? (
-              <View style={[styles.bubble, styles.ai, styles.thinking]}>
-                <ActivityIndicator size="small" color={theme.colors.inkText} />
-                <Text style={styles.bubbleText}>A pensar…</Text>
-              </View>
+              <AiResponseMessage content="" streaming />
             ) : error ? (
               <Text style={styles.error}>{error}</Text>
             ) : null
@@ -222,18 +220,6 @@ const styles = StyleSheet.create((theme) => ({
     marginBottom: theme.spacing.xs,
   },
   noticeText: { fontSize: 13, lineHeight: 19, color: theme.colors.textSecondary },
-  bubble: {
-    maxWidth: '85%',
-    borderRadius: theme.radius.lg,
-    borderCurve: 'continuous',
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-  },
-  mine: { alignSelf: 'flex-end', backgroundColor: theme.colors.ink },
-  ai: { alignSelf: 'flex-start', backgroundColor: theme.topic.intimate.fill },
-  thinking: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  bubbleText: { fontSize: 15, lineHeight: 22, color: theme.colors.textPrimary },
-  mineText: { color: theme.colors.onInk },
   error: { fontSize: 13, color: theme.colors.danger },
   composer: {
     flexDirection: 'row',

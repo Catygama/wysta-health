@@ -515,13 +515,18 @@ function SystemMessage({ content }: { content: string }) {
   );
 }
 
-function AiResponseMessage({
-  content,
+// Signature appended to AI answers until it was dropped; hidden on old messages.
+const OLD_AI_SIGNATURE = /\s*— Assistente AI\. Esta resposta é informativa, não substitui consulta clínica\.?\s*$/;
+
+// AI answer bubble. Also used by the anonymous chat (app/anonymous.tsx).
+export function AiResponseMessage({
+  content: raw,
   streaming,
 }: {
   content: string;
   streaming?: boolean;
 }) {
+  const content = raw.replace(OLD_AI_SIGNATURE, '');
   return (
     <View style={styles.ai}>
       <View style={styles.aiHeader}>
