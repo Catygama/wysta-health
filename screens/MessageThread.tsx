@@ -682,7 +682,8 @@ const styles = StyleSheet.create((theme) => ({
     letterSpacing: 0.5,
     flex: 1,
   },
-  triageBody: { fontSize: 14, color: theme.colors.textSecondary },
+  // Same size as the banner text above it.
+  triageBody: { fontSize: 12, color: theme.colors.textSecondary },
   system: { alignItems: 'center', paddingVertical: theme.spacing.xs },
   systemText: { fontSize: 12, color: theme.colors.textTertiary, textAlign: 'center' },
   ai: {
