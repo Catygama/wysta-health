@@ -14,7 +14,7 @@ type Mode = 'professional' | 'ai';
 type CurrentMeta = {
   id: string;
   type: 'multiple-choice' | 'yes-no' | 'scale' | 'text';
-  isRedFlag: boolean;
+  alert: { level: string; minScale?: number; equals?: string[] } | null;
   options: string[] | null;
   step: number;
   total: number;
@@ -55,11 +55,14 @@ async function waitForMeta(
   return last!;
 }
 
-// A red-flag answer halts the triage on the urgency alert until it's dismissed.
-async function dismissUrgencyAlert(page: Page) {
-  await expect(page.getByTestId('urgency-alert')).toBeVisible({ timeout: 5_000 });
-  await page.getByTestId('urgency-dismiss').click();
+// An emergency, urgent or time-sensitive answer halts the triage on the alert
+// until it's dismissed; priority-level answers show nothing.
+async function dismissTriageAlert(page: Page) {
+  await expect(page.getByTestId('triage-alert')).toBeVisible({ timeout: 5_000 });
+  await page.getByTestId('triage-alert-dismiss').click();
 }
+
+const showsAlert = (meta: CurrentMeta) => !!meta.alert && meta.alert.level !== 'priority';
 
 async function answerSingle(
   page: Page,
@@ -67,9 +70,9 @@ async function answerSingle(
   target: RiskTarget,
 ) {
   if (meta.type === 'yes-no') {
-    const value = target === 'urgent' && meta.isRedFlag ? 'yes' : 'no';
+    const value = target === 'urgent' && meta.alert ? 'yes' : 'no';
     await page.getByTestId(`triage-option-${value}`).click();
-    if (value === 'yes') await dismissUrgencyAlert(page);
+    if (value === 'yes' && showsAlert(meta)) await dismissTriageAlert(page);
     return;
   }
   if (meta.type === 'multiple-choice') {
@@ -80,7 +83,7 @@ async function answerSingle(
   if (meta.type === 'scale') {
     const value = target === 'urgent' ? '10' : '1';
     await page.getByTestId(`triage-scale-${value}`).click();
-    if (value === '10' && meta.isRedFlag) await dismissUrgencyAlert(page);
+    if (value === '10' && showsAlert(meta)) await dismissTriageAlert(page);
     return;
   }
   if (meta.type === 'text') {

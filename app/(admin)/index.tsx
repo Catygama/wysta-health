@@ -60,7 +60,7 @@ export default function AdminPanel() {
     try {
       const r = await seedAll();
       setSeedResult(
-        `Triagem: ${r.triage.inserted} inseridas, ${r.triage.updated} atualizadas. Artigos: ${r.articles.inserted} inseridos, ${r.articles.updated} atualizados.`
+        `Triagem: ${r.triage.inserted} inseridas, ${r.triage.updated} atualizadas. Artigos: ${r.articles.inserted} inseridos, ${r.articles.updated} atualizados. Níveis de alerta atribuídos a ${r.alertLevelsBackfilled} conversas.`
       );
     } catch (e: any) {
       setSeedResult(e?.message ?? 'Erro ao executar seed.');

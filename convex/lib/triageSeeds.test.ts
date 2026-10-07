@@ -7,12 +7,40 @@ const risk = (topic: string, responses: Record<string, unknown>) =>
   calculateRiskLevel(responses, seed(topic).riskAssessment as RiskAssessment);
 
 describe('triage seeds', () => {
-  it('only yes/no questions are emergency signs (the alert fires on "yes")', () => {
+  it("each alert's trigger fits its question type", () => {
     for (const s of TRIAGE_SEEDS) {
       for (const q of s.questions) {
-        if (q.isRedFlag) expect(q.type, `${s.topic}/${q.id}`).toBe('yes-no');
+        if (!q.alert) continue;
+        const where = `${s.topic}/${q.id}`;
+        if (q.type === 'scale') expect(q.alert.minScale, where).toBeDefined();
+        else if (q.type === 'multiple-choice') {
+          expect(q.alert.equals, where).toBeDefined();
+          for (const v of q.alert.equals!) expect(q.options, where).toContain(v);
+        } else expect(q.type, where).toBe('yes-no');
       }
     }
+  });
+
+  it('alert levels follow the agreed mapping', () => {
+    const levels = Object.fromEntries(
+      TRIAGE_SEEDS.flatMap((s) => s.questions.filter((q) => q.alert).map((q) => [`${s.topic}/${q.id}`, q.alert!.level])),
+    );
+    expect(levels).toEqual({
+      'menstrual-cycle/pain-intensity': 'urgent',
+      'menstrual-cycle/heavy-bleeding': 'urgent',
+      'menstrual-cycle/ectopic-signs': 'emergency',
+      'menstrual-cycle/fever-pain': 'urgent',
+      'contraception/main-concern': 'time-sensitive',
+      'contraception/unprotected': 'time-sensitive',
+      'sti/lesions': 'priority',
+      'sti/fever-pain': 'urgent',
+      'pregnancy/bleeding': 'emergency',
+      'pregnancy/abdominal-pain': 'emergency',
+      'pregnancy/reduced-movement': 'urgent',
+      'pregnancy/preeclampsia-signs': 'urgent',
+      'pregnancy/fluid-loss': 'urgent',
+      'general/alarm-signs': 'emergency',
+    });
   });
 
   it('conditional questions depend on an earlier question and a real option', () => {
@@ -29,13 +57,8 @@ describe('triage seeds', () => {
     }
   });
 
-  it('priority signs mark the request urgent without being emergency signs', () => {
-    const contraception = seed('contraception').questions.find((q) => q.id === 'unprotected')!;
-    expect(contraception.isRedFlag).toBeFalsy();
+  it('time-sensitive and priority signs still count as high risk for professionals', () => {
     expect(risk('contraception', { 'current-method': 'Nenhum', 'main-concern': 'Eficácia do método', unprotected: 'yes' })).toBe('high');
-
-    const lesions = seed('sti').questions.find((q) => q.id === 'lesions')!;
-    expect(lesions.isRedFlag).toBeFalsy();
     expect(risk('sti', { discharge: 'no', lesions: 'yes', 'urination-pain': 'no', 'fever-pain': 'no' })).toBe('high');
   });
 

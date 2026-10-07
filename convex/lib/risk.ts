@@ -61,11 +61,3 @@ export function calculateRiskLevel(
   }
   return 'low';
 }
-
-export function priorityFromRisk(
-  risk: RiskLevel
-): 'low' | 'medium' | 'high' | 'urgent' {
-  if (risk === 'high') return 'urgent';
-  if (risk === 'medium') return 'medium';
-  return 'low';
-}

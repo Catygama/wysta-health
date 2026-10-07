@@ -3,6 +3,7 @@
 // (E2E unrestricted re-seed).
 
 import type { TopicId as Topic } from './topics';
+import type { QuestionAlert } from './alerts';
 
 type RiskBucket = { criteria: string[]; guidance: string };
 
@@ -13,7 +14,7 @@ export type TriageSeed = {
     question: string;
     type: 'multiple-choice' | 'yes-no' | 'scale' | 'text';
     options?: string[];
-    isRedFlag?: boolean;
+    alert?: QuestionAlert;
     required: boolean;
     showIf?: { questionId: string; equals: string[] };
   }>;
@@ -34,10 +35,11 @@ export type ArticleSeed = {
   readingTimeMinutes: number;
 };
 
-// Simplified triage, not clinically validated (academic prototype). Two alarm
-// levels: `isRedFlag` questions are emergency signs and open the 112 / SNS 24
-// alert on 'yes'; priority signs only raise the request to urgent through
-// riskAssessment.highRisk, without the alert.
+// Simplified triage, not clinically validated (academic prototype). A risky
+// answer triggers the question's `alert` level (lib/alerts.ts): emergency (112),
+// urgent (SNS 24 / SNS Grávida), time-sensitive (what to do in the next hours)
+// or priority (queue only, no message). riskAssessment keeps the medium/low
+// risk rules shown to professionals.
 export const TRIAGE_SEEDS: TriageSeed[] = [
   {
     topic: 'menstrual-cycle',
@@ -47,6 +49,7 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
         question: 'Qual a intensidade da dor, de 1 a 10?',
         type: 'scale',
         options: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+        alert: { level: 'urgent', minScale: 9 },
         required: true,
       },
       {
@@ -54,14 +57,14 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
         question:
           'Tens sangramento muito intenso (trocas de penso a cada hora) ou sentes-te tonta, como se fosses desmaiar?',
         type: 'yes-no',
-        isRedFlag: true,
+        alert: { level: 'urgent' },
         required: true,
       },
       {
         id: 'ectopic-signs',
         question: 'A menstruação está atrasada e tens dor forte só de um lado da barriga?',
         type: 'yes-no',
-        isRedFlag: true,
+        alert: { level: 'emergency' },
         required: true,
       },
       {
@@ -75,6 +78,7 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
         id: 'fever-pain',
         question: 'Tens febre (≥ 38 °C) com dor na barriga ou na zona pélvica?',
         type: 'yes-no',
+        alert: { level: 'urgent' },
         required: true,
       },
     ],
@@ -114,12 +118,14 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
           'Parar método atual',
           'Contraceção de emergência',
         ],
+        alert: { level: 'time-sensitive', equals: ['Contraceção de emergência'] },
         required: true,
       },
       {
         id: 'unprotected',
         question: 'Tiveste relações sem proteção, ou com falha do método, nos últimos 5 dias?',
         type: 'yes-no',
+        alert: { level: 'time-sensitive' },
         required: true,
       },
     ],
@@ -151,6 +157,7 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
         id: 'lesions',
         question: 'Tens feridas, verrugas ou lesões visíveis?',
         type: 'yes-no',
+        alert: { level: 'priority' },
         required: true,
       },
       {
@@ -163,6 +170,7 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
         id: 'fever-pain',
         question: 'Tens febre (≥ 38 °C) com dor na parte de baixo da barriga?',
         type: 'yes-no',
+        alert: { level: 'urgent' },
         required: true,
       },
     ],
@@ -200,21 +208,21 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
         id: 'bleeding',
         question: 'Tens sangramento vaginal abundante (como uma menstruação ou mais)?',
         type: 'yes-no',
-        isRedFlag: true,
+        alert: { level: 'emergency' },
         required: true,
       },
       {
         id: 'abdominal-pain',
         question: 'Sentes dor abdominal intensa?',
         type: 'yes-no',
-        isRedFlag: true,
+        alert: { level: 'emergency' },
         required: true,
       },
       {
         id: 'reduced-movement',
         question: 'Notaste menos movimentos do bebé?',
         type: 'yes-no',
-        isRedFlag: true,
+        alert: { level: 'urgent' },
         required: true,
         showIf: { questionId: 'weeks', equals: ['24 semanas ou mais'] },
       },
@@ -222,14 +230,14 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
         id: 'preeclampsia-signs',
         question: 'Tens dor de cabeça forte, visão turva ou inchaço repentino da cara ou das mãos?',
         type: 'yes-no',
-        isRedFlag: true,
+        alert: { level: 'urgent' },
         required: true,
       },
       {
         id: 'fluid-loss',
         question: 'Perdeste líquido pela vagina?',
         type: 'yes-no',
-        isRedFlag: true,
+        alert: { level: 'urgent' },
         required: true,
       },
     ],
@@ -269,7 +277,7 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
         question:
           'Tens algum destes sinais: dificuldade em respirar, dor no peito, desmaio ou sangramento abundante?',
         type: 'yes-no',
-        isRedFlag: true,
+        alert: { level: 'emergency' },
         required: true,
       },
       {

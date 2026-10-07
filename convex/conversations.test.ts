@@ -4,6 +4,7 @@ import { convexTest } from 'convex-test';
 import schema from './schema';
 import { api, internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
+import { TRIAGE_SEEDS } from './lib/seedData';
 
 const modules = import.meta.glob('./**/*.ts');
 
@@ -318,5 +319,65 @@ describe('switchMode to professional with an open professional conversation', ()
     expect(res).toEqual({ id: proConvId, created: false });
     const ai = await t.run((ctx) => ctx.db.get(aiId));
     expect(ai?.counterpartConversationId).toBe(proConvId);
+  });
+});
+
+describe('triage alert levels', () => {
+  async function seedTriage(t: Awaited<ReturnType<typeof setup>>['t']) {
+    await t.run(async (ctx) => {
+      for (const seed of TRIAGE_SEEDS) await ctx.db.insert('triageQuestions', seed);
+    });
+  }
+
+  it('create recomputes the most severe level from the answers and sets the priority', async () => {
+    const { t, patient } = await setup();
+    await seedTriage(t);
+    const id = await patient.mutation(api.conversations.create, {
+      topic: 'pregnancy',
+      title: 'Gravidez — nova conversa',
+      triageData: {
+        responses: { weeks: '24 semanas ou mais', bleeding: 'no', 'abdominal-pain': 'yes', 'reduced-movement': 'yes' },
+      },
+    });
+    const conv = await t.run((ctx) => ctx.db.get(id));
+    expect(conv?.alertLevel).toBe('emergency');
+    expect(conv?.priority).toBe('urgent');
+  });
+
+  it('time-sensitive and priority answers raise the conversation to high, without a level change to urgent', async () => {
+    const { t, patient } = await setup();
+    await seedTriage(t);
+    const id = await patient.mutation(api.conversations.create, {
+      topic: 'sti',
+      title: 'IST — nova conversa',
+      triageData: { responses: { discharge: 'no', lesions: 'yes', 'urination-pain': 'no', 'fever-pain': 'no' } },
+    });
+    const conv = await t.run((ctx) => ctx.db.get(id));
+    expect(conv?.alertLevel).toBe('priority');
+    expect(conv?.priority).toBe('high');
+  });
+
+  it('the professional queue lists the most severe level first, oldest first within a level', async () => {
+    const { t, patient, pro } = await setup();
+    await seedTriage(t);
+    await patient.mutation(api.conversations.create, {
+      topic: 'sti',
+      title: 'IST',
+      triageData: { responses: { lesions: 'yes' } },
+    });
+    await patient.mutation(api.conversations.create, {
+      topic: 'pregnancy',
+      title: 'Gravidez',
+      triageData: { responses: { bleeding: 'yes' } },
+    });
+    await patient.mutation(api.conversations.create, {
+      topic: 'menstrual-cycle',
+      title: 'Ciclo',
+      triageData: { responses: { 'pain-intensity': 9 } },
+    });
+    const queue = await pro.query(api.conversations.listForProfessional, {});
+    // The setup's contraception conversation (priority 'high', no level) ranks
+    // with 'priority' and is older than the STI one.
+    expect(queue.map((c) => c.title)).toEqual(['Gravidez', 'Ciclo', 'Contraceção — nova conversa', 'IST']);
   });
 });

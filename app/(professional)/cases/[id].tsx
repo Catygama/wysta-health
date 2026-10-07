@@ -30,6 +30,7 @@ import {
 import { useTabBar } from '@/contexts/TabBarContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { pregnancyClinicalLabel } from '@/constants/profile';
+import type { AlertLevel } from '@/convex/lib/alerts';
 
 type Tab = 'chat' | 'internal' | 'summary';
 
@@ -175,6 +176,7 @@ export default function ProfessionalConversation() {
         {triageMessage?.metadata?.triageData && (
           <TriageSummary
             riskLevel={triageMessage.metadata.triageData.riskLevel}
+            alertLevel={conversation.alertLevel}
             responses={triageMessage.metadata.triageData.responses ?? {}}
           />
         )}
@@ -340,7 +342,7 @@ function SummaryPanel({
   canGenerate,
 }: {
   conversationId: string;
-  triage?: { topic: string; responses: Record<string, unknown>; riskLevel: string };
+  triage?: { topic: string; responses: Record<string, unknown>; riskLevel: string; alertLevel?: AlertLevel };
   messageCount: number;
   aiSummary?: string;
   aiSummaryAt?: number;
@@ -367,7 +369,7 @@ function SummaryPanel({
 
   return (
     <ScrollView style={styles.summaryScroll} contentContainerStyle={styles.summary} contentInsetAdjustmentBehavior="automatic">
-      {triage && <TriageSummary riskLevel={triage.riskLevel} responses={triage.responses ?? {}} />}
+      {triage && <TriageSummary riskLevel={triage.riskLevel} alertLevel={triage.alertLevel} responses={triage.responses ?? {}} />}
       <View style={styles.statsCard}>
         <Text style={styles.statsTitle}>Estatísticas da conversa</Text>
         <Text style={styles.statsLine}>Mensagens: {messageCount}</Text>

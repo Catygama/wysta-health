@@ -2,15 +2,18 @@ import { View, Text } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Icon } from '@/components/ui/Icon';
 import { RISK_LABELS, riskColor } from '@/constants/conversation';
+import { AlertLevelBadge } from '@/components/AlertLevelBadge';
+import type { AlertLevel } from '@/convex/lib/alerts';
 
 
 type Props = {
   riskLevel?: string;
+  alertLevel?: AlertLevel;
   responses: Record<string, unknown>;
   questionLabels?: Record<string, string>;
 };
 
-export function TriageSummary({ riskLevel, responses, questionLabels }: Props) {
+export function TriageSummary({ riskLevel, alertLevel, responses, questionLabels }: Props) {
   const { theme } = useUnistyles();
   const color = riskColor(theme, riskLevel ?? 'low') ?? theme.colors.textSecondary;
   const entries = Object.entries(responses);
@@ -21,6 +24,7 @@ export function TriageSummary({ riskLevel, responses, questionLabels }: Props) {
       <View style={styles.header}>
         <Icon name={{ sf: 'doc.text.fill', ion: 'document-text' }} size={16} color={theme.colors.inkText} />
         <Text style={styles.title}>Resumo de triagem</Text>
+        {alertLevel && <AlertLevelBadge level={alertLevel} testID="triage-summary-alert-level" />}
         {riskLevel && (
           <View style={[styles.riskBadge, { backgroundColor: color + '20' }]}>
             <Text style={[styles.riskText, { color }]}>
