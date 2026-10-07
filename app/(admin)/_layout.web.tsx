@@ -9,6 +9,16 @@ const ITEMS: NavItem[] = [
     icon: { sf: 'person.2', ion: 'people-outline' },
     match: (p) => p === '/',
   },
+  {
+    label: 'Verificações',
+    href: '/verifications',
+    icon: { sf: 'checkmark.seal', ion: 'shield-checkmark-outline' },
+  },
+  {
+    label: 'Gestão da IA',
+    href: '/ai',
+    icon: { sf: 'sparkles', ion: 'sparkles-outline' },
+  },
 ];
 
 export default function AdminLayoutWeb() {

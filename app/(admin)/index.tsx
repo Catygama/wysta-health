@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FlatList, View, Text, Pressable, ActivityIndicator, TextInput } from 'react-native';
+import { FlatList, View, Text, Pressable, ActivityIndicator, TextInput, Platform } from 'react-native';
 import { Link } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
@@ -8,7 +8,6 @@ import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { VerificationRequests } from '@/components/admin/VerificationRequests';
 import { fonts } from '@/lib/fonts';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -108,8 +107,6 @@ export default function AdminPanel() {
             <CountCard testID="admin-count-admin" label="Admins" value={counts.admin ?? 0} />
           </View>
 
-          <VerificationRequests />
-
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Conteúdo da plataforma</Text>
             <Text style={styles.cardSub}>
@@ -128,15 +125,29 @@ export default function AdminPanel() {
             )}
           </View>
 
-          <Link href="/(admin)/ai" asChild>
-            <Pressable testID="admin-ai-link" style={styles.linkCard}>
-              <View style={styles.linkBody}>
-                <Text style={styles.cardTitle}>AI Infra</Text>
-                <Text style={styles.cardSub}>Configs, prompts, audit das invocações + teste rápido.</Text>
-              </View>
-              <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={16} color={theme.colors.textTertiary} />
-            </Pressable>
-          </Link>
+          {/* On web these live in the side bar; the phone has no bar for admin. */}
+          {Platform.OS !== 'web' && (
+            <>
+              <Link href="/(admin)/verifications" asChild>
+                <Pressable testID="admin-verifications-link" style={styles.linkCard}>
+                  <View style={styles.linkBody}>
+                    <Text style={styles.cardTitle}>Verificações</Text>
+                    <Text style={styles.cardSub}>Aprovar ou recusar pedidos de profissionais.</Text>
+                  </View>
+                  <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={16} color={theme.colors.textTertiary} />
+                </Pressable>
+              </Link>
+              <Link href="/(admin)/ai" asChild>
+                <Pressable testID="admin-ai-link" style={styles.linkCard}>
+                  <View style={styles.linkBody}>
+                    <Text style={styles.cardTitle}>Gestão da IA</Text>
+                    <Text style={styles.cardSub}>Configs, prompts, audit das invocações + teste rápido.</Text>
+                  </View>
+                  <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={16} color={theme.colors.textTertiary} />
+                </Pressable>
+              </Link>
+            </>
+          )}
 
           <Text style={styles.usersHeading}>Utilizadores</Text>
 
