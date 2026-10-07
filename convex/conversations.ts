@@ -230,7 +230,7 @@ export const get = query({
 });
 
 // A patient keeps at most one open professional conversation per topic.
-async function findOpenProfessionalConversation(
+export async function findOpenProfessionalConversation(
   ctx: QueryCtx,
   patientId: Id<'users'>,
   topicId: string

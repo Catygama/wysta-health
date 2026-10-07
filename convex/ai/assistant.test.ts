@@ -184,6 +184,54 @@ describe('assistant streaming (respondAuto)', () => {
 });
 
 describe('assistant.gatherContext', () => {
+  it('AI chat started first still reads the open professional chat on the topic', async () => {
+    const t = convexTest(schema, modules);
+    const { userId, conversationId } = await t.run(async (ctx) => {
+      const userId = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
+      const proId = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
+      const conversationId = await ctx.db.insert('conversations', {
+        patientId: userId,
+        topic: 'pregnancy',
+        status: 'active',
+        priority: 'low',
+        title: 'AI',
+        lastMessageAt: 0,
+        kind: 'ai-only',
+      } as any);
+      // Separate professional chat on the same topic, with no link to the AI chat.
+      const proConvId = await ctx.db.insert('conversations', {
+        patientId: userId,
+        topic: 'pregnancy',
+        status: 'active',
+        priority: 'low',
+        title: 'Pro',
+        lastMessageAt: 0,
+        kind: 'human-async',
+      } as any);
+      await ctx.db.insert('messages', {
+        conversationId: proConvId,
+        senderId: userId,
+        content: 'Tenho náuseas todas as manhãs',
+        messageType: 'text',
+      } as any);
+      await ctx.db.insert('messages', {
+        conversationId: proConvId,
+        senderId: proId,
+        content: 'Nota só para a equipa',
+        messageType: 'text',
+        isInternal: true,
+      } as any);
+      return { userId, conversationId };
+    });
+    const res = (await t.run((ctx) =>
+      ctx.runQuery(internal.ai.assistant.gatherContext, { conversationId, userId })
+    )) as any;
+    expect(res.conversationHistory).toContain('Conversa com o profissional');
+    expect(res.conversationHistory).toContain('Utente: Tenho náuseas todas as manhãs');
+    expect(res.conversationHistory).not.toContain('Nota só para a equipa');
+    expect(res.topicAndRisk).toContain('tem uma conversa com um profissional em curso');
+  });
+
   it('returns the conversation topic', async () => {
     const t = convexTest(schema, modules);
     const { userId, conversationId } = await t.run(async (ctx) => {

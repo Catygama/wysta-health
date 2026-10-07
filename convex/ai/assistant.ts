@@ -25,7 +25,8 @@ import { internal } from '../_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { runAgent } from './runAgent';
 import { SUGGEST_CLOSE_MARKER } from './defaults';
-import type { Id } from '../_generated/dataModel';
+import type { Doc, Id } from '../_generated/dataModel';
+import { findOpenProfessionalConversation } from '../conversations';
 
 // Removes the suggest-close marker from planner output — also a partial
 // marker still arriving at the end of a stream — so the patient never sees it.
@@ -433,16 +434,31 @@ export const gatherContext = internalQuery({
     let conversationHistory =
       visible.length > 0 ? formatLines(visible) : 'Sem histórico de mensagens.';
 
-    // Conversation this one was spawned from (e.g. the professional chat the
-    // patient left to talk to the AI): prepend its recent messages.
+    // Conversation to read alongside this one. For an AI chat: the patient's
+    // professional conversation on the topic — the one it was opened from, the
+    // linked one, or else the open one on the same topic (an AI chat started
+    // first has no context link). Otherwise: the conversation it came from.
+    let contextConv: Doc<'conversations'> | null = null;
+    if (conv.kind === 'ai-only') {
+      for (const id of [conv.contextConversationId, conv.counterpartConversationId]) {
+        if (!id) continue;
+        const c = await ctx.db.get(id);
+        if (c && c.patientId === userId && c.kind !== 'ai-only') {
+          contextConv = c;
+          break;
+        }
+      }
+      contextConv ??= await findOpenProfessionalConversation(ctx, userId, conv.topic);
+    } else if (conv.contextConversationId) {
+      contextConv = await ctx.db.get(conv.contextConversationId);
+    }
+
     let contextMessages: typeof messages = [];
-    if (conv.contextConversationId) {
+    if (contextConv) {
       contextMessages = (
         await ctx.db
           .query('messages')
-          .withIndex('by_conversation', (q) =>
-            q.eq('conversationId', conv.contextConversationId!)
-          )
+          .withIndex('by_conversation', (q) => q.eq('conversationId', contextConv._id))
           .order('desc')
           .take(20)
       ).reverse();
@@ -450,9 +466,13 @@ export const gatherContext = internalQuery({
         (m) => !m.isInternal && m.messageType !== 'system' && m.messageType !== 'triage-response'
       );
       if (contextVisible.length > 0) {
-        conversationHistory = `Conversa anterior (com profissional):\n${formatLines(contextVisible)}\n\nConversa atual:\n${conversationHistory}`;
+        const label =
+          contextConv.kind === 'ai-only' ? 'Conversa anterior (com a AI)' : 'Conversa com o profissional';
+        conversationHistory = `${label}:\n${formatLines(contextVisible)}\n\nConversa atual:\n${conversationHistory}`;
       }
     }
+    const hasOpenProfessional =
+      !!contextConv && contextConv.kind !== 'ai-only' && contextConv.status !== 'closed';
 
     let escalatesOnBlock = false;
     if (conv.kind === 'ai-only' && conv.counterpartConversationId) {
@@ -484,7 +504,8 @@ export const gatherContext = internalQuery({
     const riskLabel = conv.riskLevel ? ` (risco ${conv.riskLevel})` : '';
     const goalLabel = conv.wellbeingGoal ? ` · Objetivo: ${conv.wellbeingGoal}` : '';
     // Tells the prompt whether a professional is involved (how to end answers).
-    const professionalLine = escalatesOnBlock
+    const professionalLine =
+      escalatesOnBlock || hasOpenProfessional
       ? 'Profissional: a utente tem uma conversa com um profissional em curso.'
       : 'Profissional: a utente não tem nenhuma conversa com um profissional em curso.';
     const topicAndRisk = `Tópico: ${conv.topic}${riskLabel}${goalLabel}\n${professionalLine}`;
