@@ -1,4 +1,4 @@
-import { View, Text, FlatList } from 'react-native';
+import { View, Text, FlatList, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { TOPICS } from '@/constants/topics';
@@ -33,6 +33,8 @@ type Props = {
   showPriority?: boolean;
   /** Shown when the list is empty, so a filtered-out list doesn't look broken. */
   emptyComponent?: React.ReactElement | null;
+  /** Shows a button on the right of each card that ends the conversation. */
+  onEnd?: (id: string) => void;
 };
 
 // Professional lists (Fila, Conversas): the patient first, then what was said
@@ -42,6 +44,7 @@ export function ConversationList({
   basePath,
   showPriority = false,
   emptyComponent,
+  onEnd,
 }: Props) {
   const router = useRouter();
   const { theme } = useUnistyles();
@@ -69,35 +72,51 @@ export function ConversationList({
             }
             style={styles.card}
           >
-            <View style={styles.top}>
-              <Text style={styles.name} numberOfLines={1}>
-                {item.patientName ?? 'Utente'}
-              </Text>
-              <Text style={styles.time}>{relativeTime(item.lastMessageAt)}</Text>
-            </View>
-            <Text style={styles.preview} numberOfLines={1}>
-              {item.preview ? `"${item.preview}"` : 'Questionário de triagem concluído'}
-            </Text>
-            <View style={styles.pills}>
-              {showPriority && item.alertLevel ? (
-                <AlertLevelBadge level={item.alertLevel} testID={`alert-level-${item._id}`} />
-              ) : null}
-              <View style={[styles.pill, styles.topicPill]}>
-                <Text style={styles.topicText}>{topic?.label ?? item.topic}</Text>
-              </View>
-              {showPriority && item.priority ? (
-                <View style={[styles.pill, { backgroundColor: priorityColor + '18' }]}>
-                  <Text style={[styles.pillText, { color: priorityColor }]}>
-                    {PRIORITY_LABELS[item.priority] ?? item.priority}
+            <View style={styles.cardRow}>
+              <View style={styles.cardBody}>
+                <View style={styles.top}>
+                  <Text style={styles.name} numberOfLines={1}>
+                    {item.patientName ?? 'Utente'}
                   </Text>
+                  <Text style={styles.time}>{relativeTime(item.lastMessageAt)}</Text>
                 </View>
-              ) : null}
-              {item.fromAi ? (
-                <View style={[styles.pill, styles.topicPill]}>
-                  <Icon name={{ sf: 'sparkles', ion: 'sparkles-outline' }} size={11} color={theme.colors.textSecondary} />
-                  <Text style={styles.topicText}>Vem da IA</Text>
+                <Text style={styles.preview} numberOfLines={1}>
+                  {item.preview ? `"${item.preview}"` : 'Questionário de triagem concluído'}
+                </Text>
+                <View style={styles.pills}>
+                  {showPriority && item.alertLevel ? (
+                    <AlertLevelBadge level={item.alertLevel} testID={`alert-level-${item._id}`} />
+                  ) : null}
+                  <View style={[styles.pill, styles.topicPill]}>
+                    <Text style={styles.topicText}>{topic?.label ?? item.topic}</Text>
+                  </View>
+                  {showPriority && item.priority ? (
+                    <View style={[styles.pill, { backgroundColor: priorityColor + '18' }]}>
+                      <Text style={[styles.pillText, { color: priorityColor }]}>
+                        {PRIORITY_LABELS[item.priority] ?? item.priority}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {item.fromAi ? (
+                    <View style={[styles.pill, styles.topicPill]}>
+                      <Icon name={{ sf: 'sparkles', ion: 'sparkles-outline' }} size={11} color={theme.colors.textSecondary} />
+                      <Text style={styles.topicText}>Vem da IA</Text>
+                    </View>
+                  ) : null}
                 </View>
-              ) : null}
+              </View>
+              {onEnd && (
+                <Pressable
+                  testID={`end-conversation-${item._id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel="Terminar conversa"
+                  hitSlop={8}
+                  onPress={() => onEnd(item._id)}
+                  style={({ pressed }) => [styles.endBtn, pressed && styles.pressed]}
+                >
+                  <Icon name={{ sf: 'xmark.circle', ion: 'close-circle-outline' }} size={22} color={theme.colors.textSecondary} />
+                </Pressable>
+              )}
             </View>
           </Card>
         );
@@ -111,6 +130,10 @@ const styles = StyleSheet.create((theme) => ({
   // Small top padding: the screens above the list already add their own spacing.
   content: { padding: theme.spacing.md, paddingTop: theme.spacing.xs, gap: theme.spacing.sm },
   card: { gap: 4 },
+  cardRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  cardBody: { flex: 1, gap: 4 },
+  endBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.6 },
   top: {
     flexDirection: 'row',
     alignItems: 'baseline',
