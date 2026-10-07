@@ -26,9 +26,6 @@ export default function AdminPanel() {
   const { signOut } = useAuthActions();
   const users = useQuery(api.users.listUsers);
   const setRole = useMutation(api.users.setRole);
-  const seedAll = useMutation(api.seed.seedAll);
-  const [seedResult, setSeedResult] = useState<string | null>(null);
-  const [seeding, setSeeding] = useState(false);
   const [search, setSearch] = useState('');
   // Pending role change awaiting confirmation (Alert.alert is a no-op on web).
   const [pendingRole, setPendingRole] = useState<{
@@ -52,21 +49,6 @@ export default function AdminPanel() {
     newRole: 'patient' | 'professional' | 'admin'
   ) {
     setPendingRole({ userId, currentRole, newRole });
-  }
-
-  async function runSeed() {
-    setSeeding(true);
-    setSeedResult(null);
-    try {
-      const r = await seedAll();
-      setSeedResult(
-        `Triagem: ${r.triage.inserted} inseridas, ${r.triage.updated} atualizadas. Artigos: ${r.articles.inserted} inseridos, ${r.articles.updated} atualizados, ${r.articles.kept} editados mantidos. Níveis de alerta atribuídos a ${r.alertLevelsBackfilled} conversas.`
-      );
-    } catch (e: any) {
-      setSeedResult(e?.message ?? 'Erro ao executar seed.');
-    } finally {
-      setSeeding(false);
-    }
   }
 
   const filtered = users
@@ -105,24 +87,6 @@ export default function AdminPanel() {
             <CountCard testID="admin-count-patient" label="Utentes" value={counts.patient ?? 0} />
             <CountCard testID="admin-count-professional" label="Profissionais" value={counts.professional ?? 0} />
             <CountCard testID="admin-count-admin" label="Admins" value={counts.admin ?? 0} />
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Conteúdo da plataforma</Text>
-            <Text style={styles.cardSub}>
-              Insere ou atualiza triagens e artigos educativos pré-definidos. Pode ser
-              executado várias vezes sem duplicar registos.
-            </Text>
-            <Button
-              testID="admin-seed-button"
-              label="Atualizar triagens e artigos"
-              variant="secondary"
-              onPress={runSeed}
-              loading={seeding}
-            />
-            {seedResult && (
-              <Text testID="admin-seed-result" style={styles.cardSub}>{seedResult}</Text>
-            )}
           </View>
 
           {/* On web these live in the side bar; the phone has no bar for admin. */}

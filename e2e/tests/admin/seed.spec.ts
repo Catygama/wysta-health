@@ -6,7 +6,7 @@ test('Admin seed button updates triage + articles idempotently', async ({
   page,
 }) => {
   await loginAs(page, TEST_USERS.admin.email);
-  await page.goto('/(admin)');
+  await page.goto('/content');
   await expect(page.getByTestId('admin-seed-button')).toBeVisible({
     timeout: 15_000,
   });

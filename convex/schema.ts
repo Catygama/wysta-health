@@ -212,6 +212,8 @@ export default defineSchema({
         highRisk: riskBucket,
       })
     ),
+    // Last edit by an admin in Conteúdos → Triagem (the seed leaves these alone).
+    updatedAt: v.optional(v.number()),
   }).index('by_topic', ['topic']),
 
   educationalContent: defineTable({
@@ -265,7 +267,8 @@ export default defineSchema({
       v.literal('professional-review-required'),
       v.literal('article-saved'),
       v.literal('article-published'),
-      v.literal('article-unpublished')
+      v.literal('article-unpublished'),
+      v.literal('triage-updated')
     ),
     details: v.string(),
   }).index('by_conversation', ['conversationId']),

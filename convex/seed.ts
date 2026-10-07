@@ -9,6 +9,8 @@ async function upsertTriage(ctx: MutationCtx, seed: TriageSeed) {
     .query('triageQuestions')
     .withIndex('by_topic', (q) => q.eq('topic', seed.topic))
     .unique();
+  // A triage an admin edited in Conteúdos is left as it is.
+  if (existing?.updatedAt) return 'kept' as const;
   if (existing) {
     await ctx.db.patch(existing._id, {
       questions: seed.questions,
@@ -110,6 +112,7 @@ export const seedAll = mutation({
       triage: {
         inserted: triageResults.filter((r) => r === 'inserted').length,
         updated: triageResults.filter((r) => r === 'updated').length,
+        kept: triageResults.filter((r) => r === 'kept').length,
       },
       articles: {
         inserted: articleResults.filter((r) => r === 'inserted').length,
@@ -131,6 +134,7 @@ export const seedTriage = internalMutation({
       alertLevelsBackfilled,
       inserted: results.filter((r) => r === 'inserted').length,
       updated: results.filter((r) => r === 'updated').length,
+      kept: results.filter((r) => r === 'kept').length,
     };
   },
 });
