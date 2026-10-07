@@ -241,7 +241,7 @@ export const respondAnonymous = action({
         : 'Conversa anónima, sem mensagens anteriores.',
       patientProfile: profile.patientProfile,
       recentSummary: profile.recentSummary,
-      topicAndRisk: 'Anónimo (sem conversa)',
+      topicAndRisk: 'Anónimo (sem conversa)\nProfissional: conversa anónima, sem profissional.',
     };
 
     const draft = await runAgent(ctx, {
@@ -488,7 +488,11 @@ export const gatherContext = internalQuery({
 
     const riskLabel = conv.riskLevel ? ` (risco ${conv.riskLevel})` : '';
     const goalLabel = conv.wellbeingGoal ? ` · Objetivo: ${conv.wellbeingGoal}` : '';
-    const topicAndRisk = `Tópico: ${conv.topic}${riskLabel}${goalLabel}`;
+    // Tells the prompt whether a professional is involved (how to end answers).
+    const professionalLine = escalatesOnBlock
+      ? 'Profissional: a utente tem uma conversa com um profissional em curso.'
+      : 'Profissional: a utente não tem nenhuma conversa com um profissional em curso.';
+    const topicAndRisk = `Tópico: ${conv.topic}${riskLabel}${goalLabel}\n${professionalLine}`;
 
     return {
       allowed: true as const,
