@@ -51,10 +51,10 @@ export const assertAccess = internalQuery({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    const isAdmin = profile?.role === 'admin';
-    // The assigned professional, as long as their account is still approved.
+    // Only the assigned professional, as long as their account is still
+    // approved. Admins have no access to clinical content.
     const isAssigned = conversation.professionalId === userId && hasProfessionalAccess(profile);
-    if (!isAdmin && !isAssigned) return { allowed: false as const, messages: [] };
+    if (!isAssigned) return { allowed: false as const, messages: [] };
 
     const messages = await ctx.db
       .query('messages')

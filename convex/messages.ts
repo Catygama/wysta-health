@@ -4,6 +4,8 @@ import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import { professionalCanSeeAi } from './conversations';
+import { userError, NOT_AUTHENTICATED, NOT_ALLOWED } from './lib/errors';
+import { storedAttachmentError } from './lib/attachments';
 
 export const list = query({
   args: { conversationId: v.id('conversations') },
@@ -71,27 +73,74 @@ export const send = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
+    const conv = await ctx.db.get(args.conversationId);
+    if (!conv) throw userError('Esta conversa já não existe.');
+    const senderProfile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+
+    // Only the conversation's members write in it: the patient who owns it,
+    // or the professional assigned to it (still approved). The AI assistant
+    // writes through internal functions, never through here.
+    const isPatient = conv.patientId === userId;
+    const isAssignedProfessional =
+      conv.professionalId === userId && hasProfessionalAccess(senderProfile);
+    if (!isPatient && !isAssignedProfessional) throw userError(NOT_ALLOWED);
+    if (conv.status === 'closed') {
+      throw userError('Esta conversa foi encerrada. Já não é possível enviar mensagens.');
+    }
+    // Chats with the AI are read-only for professionals.
+    if (conv.kind === 'ai-only' && !isPatient) {
+      throw userError('Só a utente pode escrever na conversa com a assistente IA.');
+    }
+    // Internal notes are for the assigned professional only.
+    if (args.isInternal && !isAssignedProfessional) {
+      throw userError('Só o profissional atribuído pode escrever notas internas.');
+    }
+
+    const messageType = args.messageType ?? 'text';
+    // System lines and triage summaries are written by the server only.
+    if (messageType !== 'text' && messageType !== 'image' && messageType !== 'file') {
+      throw userError('Tipo de mensagem inválido.');
+    }
     // Clinical safety and data protection: the AI assistant doesn't analyse
     // images or documents, so AI chats take text only.
-    const target = await ctx.db.get(args.conversationId);
-    if (
-      target?.kind === 'ai-only' &&
-      (args.messageType === 'image' || args.messageType === 'file')
-    ) {
-      throw new Error('A assistente IA não analisa imagens nem documentos.');
+    if (conv.kind === 'ai-only' && messageType !== 'text') {
+      throw userError('A assistente IA não analisa imagens nem documentos.');
     }
+
+    // Attachments: checked against the stored file's real type and size, not
+    // what the client says.
+    let attachmentMimeType: string | undefined;
+    let attachmentSize: number | undefined;
+    for (const [storageId, kind] of [
+      [args.imageId, 'image'],
+      [args.attachmentId, 'document'],
+    ] as const) {
+      if (!storageId) continue;
+      const meta = await ctx.db.system.get(storageId);
+      if (!meta) throw userError('O ficheiro não foi encontrado. Tenta enviá-lo de novo.');
+      const problem = storedAttachmentError(meta, kind);
+      if (problem) throw userError(problem);
+      if (kind === 'document') {
+        attachmentMimeType = meta.contentType;
+        attachmentSize = meta.size;
+      }
+    }
+
     await ctx.db.insert('messages', {
       conversationId: args.conversationId,
       senderId: userId,
       content: args.content,
-      messageType: args.messageType ?? 'text',
+      messageType,
       imageId: args.imageId,
       attachmentId: args.attachmentId,
-      attachmentName: args.attachmentName,
-      attachmentMimeType: args.attachmentMimeType,
-      attachmentSize: args.attachmentSize,
-      isInternal: args.isInternal,
+      attachmentName: args.attachmentId ? args.attachmentName : undefined,
+      attachmentMimeType,
+      attachmentSize,
+      isInternal: args.isInternal || undefined,
     });
     await ctx.db.patch(args.conversationId, {
       lastMessageAt: Date.now(),
@@ -99,17 +148,10 @@ export const send = mutation({
 
     if (args.isInternal) return;
 
-    const conv = await ctx.db.get(args.conversationId);
-    if (!conv) return;
-
     // ai-only conversations auto-trigger an AI reply when the patient sends
     // a text message. The action is scheduled so the mutation returns
     // promptly and the patient sees their own message land first.
-    if (
-      conv.kind === 'ai-only' &&
-      conv.patientId === userId &&
-      (args.messageType ?? 'text') === 'text'
-    ) {
+    if (conv.kind === 'ai-only' && isPatient && messageType === 'text') {
       await ctx.scheduler.runAfter(0, internal.ai.assistant.respondAuto, {
         conversationId: args.conversationId,
         query: args.content,
@@ -117,21 +159,7 @@ export const send = mutation({
       return;
     }
 
-    if (conv.patientId === userId) return;
-
-    const senderProfile = await ctx.db
-      .query('userProfiles')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .unique();
-    const isProfessional =
-      senderProfile?.role === 'professional' ||
-      senderProfile?.role === 'admin';
-    if (!isProfessional) return;
-
-    // Chats with the AI are read-only for professionals.
-    if (conv.kind === 'ai-only') {
-      throw new Error('Só a utente pode escrever na conversa com a assistente IA.');
-    }
+    if (isPatient) return;
 
     // Lock screens are visible to others: never put message content (or
     // attachment names) in the notification.
@@ -150,7 +178,7 @@ export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     return ctx.storage.generateUploadUrl();
   },
 });

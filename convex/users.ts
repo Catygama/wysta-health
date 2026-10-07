@@ -239,7 +239,16 @@ export const listUsers = query({
     return Promise.all(
       profiles.map(async (p) => {
         const user = await ctx.db.get(p.userId);
-        return { ...p, user };
+        // Account management only: leave out the patient's clinical fields.
+        const {
+          conditions: _conditions,
+          medications: _medications,
+          pregnancyStatus: _pregnancyStatus,
+          aiSummary: _aiSummary,
+          aiSummaryAt: _aiSummaryAt,
+          ...account
+        } = p;
+        return { ...account, user };
       })
     );
   },

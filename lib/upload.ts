@@ -1,6 +1,14 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import {
+  ATTACHMENT_SIZE_ERROR,
+  ATTACHMENT_TYPE_ERROR,
+  DOCUMENT_MIME_TYPES,
+  MAX_ATTACHMENT_BYTES,
+  isAllowedDocument,
+  isAllowedImage,
+} from '@/convex/lib/attachments';
 
 export type PickedFile = {
   uri: string;
@@ -27,28 +35,42 @@ export async function pickImage(): Promise<PickedImage | null> {
   });
   if (result.canceled || !result.assets?.[0]) return null;
   const asset = result.assets[0];
-  return {
-    uri: asset.uri,
-    mimeType: asset.mimeType ?? 'image/jpeg',
-    fileName: asset.fileName ?? undefined,
-    size: asset.fileSize ?? undefined,
-  };
+  return checkAttachment(
+    {
+      uri: asset.uri,
+      mimeType: asset.mimeType ?? 'image/jpeg',
+      fileName: asset.fileName ?? undefined,
+      size: asset.fileSize ?? undefined,
+    },
+    isAllowedImage,
+  );
 }
 
 export async function pickDocument(): Promise<PickedFile | null> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: '*/*',
+    // PDF or an image (e.g. a photo of a test result). The server checks again.
+    type: [...DOCUMENT_MIME_TYPES],
     copyToCacheDirectory: true,
     multiple: false,
   });
   if (result.canceled || !result.assets?.[0]) return null;
   const asset = result.assets[0];
-  return {
-    uri: asset.uri,
-    mimeType: asset.mimeType ?? 'application/octet-stream',
-    fileName: asset.name,
-    size: asset.size ?? undefined,
-  };
+  return checkAttachment(
+    {
+      uri: asset.uri,
+      mimeType: asset.mimeType ?? 'application/octet-stream',
+      fileName: asset.name,
+      size: asset.size ?? undefined,
+    },
+    isAllowedDocument,
+  );
+}
+
+// Early, friendly check before uploading; the server is the authority.
+function checkAttachment(file: PickedFile, isAllowed: (mime: string) => boolean): PickedFile {
+  if (!isAllowed(file.mimeType)) throw new Error(ATTACHMENT_TYPE_ERROR);
+  if (file.size !== undefined && file.size > MAX_ATTACHMENT_BYTES) throw new Error(ATTACHMENT_SIZE_ERROR);
+  return file;
 }
 
 export async function uploadFile(
