@@ -25,7 +25,6 @@ test.describe('Patient signup + onboarding', () => {
       timeout: 15_000,
     });
     await page.getByTestId('onboarding-age-26-35').click();
-    await page.getByTestId('onboarding-pregnancy-not-pregnant').click();
     await page.getByTestId('onboarding-name-input').fill('Maria Test');
     await page.getByTestId('onboarding-continue-button').click();
 

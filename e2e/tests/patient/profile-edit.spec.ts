@@ -11,7 +11,6 @@ test('Profile edit persists name + age range', async ({ page }) => {
   await page.getByTestId('profile-edit-button').click();
   await page.getByTestId('profile-name-input').fill('Maria Atualizada');
   await page.getByTestId('profile-age-36-45').click();
-  await page.getByTestId('profile-pregnancy-trying').click();
   await page.getByTestId('profile-save-button').click();
 
   // After save, view returns to read-only mode showing the new name.
