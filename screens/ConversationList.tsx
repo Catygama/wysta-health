@@ -11,6 +11,8 @@ import {
 import { Icon } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Card';
 import { relativeTime } from '@/lib/format';
+import { AlertLevelBadge } from '@/components/AlertLevelBadge';
+import type { AlertLevel } from '@/convex/lib/alerts';
 
 type Conversation = {
   _id: string;
@@ -18,6 +20,8 @@ type Conversation = {
   title: string;
   status: string;
   priority: string;
+  /** Triage alert level (professional queue). */
+  alertLevel?: AlertLevel;
   lastMessageAt: number;
   professionalId?: string;
   /** Professional request that started as a chat with the AI assistant. */
@@ -96,6 +100,9 @@ export function ConversationList({
                 </View>
               ) : null}
               <View style={styles.metaRow}>
+                {showPriority && item.alertLevel ? (
+                  <AlertLevelBadge level={item.alertLevel} testID={`alert-level-${item._id}`} />
+                ) : null}
                 {showPriority && item.priority ? (
                   <View style={[styles.badge, { backgroundColor: priorityColor + '15' }]}>
                     <Text style={[styles.badgeText, { color: priorityColor }]}>

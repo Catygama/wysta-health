@@ -3,11 +3,8 @@ import { internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
-import {
-  calculateRiskLevel,
-  priorityFromRisk,
-  type RiskAssessment,
-} from './lib/risk';
+import { calculateRiskLevel, type RiskAssessment } from './lib/risk';
+import { alertLevelFor, priorityFor, sortQueue, type AlertLevel } from './lib/alerts';
 import { topicValidator as topic } from './lib/topics';
 
 const status = v.union(
@@ -23,17 +20,6 @@ const PRIORITY_RANK: Record<string, number> = {
   medium: 2,
   low: 1,
 };
-
-function sortByPriorityThenRecency<T extends { priority: string; lastMessageAt: number }>(
-  items: T[]
-) {
-  return [...items].sort((a, b) => {
-    const ap = PRIORITY_RANK[a.priority] ?? 0;
-    const bp = PRIORITY_RANK[b.priority] ?? 0;
-    if (ap !== bp) return bp - ap;
-    return b.lastMessageAt - a.lastMessageAt;
-  });
-}
 
 export const listForPatient = query({
   args: {},
@@ -137,7 +123,7 @@ export const listForProfessional = query({
 
     // fromAi: the request came from a chat with the assistant (shown in the list).
     return Promise.all(
-      sortByPriorityThenRecency(conversations).map(async (c) => {
+      sortQueue(conversations).map(async (c) => {
         const context = c.contextConversationId ? await ctx.db.get(c.contextConversationId) : null;
         return { ...c, fromAi: context?.kind === 'ai-only' };
       })
@@ -286,6 +272,7 @@ export const create = mutation({
     }
 
     let riskLevel: 'low' | 'medium' | 'high' = 'low';
+    let alertLevel: AlertLevel | undefined;
     if (args.triageData) {
       const triage = await ctx.db
         .query('triageQuestions')
@@ -295,9 +282,11 @@ export const create = mutation({
         args.triageData.responses,
         triage?.riskAssessment as RiskAssessment | undefined
       );
+      // Recomputed here from the stored questions rather than trusted from the client.
+      alertLevel = alertLevelFor(triage?.questions ?? [], args.triageData.responses);
     }
 
-    const priority = priorityFromRisk(riskLevel);
+    const priority = priorityFor(alertLevel, riskLevel);
     const conversationId = await ctx.db.insert('conversations', {
       patientId: userId,
       topic: args.topic,
@@ -307,6 +296,7 @@ export const create = mutation({
       status: kind === 'ai-only' ? 'active' : 'waiting',
       lastMessageAt: Date.now(),
       riskLevel,
+      alertLevel,
       kind,
       wellbeingGoal: args.wellbeingGoal,
     });
@@ -322,6 +312,7 @@ export const create = mutation({
             topic: args.topic,
             responses: args.triageData.responses,
             riskLevel,
+            alertLevel,
           },
         },
       });

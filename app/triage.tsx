@@ -13,7 +13,9 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { UrgencyAlert } from '@/screens/UrgencyAlert';
+import { TriageAlert } from '@/screens/TriageAlert';
+import { resolveAlert, type ResolvedAlert } from '@/constants/triageAlerts';
+import { isAlertAnswer, moreSevere, showsAlert, type AlertLevel, type QuestionAlert } from '@/convex/lib/alerts';
 import { TOPICS, type TopicId } from '@/constants/topics';
 import { kindForMode, type ConversationMode } from '@/constants/conversation';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -24,7 +26,7 @@ type Question = {
   question: string;
   type: 'multiple-choice' | 'yes-no' | 'scale' | 'text';
   options?: string[];
-  isRedFlag?: boolean;
+  alert?: QuestionAlert;
   required: boolean;
   showIf?: { questionId: string; equals: string[] };
 };
@@ -35,11 +37,6 @@ function visibleQuestions(all: Question[], answers: Record<string, string | numb
   return all.filter(
     (q) => !q.showIf || q.showIf.equals.includes(String(answers[q.showIf.questionId] ?? '')),
   );
-}
-
-// A 'yes' on a yes/no red flag, or 9+ on a 0–10 scale red flag.
-function isRedFlagAnswer(value: string | number | undefined): boolean {
-  return value === 'yes' || (typeof value === 'number' && value >= 9);
 }
 
 export default function Triage() {
@@ -61,8 +58,9 @@ export default function Triage() {
 
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | number>>({});
-  const [showUrgency, setShowUrgency] = useState(false);
-  // Answers held back while the urgency alert is showing; applied on dismiss.
+  // The alert on screen (emergency / urgent / time-sensitive), if any.
+  const [activeAlert, setActiveAlert] = useState<ResolvedAlert | null>(null);
+  // Answers held back while the alert is showing; applied on dismiss.
   const [pendingAdvance, setPendingAdvance] = useState<Record<string, string | number> | null>(
     null,
   );
@@ -76,9 +74,17 @@ export default function Triage() {
   const current = questions[step];
   const isLast = step === total - 1;
 
-  const redFlagTriggered = useMemo(() => {
-    return questions.some((q) => q.isRedFlag && isRedFlagAnswer(answers[q.id]));
-  }, [questions, answers]);
+  // The most severe alert already answered, to reopen it after "Continuar".
+  const triggeredAlert = useMemo(() => {
+    let worst: { level: AlertLevel; questionId: string } | null = null;
+    for (const q of questions) {
+      if (!q.alert || !showsAlert(q.alert.level) || !isAlertAnswer(q.alert, answers[q.id])) continue;
+      if (!worst || moreSevere(worst.level, q.alert.level) !== worst.level) {
+        worst = { level: q.alert.level, questionId: q.id };
+      }
+    }
+    return worst && topic ? resolveAlert(topic, worst.questionId, worst.level) : null;
+  }, [questions, answers, topic]);
 
   // Takes the responses explicitly: callers pass the just-updated answers, which
   // aren't in `answers` state until the next render.
@@ -117,19 +123,19 @@ export default function Triage() {
     if (!current) return;
     const next = { ...answers, [current.id]: value };
     setAnswers(next);
-    if (current.isRedFlag && isRedFlagAnswer(value)) {
+    if (current.alert && showsAlert(current.alert.level) && isAlertAnswer(current.alert, value) && topic) {
       // Stop here so the alert is actually seen: advancing (or submitting, on
       // the last question) would navigate away from it. The patient moves on
-      // only by dismissing it.
+      // only by dismissing it. Priority-level answers show nothing.
       setPendingAdvance(next);
-      setShowUrgency(true);
+      setActiveAlert(resolveAlert(topic, current.id, current.alert.level));
       return;
     }
     advance(next);
   }
 
-  function dismissUrgency() {
-    setShowUrgency(false);
+  function dismissAlert() {
+    setActiveAlert(null);
     if (pendingAdvance) {
       const responses = pendingAdvance;
       setPendingAdvance(null);
@@ -216,7 +222,7 @@ export default function Triage() {
           {JSON.stringify({
             id: current.id,
             type: current.type,
-            isRedFlag: current.isRedFlag ?? false,
+            alert: current.alert ?? null,
             options: current.options ?? null,
             step,
             total,
@@ -257,7 +263,7 @@ export default function Triage() {
         </View>
       </View>
 
-      {showUrgency && <UrgencyAlert onDismiss={dismissUrgency} />}
+      {activeAlert && <TriageAlert alert={activeAlert} onDismiss={dismissAlert} />}
 
       <View style={styles.card}>
         <Text style={styles.question}>
@@ -363,12 +369,12 @@ export default function Triage() {
         )}
       </View>
 
-      {redFlagTriggered && !showUrgency && (
+      {triggeredAlert && !activeAlert && (
         // Quiet reminder after "Continuar mesmo assim": reopens the urgency alert.
         <Pressable
           testID="triage-reopen-urgency"
           accessibilityRole="button"
-          onPress={() => setShowUrgency(true)}
+          onPress={() => setActiveAlert(triggeredAlert)}
           style={({ pressed }) => [styles.urgentNote, pressed && styles.urgentNotePressed]}
         >
           <View style={styles.urgentIcon}>
@@ -379,8 +385,8 @@ export default function Triage() {
             />
           </View>
           <View style={styles.urgentBody}>
-            <Text style={styles.urgentTitle}>Situação urgente</Text>
-            <Text style={styles.urgentText}>Ver contactos de emergência</Text>
+            <Text style={styles.urgentTitle}>{triggeredAlert.label}</Text>
+            <Text style={styles.urgentText}>Ver o aviso novamente</Text>
           </View>
           <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={18} color={theme.colors.inkText} />
         </Pressable>

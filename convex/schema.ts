@@ -3,6 +3,7 @@ import { v } from 'convex/values';
 import { authTables } from '@convex-dev/auth/server';
 import { aiPurposeValidator as aiPurpose, aiProviderValidator as aiProvider } from './ai/registry';
 import { topicValidator as topic } from './lib/topics';
+import { alertLevelValidator as alertLevel } from './lib/alerts';
 
 const priority = v.union(
   v.literal('low'),
@@ -85,6 +86,9 @@ export default defineSchema({
     wellbeingGoal: v.optional(v.string()),
     lastMessageAt: v.number(),
     riskLevel: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
+    // Most severe triage alert from the patient's answers (see lib/alerts.ts);
+    // orders the professional queue.
+    alertLevel: v.optional(alertLevel),
     // Legacy escalation fields kept for old records. New flow uses
     // needsReview + priority bump + closureReason instead.
     escalationLevel: v.optional(escalationLevel),
@@ -151,6 +155,7 @@ export default defineSchema({
             topic: v.string(),
             responses: v.record(v.string(), v.any()),
             riskLevel: v.string(),
+            alertLevel: v.optional(alertLevel),
           })
         ),
         // AI answer that suggests ending the conversation (shows a
@@ -173,8 +178,17 @@ export default defineSchema({
           v.literal('text')
         ),
         options: v.optional(v.array(v.string())),
-        // Emergency sign: a 'yes' opens the 112 / SNS 24 alert. Priority-only
-        // signs live in riskAssessment.highRisk instead.
+        // What a risky answer triggers (lib/alerts.ts): the level, plus
+        // minScale for scale questions or equals for multiple choice.
+        alert: v.optional(
+          v.object({
+            level: alertLevel,
+            minScale: v.optional(v.number()),
+            equals: v.optional(v.array(v.string())),
+          })
+        ),
+        // Superseded by `alert`. Kept optional so stored docs stay valid until
+        // the admin Seed rewrites them.
         isRedFlag: v.optional(v.boolean()),
         required: v.boolean(),
         // Only asked when another question's answer is one of `equals`.

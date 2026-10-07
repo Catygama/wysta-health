@@ -2,6 +2,7 @@ import { internalMutation, mutation } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { TRIAGE_SEEDS, ARTICLE_SEEDS, type TriageSeed, type ArticleSeed } from './lib/seedData';
+import { alertLevelFor } from './lib/alerts';
 
 async function upsertTriage(ctx: MutationCtx, seed: TriageSeed) {
   const existing = await ctx.db
@@ -40,6 +41,38 @@ async function upsertArticle(ctx: MutationCtx, seed: ArticleSeed) {
   return 'inserted' as const;
 }
 
+// Migration: give open conversations created before triage alert levels their
+// level, recomputed from the answers stored on the triage message with the
+// current questions. Priority is left alone (a professional may have changed
+// it); the queue ranks by the higher of the two. Idempotent.
+async function backfillAlertLevels(ctx: MutationCtx) {
+  let updated = 0;
+  for (const status of ['waiting', 'active', 'escalated'] as const) {
+    const open = await ctx.db
+      .query('conversations')
+      .withIndex('by_status', (q) => q.eq('status', status))
+      .take(500);
+    for (const c of open) {
+      if (c.alertLevel || c.kind === 'ai-only') continue;
+      const seed = TRIAGE_SEEDS.find((t) => t.topic === c.topic);
+      if (!seed) continue;
+      const messages = await ctx.db
+        .query('messages')
+        .withIndex('by_conversation', (q) => q.eq('conversationId', c._id))
+        .take(20);
+      const triage = messages.find((m) => m.messageType === 'triage-response');
+      const responses = triage?.metadata?.triageData?.responses;
+      if (!responses) continue;
+      const level = alertLevelFor(seed.questions, responses);
+      if (level) {
+        await ctx.db.patch(c._id, { alertLevel: level });
+        updated++;
+      }
+    }
+  }
+  return updated;
+}
+
 async function isAdminOrEmpty(ctx: MutationCtx) {
   const anyAdmin = await ctx.db
     .query('userProfiles')
@@ -68,7 +101,9 @@ export const seedAll = mutation({
     }
     const triageResults = await Promise.all(TRIAGE_SEEDS.map((t) => upsertTriage(ctx, t)));
     const articleResults = await Promise.all(ARTICLE_SEEDS.map((a) => upsertArticle(ctx, a)));
+    const alertLevelsBackfilled = await backfillAlertLevels(ctx);
     return {
+      alertLevelsBackfilled,
       triage: {
         inserted: triageResults.filter((r) => r === 'inserted').length,
         updated: triageResults.filter((r) => r === 'updated').length,
@@ -87,7 +122,9 @@ export const seedTriage = internalMutation({
   args: {},
   handler: async (ctx) => {
     const results = await Promise.all(TRIAGE_SEEDS.map((t) => upsertTriage(ctx, t)));
+    const alertLevelsBackfilled = await backfillAlertLevels(ctx);
     return {
+      alertLevelsBackfilled,
       inserted: results.filter((r) => r === 'inserted').length,
       updated: results.filter((r) => r === 'updated').length,
     };
