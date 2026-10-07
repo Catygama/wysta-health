@@ -26,6 +26,7 @@ import { getAuthUserId } from '@convex-dev/auth/server';
 import { runAgent } from './runAgent';
 import { SUGGEST_CLOSE_MARKER } from './defaults';
 import type { Id } from '../_generated/dataModel';
+import type { TopicId } from '../lib/topics';
 
 // Removes the suggest-close marker from planner output — also a partial
 // marker still arriving at the end of a stream — so the patient never sees it.
@@ -68,6 +69,65 @@ type StreamVars = {
   topicAndRisk: string;
 };
 
+// The chain itself: draft, then the two validators in parallel, then the judge.
+// Shared by the patient-facing actions and the offline evaluation.
+export async function runAssistantChain(
+  ctx: ActionCtx,
+  args: {
+    baseVars: StreamVars;
+    topic?: TopicId;
+    userId?: Id<'users'>;
+    conversationId?: Id<'conversations'>;
+    onDelta?: (textSoFar: string) => Promise<void>;
+  }
+) {
+  const { baseVars, topic, userId, conversationId } = args;
+  const draft = await runAgent(ctx, {
+    purpose: 'chat',
+    topic,
+    vars: baseVars,
+    userId,
+    conversationId,
+    onDelta: args.onDelta,
+  });
+  const { text: draftText, suggestClose } = stripSuggestClose(draft.output);
+  const validatorArgs = {
+    topic,
+    vars: { ...baseVars, draft: draftText },
+    userId,
+    conversationId,
+    parentInvocationId: draft.invocationId,
+    outputSchema: validatorSchema,
+  };
+  const [safety, clinical] = await Promise.all([
+    runAgent(ctx, { purpose: 'chat-validator-safety', ...validatorArgs }),
+    runAgent(ctx, { purpose: 'chat-validator-clinical', ...validatorArgs }),
+  ]);
+  const judged = await runAgent(ctx, {
+    purpose: 'chat-judge',
+    topic,
+    vars: {
+      ...baseVars,
+      draft: draftText,
+      safety: JSON.stringify(safety.output),
+      clinical: JSON.stringify(clinical.output),
+    },
+    userId,
+    conversationId,
+    parentInvocationId: draft.invocationId,
+    outputSchema: judgeSchema,
+  });
+  return {
+    sent: judged.output.action === 'send',
+    draftText,
+    suggestClose,
+    safety: safety.output,
+    clinical: clinical.output,
+    judged,
+    draftInvocationId: draft.invocationId,
+  };
+}
+
 // Shared: create a placeholder ai-response message, stream the draft into it,
 // run the safety chain, then finalize (draft+disclaimer / blocked / fallback).
 async function streamAndValidate(
@@ -76,7 +136,7 @@ async function streamAndValidate(
     conversationId: Id<'conversations'>;
     patientId: Id<'users'>;
     baseVars: StreamVars;
-    topic?: string;
+    topic?: TopicId;
     blockedMessage: string;
   }
 ): Promise<{ sent: boolean; blocked: boolean }> {
@@ -87,10 +147,9 @@ async function streamAndValidate(
   try {
     let lastWriteAt = 0;
     let lastLen = 0;
-    const draft = await runAgent(ctx, {
-      purpose: 'chat',
-      topic: args.topic as any,
-      vars: args.baseVars,
+    const { sent, draftText, suggestClose, judged } = await runAssistantChain(ctx, {
+      baseVars: args.baseVars,
+      topic: args.topic,
       userId: args.patientId,
       conversationId: args.conversationId,
       onDelta: async (textSoFar) => {
@@ -105,45 +164,6 @@ async function streamAndValidate(
         }
       },
     });
-    const { text: draftText, suggestClose } = stripSuggestClose(draft.output);
-
-    const [safety, clinical] = await Promise.all([
-      runAgent(ctx, {
-        purpose: 'chat-validator-safety',
-        topic: args.topic as any,
-        vars: { ...args.baseVars, draft: draftText },
-        userId: args.patientId,
-        conversationId: args.conversationId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-      runAgent(ctx, {
-        purpose: 'chat-validator-clinical',
-        topic: args.topic as any,
-        vars: { ...args.baseVars, draft: draftText },
-        userId: args.patientId,
-        conversationId: args.conversationId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-    ]);
-
-    const judged = await runAgent(ctx, {
-      purpose: 'chat-judge',
-      topic: args.topic as any,
-      vars: {
-        ...args.baseVars,
-        draft: draftText,
-        safety: JSON.stringify(safety.output),
-        clinical: JSON.stringify(clinical.output),
-      },
-      userId: args.patientId,
-      conversationId: args.conversationId,
-      parentInvocationId: draft.invocationId,
-      outputSchema: judgeSchema,
-    });
-
-    const sent = judged.output.action === 'send';
     await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
       messageId,
       content: sent ? draftText : args.blockedMessage,
@@ -242,41 +262,7 @@ export const respondAnonymous = action({
       topicAndRisk: 'Anónimo (sem conversa)\nProfissional: conversa anónima, sem profissional.',
     };
 
-    const draft = await runAgent(ctx, {
-      purpose: 'chat',
-      vars: baseVars,
-      userId,
-    });
-    const [safety, clinical] = await Promise.all([
-      runAgent(ctx, {
-        purpose: 'chat-validator-safety',
-        vars: { ...baseVars, draft: stripSuggestClose(draft.output).text },
-        userId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-      runAgent(ctx, {
-        purpose: 'chat-validator-clinical',
-        vars: { ...baseVars, draft: stripSuggestClose(draft.output).text },
-        userId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-    ]);
-    const judged = await runAgent(ctx, {
-      purpose: 'chat-judge',
-      vars: {
-        ...baseVars,
-        draft: stripSuggestClose(draft.output).text,
-        safety: JSON.stringify(safety.output),
-        clinical: JSON.stringify(clinical.output),
-      },
-      userId,
-      parentInvocationId: draft.invocationId,
-      outputSchema: judgeSchema,
-    });
-
-    const sent = judged.output.action === 'send';
+    const { sent, judged } = await runAssistantChain(ctx, { baseVars, userId });
     // The chat prompt ends every answer with "…espera pela resposta do
     // profissional…"; there is no professional in an anonymous chat.
     const answer = sent

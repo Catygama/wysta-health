@@ -9,6 +9,12 @@ const CONVEX_URL =
   process.env.EXPO_PUBLIC_CONVEX_URL ??
   'http://127.0.0.1:3210';
 
+const CROSS_BROWSER_SPECS = [
+  /journeys\/.*\.spec\.ts/,
+  /a11y\/.*\.spec\.ts/,
+  /auth\/login-.*\.spec\.ts/,
+];
+
 export default defineConfig({
   testDir: './e2e/tests',
   globalSetup: './e2e/global-setup.ts',
@@ -29,11 +35,26 @@ export default defineConfig({
     // Convex URL passed to helpers via process.env at test time.
   },
 
+  // The full suite runs on Chromium. The other browsers and devices run only
+  // the specs that don't depend on state left by earlier specs (the database
+  // is reset once per run).
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    ...(
+      [
+        ['firefox', devices['Desktop Firefox']],
+        ['webkit', devices['Desktop Safari']],
+        ['mobile-android', devices['Pixel 7']],
+        ['mobile-ios', devices['iPhone 14']],
+      ] as const
+    ).map(([name, device]) => ({
+      name,
+      use: { ...device },
+      testMatch: CROSS_BROWSER_SPECS,
+    })),
   ],
 
   webServer: {
