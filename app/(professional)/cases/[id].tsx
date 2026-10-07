@@ -47,7 +47,6 @@ export default function ProfessionalConversation() {
   const messages = useQuery(api.messages.list, id ? { conversationId: id as any } : 'skip');
   const assign = useMutation(api.conversations.assign);
   const close = useMutation(api.conversations.close);
-  const markUrgent = useMutation(api.conversations.markUrgent);
   const recommendInPerson = useMutation(api.conversations.recommendInPerson);
   const { setIsTabBarHidden } = useTabBar();
   const [redirectOpen, setRedirectOpen] = useState(false);
@@ -111,7 +110,6 @@ export default function ProfessionalConversation() {
       canEscalate={canEscalate}
       canClose={canClose}
       onAssign={() => assign({ id: id as any })}
-      onMarkUrgent={() => markUrgent({ id: id as any })}
       onRequestClose={() => setConfirmClose(true)}
       onOpenRelated={(relatedId) =>
         router.push({ pathname: '/(professional)/cases/[id]', params: { id: relatedId } })
@@ -280,7 +278,6 @@ type OptionsPanelProps = {
   canEscalate: boolean;
   canClose: boolean;
   onAssign: () => void;
-  onMarkUrgent: () => void;
   onRequestClose: () => void;
   onOpenRelated: (id: string) => void;
 };
@@ -425,14 +422,6 @@ function OptionsPanel(p: OptionsPanelProps) {
             chevron
             onPress={() => p.onView('summary')}
           />
-          {p.canEscalate && c.priority !== 'urgent' && (
-            <MenuItem
-              testID="conversation-mark-urgent"
-              icon={{ sf: 'arrow.up', ion: 'arrow-up' }}
-              label="Aumentar prioridade"
-              onPress={p.onMarkUrgent}
-            />
-          )}
           {c.contextConversation && c.contextConversation.kind !== 'ai-only' && (
             <MenuItem
               testID="related-context-conversation"
