@@ -52,7 +52,7 @@ test.describe('Conversation escalation flows', () => {
     await page.goto(`/(professional)/cases/${seeded.conversationId}`);
 
     await page.getByTestId('conversation-recommend-in-person').click({ timeout: 15_000 });
-    await page.getByTestId('redirect-also-close').click(); // toggle off
+    // switch is OFF by default — conversation stays open
     await page.getByTestId('redirect-submit').click();
 
     // Continua aberta — close button visível
@@ -86,7 +86,7 @@ test.describe('Conversation escalation flows', () => {
     await page.goto(`/(professional)/cases/${seeded.conversationId}`);
 
     await page.getByTestId('conversation-recommend-in-person').click({ timeout: 15_000 });
-    // keep switch ON (default true) — fecha
+    await page.getByTestId('redirect-also-close').click(); // toggle on — fecha
     await page.getByTestId('redirect-submit').click();
 
     await expect

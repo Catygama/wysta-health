@@ -497,7 +497,8 @@ function RecommendInPersonSheet({
 }) {
   const { theme } = useUnistyles();
   const [extraNote, setExtraNote] = useState('');
-  const [alsoClose, setAlsoClose] = useState(true);
+  // Off by default: closing is a deliberate choice, not a side effect.
+  const [alsoClose, setAlsoClose] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
