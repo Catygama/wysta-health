@@ -75,7 +75,7 @@ export const listLatest = query({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query('aiInvocations').order('desc').take(50);
+    return ctx.db.query('aiInvocations').order('desc').take(10);
   },
 });
 

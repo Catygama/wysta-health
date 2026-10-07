@@ -149,7 +149,7 @@ export default function AdminAi() {
         </>
       )}
 
-      <Card title="Invocações recentes (50)">
+      <Card title="Invocações recentes (10)">
         {invocations === undefined ? (
           <ActivityIndicator color={theme.colors.inkText} />
         ) : invocations.length === 0 ? (
