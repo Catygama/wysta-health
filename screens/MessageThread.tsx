@@ -405,7 +405,9 @@ export function MessageThread({
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <View style={styles.inputRow}>
-              {scope !== 'internal' && (
+              {/* Attachments only with professionals: for clinical safety and data
+                  protection the AI assistant doesn't analyse images or documents. */}
+              {scope !== 'internal' && !aiOnly && (
                 <>
                   <Pressable
                     testID="message-attach-image"

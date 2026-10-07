@@ -72,6 +72,15 @@ export const send = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
+    // Clinical safety and data protection: the AI assistant doesn't analyse
+    // images or documents, so AI chats take text only.
+    const target = await ctx.db.get(args.conversationId);
+    if (
+      target?.kind === 'ai-only' &&
+      (args.messageType === 'image' || args.messageType === 'file')
+    ) {
+      throw new Error('A assistente IA não analisa imagens nem documentos.');
+    }
     await ctx.db.insert('messages', {
       conversationId: args.conversationId,
       senderId: userId,

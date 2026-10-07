@@ -403,3 +403,37 @@ describe('recommend in person', () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
+
+describe('attachments', () => {
+  it('AI chats take text only; professional chats accept attachments', async () => {
+    const { t, patient, patientId, proConvId } = await setup();
+    const aiId = await t.run((ctx) =>
+      ctx.db.insert('conversations', {
+        patientId,
+        topic: 'general',
+        title: 'Conversa com AI',
+        priority: 'low',
+        status: 'active',
+        lastMessageAt: 0,
+        kind: 'ai-only',
+      })
+    );
+    await expect(
+      patient.mutation(api.messages.send, { conversationId: aiId, content: 'foto', messageType: 'image' })
+    ).rejects.toThrow('não analisa imagens');
+    await patient.mutation(api.messages.send, {
+      conversationId: proConvId,
+      content: 'analises.pdf',
+      messageType: 'file',
+      attachmentName: 'analises.pdf',
+    });
+    const last = await t.run((ctx) =>
+      ctx.db
+        .query('messages')
+        .withIndex('by_conversation', (q) => q.eq('conversationId', proConvId))
+        .order('desc')
+        .first()
+    );
+    expect(last?.messageType).toBe('file');
+  });
+});
