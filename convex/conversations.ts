@@ -524,16 +524,16 @@ export const recommendInPerson = mutation({
 
     const baseMsg =
       'Pelo que descreves, recomendamos que procures consulta presencial nos teus cuidados primários ou liga ao SNS 24 (808 24 24 24). Se for uma situação urgente, liga 112.';
-    const content = args.extraNote?.trim()
-      ? `${baseMsg}\n\nNota do profissional: ${args.extraNote.trim()}`
-      : baseMsg;
+    // The professional's own words follow the recommendation as one message.
+    const content = args.extraNote?.trim() ? `${baseMsg}\n\n${args.extraNote.trim()}` : baseMsg;
     const now = Date.now();
 
     await ctx.db.insert('messages', {
       conversationId: args.id,
       senderId: userId,
       content,
-      messageType: 'system',
+      // A regular message from the professional (their bubble), not a system line.
+      messageType: 'text',
     });
     await ctx.db.patch(args.id, { lastMessageAt: now });
 
