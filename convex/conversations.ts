@@ -121,11 +121,31 @@ export const listForProfessional = query({
       conversations = conversations.filter((c) => c.priority === args.priority);
     }
 
-    // fromAi: the request came from a chat with the assistant (shown in the list).
+    // For the list card: who the patient is, what was said last, and whether
+    // the request came from a chat with the assistant.
     return Promise.all(
       sortQueue(conversations).map(async (c) => {
         const context = c.contextConversationId ? await ctx.db.get(c.contextConversationId) : null;
-        return { ...c, fromAi: context?.kind === 'ai-only' };
+        const patientProfile = await ctx.db
+          .query('userProfiles')
+          .withIndex('by_user', (q) => q.eq('userId', c.patientId))
+          .unique();
+        const patientUser = await ctx.db.get(c.patientId);
+        const recent = await ctx.db
+          .query('messages')
+          .withIndex('by_conversation', (q) => q.eq('conversationId', c._id))
+          .order('desc')
+          .take(10);
+        const lastText = recent.find(
+          (m) => !m.isInternal && (m.messageType === 'text' || m.messageType === 'ai-response')
+        );
+        return {
+          ...c,
+          fromAi: context?.kind === 'ai-only',
+          patientName:
+            patientProfile?.displayName?.trim() || patientUser?.email || 'Utente convidada',
+          preview: lastText?.content.slice(0, 140) ?? null,
+        };
       })
     );
   },
