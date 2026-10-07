@@ -37,7 +37,7 @@ export default function PatientHome() {
   const { theme } = useUnistyles();
   const user = useQuery(api.users.currentUser);
   const greeting =
-    user?.profile?.displayName?.trim().split(/s+/)[0] || user?.email?.split('@')[0] || 'utente';
+    user?.profile?.displayName?.trim().split(/\s+/)[0] || user?.email?.split('@')[0] || 'utente';
   // Which path the patient chose on Home; the topic picker is open while set.
   const [pickerMode, setPickerMode] = useState<ConversationMode | null>(null);
   const openByTopic = useQuery(api.conversations.openProfessionalByTopic) ?? {};
