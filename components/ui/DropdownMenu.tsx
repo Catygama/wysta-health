@@ -109,7 +109,8 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.spacing.md,
   },
   itemHover: { backgroundColor: theme.colors.surfaceSunken },
-  dot: { width: 8, height: 8, borderRadius: 4 },
+  // Outlined so pale pastel colours still read on the white menu.
+  dot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1, borderColor: theme.colors.border },
   itemText: { flex: 1, fontSize: 15, color: theme.colors.textPrimary },
   itemTextOn: { fontWeight: '600', color: theme.colors.inkText },
 }));

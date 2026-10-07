@@ -8,12 +8,13 @@ test.describe('Education browsing', () => {
   }) => {
     await loginAs(page, TEST_USERS.patientA.email);
     await page.goto('/(patient)/education');
-    await expect(page.getByTestId('edu-chip-all')).toBeVisible({
+    await expect(page.getByTestId('edu-topic')).toBeVisible({
       timeout: 15_000,
     });
 
     // Filter by contraception chip — only contraception articles remain.
-    await page.getByTestId('edu-chip-contraception').click();
+    await page.getByTestId('edu-topic').click();
+    await page.getByTestId('edu-topic-contraception').click();
     const article = page
       .getByText('Métodos contracetivos: guia completo')
       .first();

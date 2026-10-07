@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { FlatList, View, Text, Pressable, TextInput, ScrollView } from 'react-native';
+import { FlatList, View, Text, Pressable, TextInput } from 'react-native';
 import { useQuery } from 'convex/react';
 import { useRouter, useSegments } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { TOPICS, type TopicId } from '@/constants/topics';
-import { Icon, type IconName } from '@/components/ui/Icon';
+import { Icon } from '@/components/ui/Icon';
+import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { Card } from '@/components/ui/Card';
 
 export function EducationScreen() {
@@ -59,28 +60,21 @@ export function EducationScreen() {
             />
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chips}
-          >
-            <FilterChip
-              testID="edu-chip-all"
-              label="Todos"
-              active={topicFilter === null}
-              onPress={() => setTopicFilter(null)}
-            />
-            {TOPICS.map((topic) => (
-              <FilterChip
-                key={topic.id}
-                testID={`edu-chip-${topic.id}`}
-                label={topic.label}
-                icon={topic.icon}
-                active={topicFilter === topic.id}
-                onPress={() => setTopicFilter(topic.id)}
-              />
-            ))}
-          </ScrollView>
+          {/* Same quiet dropdown as the professional's queue filters. */}
+          <DropdownMenu<TopicId | 'all'>
+            testID="edu-topic"
+            label={`Tema: ${topicFilter ? (TOPICS.find((t) => t.id === topicFilter)?.label ?? '') : 'todos'}`}
+            value={topicFilter ?? 'all'}
+            onChange={(v) => setTopicFilter(v === 'all' ? null : v)}
+            options={[
+              { value: 'all', label: 'Todos' },
+              ...TOPICS.map((t) => ({
+                value: t.id,
+                label: t.label,
+                dotColor: theme.topic[t.color].fill,
+              })),
+            ]}
+          />
         </View>
       }
       ListEmptyComponent={
@@ -142,39 +136,10 @@ export function EducationScreen() {
   );
 }
 
-type ChipProps = {
-  label: string;
-  icon?: IconName;
-  active: boolean;
-  onPress: () => void;
-  testID?: string;
-};
-
-function FilterChip({ label, icon, active, onPress, testID }: ChipProps) {
-  const { theme } = useUnistyles();
-  styles.useVariants({ active });
-  return (
-    <Pressable
-      testID={testID}
-      onPress={onPress}
-      style={({ pressed }) => [styles.filterChip, pressed && styles.dim]}
-    >
-      {icon && (
-        <Icon
-          name={icon}
-          size={14}
-          color={active ? theme.colors.onInk : theme.colors.accent}
-        />
-      )}
-      <Text style={styles.filterChipText}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create((theme) => ({
   list: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.md, gap: theme.spacing.sm },
-  header: { gap: theme.spacing.md, paddingBottom: theme.spacing.sm },
+  header: { gap: theme.spacing.sm, paddingBottom: theme.spacing.xs },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -188,33 +153,6 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing.sm,
     fontSize: 16,
     color: theme.colors.textPrimary,
-  },
-  chips: { gap: theme.spacing.sm },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radius.pill,
-    borderCurve: 'continuous',
-    variants: {
-      active: {
-        true: { backgroundColor: theme.colors.ink },
-        false: { backgroundColor: theme.colors.surface },
-      },
-    },
-  },
-  dim: { opacity: 0.8 },
-  filterChipText: {
-    fontSize: 14,
-    fontWeight: '500',
-    variants: {
-      active: {
-        true: { color: theme.colors.onInk },
-        false: { color: theme.colors.textPrimary },
-      },
-    },
   },
   empty: { padding: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.md },
   emptyText: { fontSize: 16, color: theme.colors.textSecondary, textAlign: 'center' },
