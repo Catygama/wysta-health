@@ -7,14 +7,12 @@ export default function ConversationsLayout() {
     <Stack screenOptions={useStackHeaderOptions()}>
       <Stack.Screen
         name="[id]"
-        options={({ navigation }) => ({
+        options={{
           title: 'Conversa',
-          headerBackTitle: 'Voltar',
-          // Opened from the queue (another stack), so there's no native back button.
-          headerLeft: navigation.canGoBack()
-            ? undefined
-            : () => <HeaderBack fallback="/(professional)/ongoing" />,
-        })}
+          // Always our own back button: opened from the Fila or Conversas (other
+          // stacks) the stack shows none. Goes back, else to the Fila.
+          headerLeft: () => <HeaderBack fallback="/(professional)/queue" />,
+        }}
       />
     </Stack>
   );

@@ -138,6 +138,18 @@ const SUGGEST_CLOSE_RULE = [
   '- Não menciones o marcador nem escrevas que vais terminar a conversa.',
 ].join('\n');
 
+// How a chat answer ends depends on whether a professional is involved: the
+// context's "Profissional:" line (see assistant.gatherContext) says so.
+// Exported so maintenance can swap it into prompts already stored in the DB.
+export const CHAT_CLOSING_RULE = [
+  '- Vê a linha "Profissional:" do contexto. Se disser que a utente tem uma',
+  '  conversa com um profissional em curso, termina com a frase: "Para a tua',
+  '  situação concreta, espera pela resposta do profissional ou marca consulta',
+  '  presencial." Caso contrário, NÃO digas para esperar por um profissional;',
+  '  quando fizer sentido, termina com: "Se precisares de acompanhamento,',
+  '  podes falar com um profissional de saúde a qualquer momento."',
+];
+
 DEFAULT_PROMPTS.chat = {
   systemPrompt: [
     ASSISTANT_BASE,
@@ -149,8 +161,7 @@ DEFAULT_PROMPTS.chat = {
     '',
     'Para esta resposta:',
     '- Mantém entre 3 e 6 frases.',
-    '- Termina sempre com a frase: "Para a tua situação concreta, espera',
-    '  pela resposta do profissional ou marca consulta presencial."',
+    ...CHAT_CLOSING_RULE,
     '- Se a pergunta sugere urgência médica (sangramento intenso, dor',
     '  aguda, sintomas de gravidez ectópica, sinais de infeção grave),',
     '  responde APENAS: "Esta situação precisa de avaliação clínica',

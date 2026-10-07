@@ -5,6 +5,7 @@ import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { calculateRiskLevel, type RiskAssessment } from './lib/risk';
 import { alertLevelFor, priorityFor, sortQueue, type AlertLevel } from './lib/alerts';
+import { hasProfessionalAccess } from './lib/professional';
 import { topicValidator as topic } from './lib/topics';
 
 const status = v.union(
@@ -97,7 +98,7 @@ export const listForProfessional = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    if (profile?.role !== 'professional' && profile?.role !== 'admin') return [];
+    if (!hasProfessionalAccess(profile)) return [];
 
     let conversations = args.status
       ? await ctx.db
@@ -121,11 +122,31 @@ export const listForProfessional = query({
       conversations = conversations.filter((c) => c.priority === args.priority);
     }
 
-    // fromAi: the request came from a chat with the assistant (shown in the list).
+    // For the list card: who the patient is, what was said last, and whether
+    // the request came from a chat with the assistant.
     return Promise.all(
       sortQueue(conversations).map(async (c) => {
         const context = c.contextConversationId ? await ctx.db.get(c.contextConversationId) : null;
-        return { ...c, fromAi: context?.kind === 'ai-only' };
+        const patientProfile = await ctx.db
+          .query('userProfiles')
+          .withIndex('by_user', (q) => q.eq('userId', c.patientId))
+          .unique();
+        const patientUser = await ctx.db.get(c.patientId);
+        const recent = await ctx.db
+          .query('messages')
+          .withIndex('by_conversation', (q) => q.eq('conversationId', c._id))
+          .order('desc')
+          .take(10);
+        const lastText = recent.find(
+          (m) => !m.isInternal && (m.messageType === 'text' || m.messageType === 'ai-response')
+        );
+        return {
+          ...c,
+          fromAi: context?.kind === 'ai-only',
+          patientName:
+            patientProfile?.displayName?.trim() || patientUser?.email || 'Utente convidada',
+          preview: lastText?.content.slice(0, 140) ?? null,
+        };
       })
     );
   },
@@ -140,7 +161,7 @@ export const queueStats = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    if (profile?.role !== 'professional' && profile?.role !== 'admin') return null;
+    if (!hasProfessionalAccess(profile)) return null;
     const all = (await ctx.db.query('conversations').collect()).filter(
       (c) => c.kind !== 'ai-only'
     );
@@ -163,14 +184,11 @@ export const get = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    const hasAccess =
-      conv.patientId === userId ||
-      conv.professionalId === userId ||
-      profile?.role === 'professional' ||
-      profile?.role === 'admin';
+    const isProfessional = hasProfessionalAccess(profile);
+    // The patient, or an admin / approved professional. A professional whose
+    // account is pending or was rejected has no access, even if assigned.
+    const hasAccess = conv.patientId === userId || isProfessional;
     if (!hasAccess) return null;
-    const isProfessional =
-      profile?.role === 'professional' || profile?.role === 'admin';
     if (
       conv.kind === 'ai-only' &&
       conv.patientId !== userId &&
@@ -327,7 +345,8 @@ async function requireProfessional(ctx: any, userId: any) {
     .query('userProfiles')
     .withIndex('by_user', (q: any) => q.eq('userId', userId))
     .unique();
-  if (profile?.role !== 'professional' && profile?.role !== 'admin') {
+  // Admins, and professionals an admin has approved (lib/professional.ts).
+  if (!hasProfessionalAccess(profile)) {
     throw new Error('Unauthorized');
   }
   return profile;
@@ -444,7 +463,7 @@ export const listHistory = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    const isProfessional = profile?.role === 'professional' || profile?.role === 'admin';
+    const isProfessional = hasProfessionalAccess(profile);
     const rows = isProfessional
       ? await ctx.db
           .query('conversations')
@@ -498,25 +517,32 @@ export const recommendInPerson = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
-    await requireProfessional(ctx, userId);
+    const senderProfile = await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
     if (!conv) throw new Error('Conversation not found');
     if (conv.status === 'closed') throw new Error('Conversa já fechada');
 
     const baseMsg =
       'Pelo que descreves, recomendamos que procures consulta presencial nos teus cuidados primários ou liga ao SNS 24 (808 24 24 24). Se for uma situação urgente, liga 112.';
-    const content = args.extraNote?.trim()
-      ? `${baseMsg}\n\nNota do profissional: ${args.extraNote.trim()}`
-      : baseMsg;
+    // The professional's own words follow the recommendation as one message.
+    const content = args.extraNote?.trim() ? `${baseMsg}\n\n${args.extraNote.trim()}` : baseMsg;
     const now = Date.now();
 
     await ctx.db.insert('messages', {
       conversationId: args.id,
       senderId: userId,
       content,
-      messageType: 'system',
+      // A regular message from the professional (their bubble), not a system line.
+      messageType: 'text',
     });
     await ctx.db.patch(args.id, { lastMessageAt: now });
+    // Same push as any professional message; never the content (lock screens).
+    const senderName = senderProfile?.displayName?.trim();
+    await ctx.scheduler.runAfter(0, internal.notifications.sendToUser, {
+      userId: conv.patientId,
+      title: senderName ? `Nova mensagem de ${senderName}` : 'Nova mensagem de um profissional',
+      data: { conversationId: args.id },
+    });
 
     if (args.alsoClose) {
       await ctx.db.patch(args.id, {
@@ -685,7 +711,7 @@ export const aiContext = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    if (profile?.role !== 'professional' && profile?.role !== 'admin') return [];
+    if (!hasProfessionalAccess(profile)) return [];
     const conv = await ctx.db.get(args.id);
     if (!conv || conv.kind === 'ai-only') return [];
     if (conv.professionalId && conv.professionalId !== userId) return [];

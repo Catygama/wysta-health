@@ -60,21 +60,31 @@ export default defineSchema({
     ),
     professionalVerificationDocuments: v.optional(v.array(v.id('_storage'))),
     professionalVerificationNotes: v.optional(v.string()),
+    // Manual review by an admin (users.approveProfessional / rejectProfessional).
+    professionalVerificationRequestedAt: v.optional(v.number()),
+    professionalVerificationReviewedBy: v.optional(v.id('users')),
+    professionalVerificationReviewedAt: v.optional(v.number()),
+    professionalVerificationRejectionReason: v.optional(v.string()),
     // Guest sessions (Anonymous provider) — for testing only
     isGuest: v.optional(v.boolean()),
-    // Expo push tokens for this user (max 15, oldest evicted on overflow).
+    // Push destinations (max 15, oldest evicted on overflow). Native entries
+    // hold an Expo push token; web entries hold the subscription endpoint in
+    // `token` plus its encryption keys.
     pushTokens: v.optional(
       v.array(
         v.object({
           token: v.string(),
-          platform: v.union(v.literal('ios'), v.literal('android')),
+          platform: v.union(v.literal('ios'), v.literal('android'), v.literal('web')),
+          webKeys: v.optional(v.object({ p256dh: v.string(), auth: v.string() })),
           addedAt: v.number(),
         })
       )
     ),
     aiSummary: v.optional(v.string()),
     aiSummaryAt: v.optional(v.number()),
-  }).index('by_user', ['userId']),
+  })
+    .index('by_user', ['userId'])
+    .index('by_professionalVerificationStatus', ['professionalVerificationStatus']),
 
   conversations: defineTable({
     patientId: v.id('users'),
@@ -227,8 +237,13 @@ export default defineSchema({
   }).index('by_user', ['userId']),
 
   auditLog: defineTable({
-    conversationId: v.id('conversations'),
-    professionalId: v.id('users'),
+    // Conversation actions set conversationId + professionalId; account
+    // reviews (professional-approved/-rejected) set adminId + targetUserId;
+    // professional-review-required (a migration, no admin) sets targetUserId.
+    conversationId: v.optional(v.id('conversations')),
+    professionalId: v.optional(v.id('users')),
+    adminId: v.optional(v.id('users')),
+    targetUserId: v.optional(v.id('users')),
     action: v.union(
       v.literal('escalation'),
       v.literal('closure'),
@@ -238,7 +253,10 @@ export default defineSchema({
       v.literal('unassigned'),
       v.literal('review-requested'),
       v.literal('review-cleared'),
-      v.literal('redirect-recommended')
+      v.literal('redirect-recommended'),
+      v.literal('professional-approved'),
+      v.literal('professional-rejected'),
+      v.literal('professional-review-required')
     ),
     details: v.string(),
   }).index('by_conversation', ['conversationId']),

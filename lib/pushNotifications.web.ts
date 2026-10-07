@@ -5,8 +5,8 @@ export type PushRegistration = {
   platform: PushPlatform;
 };
 
-// TODO(push-web): web push notifications not implemented yet — would need
-// service worker + VAPID setup, separate from Expo's push service.
+// Web push needs an explicit user gesture to request permission, so it is
+// opt-in via components/WebPushCard.web.tsx (lib/webPush.ts) instead.
 export async function registerForPushNotifications(): Promise<PushRegistration | null> {
   return null;
 }

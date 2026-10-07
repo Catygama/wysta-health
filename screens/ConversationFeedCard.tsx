@@ -1,8 +1,7 @@
-import { View, Text } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { View, Text, Pressable } from 'react-native';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { TOPICS } from '@/constants/topics';
-import { Card } from '@/components/ui/Card';
-import { Avatar } from '@/components/ui/Avatar';
+import { Icon } from '@/components/ui/Icon';
 import { relativeTime } from '@/lib/format';
 
 export type FeedConversation = {
@@ -14,59 +13,97 @@ export type FeedConversation = {
   isAiOnly: boolean;
 };
 
-// Patient-facing conversation card: who answers (professional, team or AI),
-// topic and the latest visible message.
+// Patient-facing conversation row (no box, like an inbox): topic icon, topic
+// and who answers (professional, team or AI), the latest visible message.
 export function ConversationFeedCard({
   conversation,
   onPress,
+  onEnd,
+  isLast,
 }: {
   conversation: FeedConversation;
   onPress: () => void;
+  /** Shows a button on the right that ends the conversation (after confirming). */
+  onEnd?: () => void;
+  /** Last row of the group: no divider under it. */
+  isLast?: boolean;
 }) {
+  const { theme } = useUnistyles();
   const topic = TOPICS.find((t) => t.id === conversation.topic);
-  const isAi = conversation.isAiOnly;
-  const name = conversation.responderName ?? (isAi ? 'Assistente Wysta' : 'Equipa Wysta');
-  const initials = conversation.responderName
-    ? conversation.responderName
-        .split(' ')
-        .map((s) => s[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
-    : isAi
-      ? 'AI'
-      : 'W';
-  const tone = conversation.responderName ? 'lilac' : isAi ? 'mint' : 'ink';
+  const pastel = theme.topic[topic?.color ?? 'general'];
+  const who =
+    conversation.responderName ?? (conversation.isAiOnly ? 'Assistente IA' : 'Profissional de saúde');
 
   return (
-    <Card
-      testID={`patient-conversation-${conversation._id}`}
-      onPress={onPress}
-      style={styles.feedCard}
-    >
-      <Avatar initials={initials} tone={tone} size={44} />
-      <View style={styles.feedBody}>
-        <View style={styles.feedTop}>
-          <Text style={styles.feedName} numberOfLines={1}>{name}</Text>
-          {conversation.previewAt && (
-            <Text style={styles.feedTime}>{relativeTime(conversation.previewAt)}</Text>
+    <View style={[styles.wrap, !isLast && styles.divider]}>
+      <Pressable
+        testID={`patient-conversation-${conversation._id}`}
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      >
+        <View style={[styles.icon, { backgroundColor: pastel.fill }]}>
+          {topic && <Icon name={topic.icon} size={18} color={pastel.on} />}
+        </View>
+        <View style={styles.body}>
+          <View style={styles.top}>
+            <Text style={styles.title} numberOfLines={1}>
+              {topic?.label ?? conversation.topic}
+              <Text style={styles.who}> · {who}</Text>
+            </Text>
+            {conversation.previewAt && (
+              <Text style={styles.time}>{relativeTime(conversation.previewAt)}</Text>
+            )}
+          </View>
+          {conversation.preview && (
+            <Text style={styles.preview} numberOfLines={1}>
+              {conversation.preview}
+            </Text>
           )}
         </View>
-        <Text style={styles.feedTopic}>{topic?.label ?? conversation.topic}</Text>
-        {conversation.preview && (
-          <Text style={styles.feedPreview} numberOfLines={1}>{conversation.preview}</Text>
-        )}
-      </View>
-    </Card>
+      </Pressable>
+      {onEnd && (
+        <Pressable
+          testID={`end-conversation-${conversation._id}`}
+          accessibilityRole="button"
+          accessibilityLabel="Terminar conversa"
+          hitSlop={8}
+          onPress={onEnd}
+          style={({ pressed }) => [styles.endBtn, pressed && styles.pressed]}
+        >
+          <Icon name={{ sf: 'xmark.circle', ion: 'close-circle-outline' }} size={22} color={theme.colors.textSecondary} />
+        </Pressable>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
-  feedCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
-  feedBody: { flex: 1, gap: 2 },
-  feedTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.sm },
-  feedName: { fontSize: 15, fontWeight: '500', color: theme.colors.textPrimary, flex: 1 },
-  feedTime: { fontSize: 12, color: theme.colors.textTertiary },
-  feedTopic: { fontSize: 12, color: theme.colors.accent, fontWeight: '500' },
-  feedPreview: { fontSize: 13, color: theme.colors.textSecondary },
+  wrap: { flexDirection: 'row', alignItems: 'center', paddingRight: theme.spacing.sm },
+  divider: { borderBottomWidth: 1, borderBottomColor: theme.colors.divider },
+  row: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    paddingLeft: theme.spacing.md,
+    paddingRight: theme.spacing.sm,
+  },
+  endBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.6 },
+  icon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  body: { flex: 1, gap: 2 },
+  top: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: theme.spacing.sm },
+  title: { flex: 1, fontSize: 15, fontWeight: '600', color: theme.colors.textPrimary },
+  who: { fontWeight: '400', color: theme.colors.textSecondary },
+  time: { fontSize: 12, color: theme.colors.textTertiary },
+  preview: { fontSize: 14, color: theme.colors.textSecondary },
 }));

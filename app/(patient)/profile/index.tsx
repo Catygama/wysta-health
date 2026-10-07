@@ -20,6 +20,7 @@ import { HistoryLink } from '@/components/HistoryLink';
 import { AcademicNotice } from '@/components/AcademicNotice';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ThemeCard } from '@/components/ThemeCard';
+import { WebPushCard } from '@/components/WebPushCard';
 import { fonts } from '@/lib/fonts';
 import { PREGNANCY_OPTIONS } from '@/constants/profile';
 
@@ -248,6 +249,8 @@ export default function Profile() {
           )}
         </View>
       )}
+
+      <WebPushCard />
 
       <ThemeCard />
 

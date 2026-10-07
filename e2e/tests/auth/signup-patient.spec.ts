@@ -29,10 +29,9 @@ test.describe('Patient signup + onboarding', () => {
     await page.getByTestId('onboarding-name-input').fill('Maria Test');
     await page.getByTestId('onboarding-continue-button').click();
 
-    // Should land on patient home with topic cards visible
-    await expect(page.getByTestId('patient-new-conversation')).toBeVisible({
-      timeout: 15_000,
-    });
+    // Patient home: both ways to start a conversation are offered.
+    await expect(page.getByTestId('home-path-professional')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('home-path-ai')).toBeVisible();
   });
 
   test('mismatched password shows error', async ({ page }) => {

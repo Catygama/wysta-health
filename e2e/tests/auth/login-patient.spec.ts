@@ -10,9 +10,9 @@ test.describe('Patient login', () => {
       .getByTestId('auth-password-input')
       .fill(TEST_USERS.patientA.password);
     await page.getByTestId('auth-login-button').click();
-    await expect(page.getByTestId('patient-new-conversation')).toBeVisible({
-      timeout: 15_000,
-    });
+    // Patient home: both ways to start a conversation are offered.
+    await expect(page.getByTestId('home-path-professional')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('home-path-ai')).toBeVisible();
   });
 
   test('invalid credentials show error', async ({ page }) => {

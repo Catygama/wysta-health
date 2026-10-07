@@ -9,12 +9,16 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   // atomically with the sign-in, avoiding the auth-token race that breaks
   // a client-side ensureProfile() right after signIn().
   //
-  // Disable in production by removing the Anonymous providers, or hide
-  // the UI entry points via EXPO_PUBLIC_GUEST_AUTH on the client.
+  // The guest professional (auto-verified, for demos and tests) exists only
+  // when the deployment sets ALLOW_GUEST_PROFESSIONAL=true; leave it unset in
+  // production, where professionals go through admin verification. Guest
+  // patients stay available; EXPO_PUBLIC_GUEST_AUTH hides the UI entry points.
   providers: [
     Password,
     Anonymous(),
-    Anonymous({ id: 'anonymous-professional' }),
+    ...(process.env.ALLOW_GUEST_PROFESSIONAL === 'true'
+      ? [Anonymous({ id: 'anonymous-professional' })]
+      : []),
   ],
   callbacks: {
     afterUserCreatedOrUpdated: async (
@@ -43,7 +47,8 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           userId,
           role: 'professional',
           isGuest: true,
-          // TODO: remove auto-verify once admin review UI is in place.
+          // Demo account: auto-verified. Only reachable when
+          // ALLOW_GUEST_PROFESSIONAL is on (see providers above).
           professionalVerificationStatus: 'verified',
         });
       } else if (provider.id === 'anonymous') {
