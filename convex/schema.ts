@@ -61,12 +61,15 @@ export default defineSchema({
     professionalVerificationNotes: v.optional(v.string()),
     // Guest sessions (Anonymous provider) — for testing only
     isGuest: v.optional(v.boolean()),
-    // Expo push tokens for this user (max 15, oldest evicted on overflow).
+    // Push destinations (max 15, oldest evicted on overflow). Native entries
+    // hold an Expo push token; web entries hold the subscription endpoint in
+    // `token` plus its encryption keys.
     pushTokens: v.optional(
       v.array(
         v.object({
           token: v.string(),
-          platform: v.union(v.literal('ios'), v.literal('android')),
+          platform: v.union(v.literal('ios'), v.literal('android'), v.literal('web')),
+          webKeys: v.optional(v.object({ p256dh: v.string(), auth: v.string() })),
           addedAt: v.number(),
         })
       )
