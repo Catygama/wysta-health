@@ -47,6 +47,8 @@ type Props = {
   closed?: boolean;
   /** Patient only: the AI suggested ending — offer a button that calls this. */
   onRequestEnd?: () => void;
+  /** Conversation with the AI assistant (not a professional): adjusts the copy. */
+  aiOnly?: boolean;
 };
 
 
@@ -59,6 +61,7 @@ export function MessageThread({
   forceInternal = false,
   closed = false,
   onRequestEnd,
+  aiOnly = false,
 }: Props) {
   const messages =
     useQuery(api.messages.list, { conversationId: conversationId as any }) ??
@@ -218,7 +221,9 @@ export function MessageThread({
             <View testID="thread-next-step" style={styles.nextStep}>
               <Text style={styles.nextStepTitle}>Agora, conta-nos o que se passa</Text>
               <Text style={styles.nextStepText}>
-                Escreve a tua dúvida em baixo. Um profissional responde normalmente em 24h.
+                {aiOnly
+                  ? 'Escreve a tua dúvida em baixo. A assistente IA responde-te na hora.'
+                  : 'Escreve a tua dúvida em baixo. Um profissional responde normalmente em 24h.'}
               </Text>
             </View>
           ) : null
@@ -251,7 +256,7 @@ export function MessageThread({
             item.messageType === 'triage-response' &&
             item.metadata?.triageData
           ) {
-            return <TriageMessage data={item.metadata.triageData} />;
+            return <TriageMessage data={item.metadata.triageData} aiOnly={aiOnly} />;
           }
           if (item.messageType === 'system') {
             return <SystemMessage content={item.content} />;
@@ -471,8 +476,10 @@ export function MessageThread({
 
 function TriageMessage({
   data,
+  aiOnly,
 }: {
   data: { topic: string; responses: Record<string, unknown>; riskLevel: string };
+  aiOnly: boolean;
 }) {
   const { theme } = useUnistyles();
   return (
@@ -486,7 +493,9 @@ function TriageMessage({
         <Text style={styles.triageTitle}>Triagem concluída</Text>
       </View>
       <Text style={styles.triageBody}>
-        Respostas guardadas para o profissional de saúde.
+        {aiOnly
+          ? 'Respostas guardadas para a assistente IA.'
+          : 'Respostas guardadas para o profissional de saúde.'}
       </Text>
     </View>
   );

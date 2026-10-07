@@ -79,6 +79,7 @@ export default function PatientConversation() {
         currentUserId={user._id}
         isProfessional={false}
         closed={closed}
+        aiOnly={isAiOnly}
         onRequestEnd={() => setConfirmEnd(true)}
       />
       <ConfirmDialog
