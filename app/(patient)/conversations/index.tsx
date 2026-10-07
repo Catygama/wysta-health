@@ -61,7 +61,10 @@ export default function PatientConversations() {
         data={open}
         keyExtractor={(item) => item._id}
         style={styles.list}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { backgroundColor: theme.colors.surface, borderColor: theme.colors.divider },
+        ]}
         contentInsetAdjustmentBehavior="automatic"
         renderItem={({ item, index }) => (
           <ConversationFeedCard
