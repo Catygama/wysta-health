@@ -517,25 +517,32 @@ export const recommendInPerson = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
-    await requireProfessional(ctx, userId);
+    const senderProfile = await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
     if (!conv) throw new Error('Conversation not found');
     if (conv.status === 'closed') throw new Error('Conversa já fechada');
 
     const baseMsg =
       'Pelo que descreves, recomendamos que procures consulta presencial nos teus cuidados primários ou liga ao SNS 24 (808 24 24 24). Se for uma situação urgente, liga 112.';
-    const content = args.extraNote?.trim()
-      ? `${baseMsg}\n\nNota do profissional: ${args.extraNote.trim()}`
-      : baseMsg;
+    // The professional's own words follow the recommendation as one message.
+    const content = args.extraNote?.trim() ? `${baseMsg}\n\n${args.extraNote.trim()}` : baseMsg;
     const now = Date.now();
 
     await ctx.db.insert('messages', {
       conversationId: args.id,
       senderId: userId,
       content,
-      messageType: 'system',
+      // A regular message from the professional (their bubble), not a system line.
+      messageType: 'text',
     });
     await ctx.db.patch(args.id, { lastMessageAt: now });
+    // Same push as any professional message; never the content (lock screens).
+    const senderName = senderProfile?.displayName?.trim();
+    await ctx.scheduler.runAfter(0, internal.notifications.sendToUser, {
+      userId: conv.patientId,
+      title: senderName ? `Nova mensagem de ${senderName}` : 'Nova mensagem de um profissional',
+      data: { conversationId: args.id },
+    });
 
     if (args.alsoClose) {
       await ctx.db.patch(args.id, {
