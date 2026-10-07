@@ -100,7 +100,7 @@ export function ConversationList({
                   {item.fromAi ? (
                     <View style={[styles.pill, styles.topicPill]}>
                       <Icon name={{ sf: 'sparkles', ion: 'sparkles-outline' }} size={11} color={theme.colors.textSecondary} />
-                      <Text style={styles.topicText}>Vem da IA</Text>
+                      <Text style={styles.topicText}>Iniciada com a IA</Text>
                     </View>
                   ) : null}
                 </View>
