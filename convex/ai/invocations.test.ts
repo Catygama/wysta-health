@@ -126,3 +126,35 @@ describe('aiInvocations', () => {
     expect(row?.errorMessage).toBe('rate limited');
   });
 });
+
+describe('costPerResponse', () => {
+  it('sums each draft with its validators and judge, and divides by drafts', async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('users', {} as any);
+      const configId = await ctx.db.insert('aiConfigs', {
+        purpose: 'chat',
+        provider: 'anthropic',
+        modelId: 'm',
+        apiKey: 'k',
+        createdBy: userId,
+      });
+      const promptId = await ctx.db.insert('aiPrompts', { purpose: 'chat', systemPrompt: 's', createdBy: userId });
+      const base = { configId, promptId, userId, status: 'success' as const };
+      for (const draftCost of [0.01, 0.03]) {
+        const draft = await ctx.db.insert('aiInvocations', { ...base, purpose: 'chat', costUsd: draftCost });
+        for (const purpose of ['chat-validator-safety', 'chat-validator-clinical', 'chat-judge'] as const) {
+          await ctx.db.insert('aiInvocations', { ...base, purpose, parentInvocationId: draft, costUsd: 0.002 });
+        }
+      }
+      // A summary: reported apart, not part of the response cost.
+      await ctx.db.insert('aiInvocations', { ...base, purpose: 'chat-summary', costUsd: 0.5 });
+    });
+    const r = await t.query(internal.ai.invocations.costPerResponse, {});
+    expect(r.responses).toBe(2);
+    expect(r.chainCostUsd).toBeCloseTo(0.01 + 0.03 + 6 * 0.002);
+    expect(r.costPerResponseUsd).toBeCloseTo((0.01 + 0.03 + 6 * 0.002) / 2);
+    expect(r.byPurpose['chat-judge']).toEqual({ count: 2, costUsd: expect.closeTo(0.004) });
+    expect(r.summaries['chat-summary']).toEqual({ count: 1, costUsd: 0.5 });
+  });
+});
