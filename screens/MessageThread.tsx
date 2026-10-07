@@ -22,7 +22,6 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
 import { ChatMessage } from '@/components/chat/ChatMessage';
-import { RISK_LABELS, riskColor } from '@/constants/conversation';
 import {
   pickImage,
   pickDocument,
@@ -476,7 +475,6 @@ function TriageMessage({
   data: { topic: string; responses: Record<string, unknown>; riskLevel: string };
 }) {
   const { theme } = useUnistyles();
-  const color = riskColor(theme, data.riskLevel) ?? theme.colors.textSecondary;
   return (
     <View style={styles.triage}>
       <View style={styles.triageHeader}>
@@ -486,9 +484,6 @@ function TriageMessage({
           color={theme.colors.textSecondary}
         />
         <Text style={styles.triageTitle}>Triagem concluída</Text>
-        <Text style={[styles.triageRisk, { color }]}>
-          Risco {RISK_LABELS[data.riskLevel] ?? data.riskLevel}
-        </Text>
       </View>
       <Text style={styles.triageBody}>
         Respostas guardadas para o profissional de saúde.
@@ -676,7 +671,6 @@ const styles = StyleSheet.create((theme) => ({
     letterSpacing: 0.5,
     flex: 1,
   },
-  triageRisk: { fontSize: 12, fontWeight: '500' },
   triageBody: { fontSize: 14, color: theme.colors.textSecondary },
   system: { alignItems: 'center', paddingVertical: theme.spacing.xs },
   systemText: { fontSize: 12, color: theme.colors.textTertiary, textAlign: 'center' },
