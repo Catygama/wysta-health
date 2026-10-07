@@ -178,7 +178,13 @@ const styles = StyleSheet.create((theme) => ({
   title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.inkText, lineHeight: 30 },
   metaText: { fontSize: 14, color: theme.colors.textSecondary },
   // Lead paragraph: says what the article is about.
-  summary: { fontSize: 18, lineHeight: 27, color: theme.colors.textPrimary, marginTop: theme.spacing.xs },
+  summary: {
+    fontFamily: fonts.display,
+    fontSize: 19,
+    lineHeight: 28,
+    color: theme.colors.accent,
+    marginTop: theme.spacing.xs,
+  },
   bodyBlocks: { gap: theme.spacing.md },
   body: { fontSize: 16, color: theme.colors.textPrimary, lineHeight: 26 },
   subheading: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText, marginTop: theme.spacing.xs },
