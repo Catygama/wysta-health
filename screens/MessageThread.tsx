@@ -312,7 +312,9 @@ export function MessageThread({
       {!canSend && !closed && !aboveComposer && (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
-            Para responder, atribui esta conversa a ti.
+            {isInternalScope
+              ? 'Atribui esta conversa a ti para poderes escrever notas internas.'
+              : 'Para responder, atribui esta conversa a ti.'}
           </Text>
         </View>
       )}
