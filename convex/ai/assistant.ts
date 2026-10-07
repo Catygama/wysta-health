@@ -51,8 +51,6 @@ const judgeSchema = z.object({
   finalAnswer: z.string(),
 });
 
-const DISCLAIMER =
-  '\n\n— Assistente AI. Esta resposta é informativa, não substitui consulta clínica.';
 const FALLBACK_MESSAGE =
   'Não consegui responder agora. Tenta novamente daqui a pouco ou fala com um profissional.';
 const BLOCKED_AUTO =
@@ -148,7 +146,7 @@ async function streamAndValidate(
     const sent = judged.output.action === 'send';
     await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
       messageId,
-      content: sent ? draftText + DISCLAIMER : args.blockedMessage,
+      content: sent ? draftText : args.blockedMessage,
       suggestClose: sent && suggestClose,
       invocationId: judged.invocationId,
     });
