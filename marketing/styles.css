@@ -1,3 +1,20 @@
+/* Fraunces is served from this site (SIL OFL, see fonts/OFL.txt) rather than
+   Google Fonts, so visitors' IP addresses aren't sent to Google. */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/Fraunces-600.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/Fraunces-700.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Wysta — public site. Same palette as the app (maroon #50000D, dusty pink
    #E3C7C7, beige #EFDCD6). Fraunces (display) + system sans (body). */
 
