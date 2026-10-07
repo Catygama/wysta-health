@@ -517,7 +517,7 @@ export const recommendInPerson = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
-    await requireProfessional(ctx, userId);
+    const senderProfile = await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
     if (!conv) throw new Error('Conversation not found');
     if (conv.status === 'closed') throw new Error('Conversa já fechada');
@@ -536,6 +536,13 @@ export const recommendInPerson = mutation({
       messageType: 'text',
     });
     await ctx.db.patch(args.id, { lastMessageAt: now });
+    // Same push as any professional message; never the content (lock screens).
+    const senderName = senderProfile?.displayName?.trim();
+    await ctx.scheduler.runAfter(0, internal.notifications.sendToUser, {
+      userId: conv.patientId,
+      title: senderName ? `Nova mensagem de ${senderName}` : 'Nova mensagem de um profissional',
+      data: { conversationId: args.id },
+    });
 
     if (args.alsoClose) {
       await ctx.db.patch(args.id, {

@@ -381,3 +381,25 @@ describe('triage alert levels', () => {
     expect(queue.map((c) => c.title)).toEqual(['Gravidez', 'Ciclo', 'Contraceção — nova conversa', 'IST']);
   });
 });
+
+describe('recommend in person', () => {
+  it("sends the professional's own message and notifies the patient", async () => {
+    const { t, pro, proConvId, proId } = await setup();
+    await t.run((ctx) => ctx.db.patch(proConvId, { professionalId: proId, status: 'active' }));
+    await pro.mutation(api.conversations.recommendInPerson, { id: proConvId, extraNote: 'Vai ao centro de saúde.' });
+    const messages = await t.run((ctx) =>
+      ctx.db
+        .query('messages')
+        .withIndex('by_conversation', (q) => q.eq('conversationId', proConvId))
+        .collect()
+    );
+    const last = messages[messages.length - 1];
+    expect(last).toMatchObject({ senderId: proId, messageType: 'text' });
+    expect(last.content).toContain('SNS 24');
+    expect(last.content.endsWith('Vai ao centro de saúde.')).toBe(true);
+    expect(last.content).not.toContain('Nota do profissional');
+    const scheduled = await t.run((ctx) => ctx.db.system.query('_scheduled_functions').collect());
+    expect(scheduled.some((s) => s.name.includes('notifications'))).toBe(true);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
