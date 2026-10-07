@@ -492,11 +492,10 @@ function TriageMessage({
         />
         <Text style={styles.triageTitle}>Triagem concluída</Text>
       </View>
-      <Text style={styles.triageBody}>
-        {aiOnly
-          ? 'Respostas guardadas para a assistente IA.'
-          : 'Respostas guardadas para o profissional de saúde.'}
-      </Text>
+      {/* The AI already reads the answers; the note only matters for professionals. */}
+      {!aiOnly && (
+        <Text style={styles.triageBody}>Respostas guardadas para o profissional de saúde.</Text>
+      )}
     </View>
   );
 }

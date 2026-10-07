@@ -203,7 +203,8 @@ function ErrorBanner({ text, onDismiss }: { text: string; onDismiss: () => void 
 
 const styles = StyleSheet.create((theme) => ({
   banner: {
-    marginHorizontal: theme.spacing.sm,
+    // Same side inset as the message list, so the banner lines up with the cards.
+    marginHorizontal: theme.spacing.md,
     marginTop: theme.spacing.sm,
     padding: theme.spacing.sm,
     borderRadius: theme.radius.md,
