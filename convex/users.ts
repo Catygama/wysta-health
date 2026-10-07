@@ -327,7 +327,8 @@ async function reviewProfessional(
 // access and shows up in the admin's "Pedidos de verificação".
 // Idempotent: reviewed, pending and rejected accounts are left alone.
 // Run it from the Convex dashboard (Functions → users:requireReviewForUnreviewedProfessionals,
-// args {}) or: bunx convex run --prod users:requireReviewForUnreviewedProfessionals
+// args {}) or, with the production CONVEX_DEPLOY_KEY set:
+// bunx convex run --prod users:requireReviewForUnreviewedProfessionals
 export const requireReviewForUnreviewedProfessionals = internalMutation({
   args: { paginationOpts: v.optional(paginationOptsValidator) },
   handler: async (ctx, args) => {

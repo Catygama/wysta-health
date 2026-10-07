@@ -98,7 +98,8 @@ export const listChain = query({
 // invocation (the draft); its safety/clinical validators and the judge are
 // children via parentInvocationId, so each response's cost includes them.
 // Summaries (chat-summary, user-summary) are separate agents, reported apart.
-// Run from the Convex dashboard: ai/invocations:costPerResponse, args {}
+// Run from the Convex dashboard: ai/invocations:costPerResponse, args {}.
+// From the CLI, --prod only reaches production with CONVEX_DEPLOY_KEY set.
 // (optionally { sinceMs } to count only invocations created after that time).
 export const costPerResponse = internalQuery({
   args: { sinceMs: v.optional(v.number()) },
