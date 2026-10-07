@@ -51,6 +51,8 @@ type Props = {
   aiOnly?: boolean;
   /** Shown above the messages (e.g. the patient's AI chat for professionals). */
   header?: React.ReactElement | null;
+  /** Shown right above the text field (e.g. the professional's quick actions). */
+  aboveComposer?: React.ReactElement | null;
 };
 
 
@@ -65,6 +67,7 @@ export function MessageThread({
   onRequestEnd,
   aiOnly = false,
   header,
+  aboveComposer,
 }: Props) {
   const messages =
     useQuery(api.messages.list, { conversationId: conversationId as any }) ??
@@ -301,6 +304,10 @@ export function MessageThread({
         }}
       />
 
+      {!canSend && !closed && aboveComposer ? (
+        <View style={styles.composer}>{aboveComposer}</View>
+      ) : null}
+
       {!canSend && !closed && (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
@@ -327,6 +334,7 @@ export function MessageThread({
             />
           ) : null}
           <View style={styles.composer}>
+            {aboveComposer}
 
             {pendingImage && (
               <View style={styles.pendingRow}>
