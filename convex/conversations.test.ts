@@ -20,7 +20,7 @@ async function setup() {
     const patientId = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
     const proId = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
     await ctx.db.insert('userProfiles', { userId: patientId, role: 'patient' });
-    await ctx.db.insert('userProfiles', { userId: proId, role: 'professional' });
+    await ctx.db.insert('userProfiles', { userId: proId, role: 'professional', professionalVerificationStatus: 'verified' });
     const proConvId = await ctx.db.insert('conversations', {
       patientId,
       topic: 'contraception',
@@ -157,7 +157,7 @@ describe('AI chats are read-only context for professionals', () => {
     const { t, patient, pro, proId, patientId } = await setup();
     const otherId = await t.run(async (ctx) => {
       const id = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
-      await ctx.db.insert('userProfiles', { userId: id, role: 'professional' });
+      await ctx.db.insert('userProfiles', { userId: id, role: 'professional', professionalVerificationStatus: 'verified' });
       return id;
     });
     const other = t.withIdentity({ subject: `${otherId}|s3` });

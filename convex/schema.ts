@@ -238,7 +238,8 @@ export default defineSchema({
 
   auditLog: defineTable({
     // Conversation actions set conversationId + professionalId; account
-    // reviews (professional-approved/-rejected) set adminId + targetUserId.
+    // reviews (professional-approved/-rejected) set adminId + targetUserId;
+    // professional-review-required (a migration, no admin) sets targetUserId.
     conversationId: v.optional(v.id('conversations')),
     professionalId: v.optional(v.id('users')),
     adminId: v.optional(v.id('users')),
@@ -254,7 +255,8 @@ export default defineSchema({
       v.literal('review-cleared'),
       v.literal('redirect-recommended'),
       v.literal('professional-approved'),
-      v.literal('professional-rejected')
+      v.literal('professional-rejected'),
+      v.literal('professional-review-required')
     ),
     details: v.string(),
   }).index('by_conversation', ['conversationId']),

@@ -6,11 +6,8 @@ import type { Doc } from '../_generated/dataModel';
 type Profile = Pick<Doc<'userProfiles'>, 'role' | 'professionalVerificationStatus'> | null | undefined;
 
 export function isVerifiedProfessional(profile: Profile): boolean {
-  if (profile?.role !== 'professional') return false;
-  // No status: professionals an admin promoted directly (users.setRole)
-  // before manual review existed. Only an explicit pending/rejected blocks.
-  const status = profile.professionalVerificationStatus;
-  return status !== 'pending' && status !== 'rejected';
+  // Only an explicit approval counts: a missing status blocks, like pending.
+  return profile?.role === 'professional' && profile.professionalVerificationStatus === 'verified';
 }
 
 // Professional-side access (queue, cases, patient conversations).

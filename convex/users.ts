@@ -1,4 +1,6 @@
-import { mutation, query, type MutationCtx } from './_generated/server';
+import { internalMutation, mutation, query, type MutationCtx } from './_generated/server';
+import { internal } from './_generated/api';
+import { paginationOptsValidator } from 'convex/server';
 import type { Id } from './_generated/dataModel';
 import { requireAdmin } from './lib/auth';
 import { getAuthUserId } from '@convex-dev/auth/server';
@@ -309,6 +311,49 @@ async function reviewProfessional(
         : `Pedido recusado${trimmed ? `: ${trimmed}` : '.'}`,
   });
 }
+
+// One-off migration: every professional account no admin ever reviewed
+// (guest demo sign-ins, ensureProfile auto-verifications, promotions from
+// before setRole recorded a reviewer) goes back to pending, so it loses
+// access and shows up in the admin's "Pedidos de verificação".
+// Idempotent: reviewed, pending and rejected accounts are left alone.
+// Run it from the Convex dashboard (Functions → users:requireReviewForUnreviewedProfessionals,
+// args {}) or: bunx convex run --prod users:requireReviewForUnreviewedProfessionals
+export const requireReviewForUnreviewedProfessionals = internalMutation({
+  args: { paginationOpts: v.optional(paginationOptsValidator) },
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query('userProfiles')
+      .paginate(args.paginationOpts ?? { numItems: 200, cursor: null });
+    const now = Date.now();
+    let changed = 0;
+    for (const profile of page.page) {
+      if (profile.role !== 'professional') continue;
+      if (profile.professionalVerificationReviewedBy) continue;
+      const status = profile.professionalVerificationStatus;
+      if (status === 'pending' || status === 'rejected') continue;
+      await ctx.db.patch(profile._id, {
+        professionalVerificationStatus: 'pending',
+        professionalVerificationRequestedAt: now,
+      });
+      await ctx.db.insert('auditLog', {
+        targetUserId: profile.userId,
+        action: 'professional-review-required',
+        details: profile.isGuest
+          ? 'Conta de convidado sem revisão: acesso suspenso até aprovação.'
+          : 'Conta sem revisão registada: acesso suspenso até aprovação.',
+      });
+      changed++;
+    }
+    console.log(`requireReviewForUnreviewedProfessionals: ${changed} account(s) set to pending`);
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.users.requireReviewForUnreviewedProfessionals, {
+        paginationOpts: { numItems: 200, cursor: page.continueCursor },
+      });
+    }
+    return { changed, isDone: page.isDone };
+  },
+});
 
 export const approveProfessional = mutation({
   args: { userId: v.id('users') },

@@ -100,6 +100,7 @@ describe('message notifications', () => {
       await ctx.db.insert('userProfiles', {
         userId: proId,
         role: 'professional',
+        professionalVerificationStatus: 'verified',
         displayName: 'Ana Gomes',
       });
       const conversationId = await ctx.db.insert('conversations', {

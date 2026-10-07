@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { convexTest } from 'convex-test';
 import schema from './schema';
-import { api } from './_generated/api';
+import { api, internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 
 const modules = import.meta.glob('./**/*.ts');
@@ -120,6 +120,61 @@ describe('professional verification', () => {
     const { t, admin, patientId } = await setup();
     await admin.mutation(api.users.setRole, { targetUserId: patientId, role: 'professional' });
     expect((await profileOf(t, patientId))?.professionalVerificationStatus).toBe('verified');
+  });
+
+  it('a professional with no verification status is blocked', async () => {
+    const { t, convId } = await setup();
+    const legacyId = await t.run(async (ctx) => {
+      const id = (await ctx.db.insert('users', { email: 'antiga@test.pt' } as any)) as Id<'users'>;
+      await ctx.db.insert('userProfiles', { userId: id, role: 'professional' });
+      return id;
+    });
+    const legacy = t.withIdentity({ subject: `${legacyId}|s` });
+    expect(await legacy.query(api.conversations.listForProfessional, {})).toEqual([]);
+    expect(await legacy.query(api.conversations.get, { id: convId })).toBeNull();
+    await expect(legacy.mutation(api.conversations.assign, { id: convId })).rejects.toThrow('Unauthorized');
+  });
+
+  it('the migration sends every unreviewed professional back to review, once', async () => {
+    const { t, admin, adminId, patientId, proId } = await setup();
+    // Reviewed by an admin: kept. Promoted via setRole: kept (reviewer recorded).
+    await admin.mutation(api.users.approveProfessional, { userId: proId });
+    await admin.mutation(api.users.setRole, { targetUserId: patientId, role: 'professional' });
+    const { guestId, legacyId } = await t.run(async (ctx) => {
+      const guestId = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
+      const legacyId = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
+      // Guest demo sign-in: explicitly verified, but nobody reviewed it.
+      await ctx.db.insert('userProfiles', {
+        userId: guestId,
+        role: 'professional',
+        isGuest: true,
+        professionalVerificationStatus: 'verified',
+      });
+      // Promoted before setRole recorded a status.
+      await ctx.db.insert('userProfiles', { userId: legacyId, role: 'professional' });
+      return { guestId, legacyId };
+    });
+
+    const first = await t.mutation(internal.users.requireReviewForUnreviewedProfessionals, {});
+    expect(first.changed).toBe(2);
+    expect((await profileOf(t, guestId))?.professionalVerificationStatus).toBe('pending');
+    expect((await profileOf(t, legacyId))?.professionalVerificationStatus).toBe('pending');
+    expect((await profileOf(t, proId))?.professionalVerificationStatus).toBe('verified');
+    expect((await profileOf(t, patientId))?.professionalVerificationStatus).toBe('verified');
+    expect((await profileOf(t, adminId))?.role).toBe('admin');
+
+    const pending = await admin.query(api.users.listPendingVerifications, {});
+    expect(pending.map((p) => p.userId).sort()).toEqual([guestId, legacyId].sort());
+    const audit = await t.run((ctx) => ctx.db.query('auditLog').collect());
+    expect(audit.filter((a) => a.action === 'professional-review-required')).toHaveLength(2);
+
+    // Running it again changes nothing.
+    const second = await t.mutation(internal.users.requireReviewForUnreviewedProfessionals, {});
+    expect(second.changed).toBe(0);
+
+    // The admin can then approve the real nurses from the usual list.
+    await admin.mutation(api.users.approveProfessional, { userId: legacyId });
+    expect((await profileOf(t, legacyId))?.professionalVerificationStatus).toBe('verified');
   });
 
   it('the guest professional sign-in is off unless ALLOW_GUEST_PROFESSIONAL is set', async () => {

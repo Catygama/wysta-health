@@ -70,7 +70,7 @@ docs/                           # ENGINEERING.md, TASKS.md, plans/
 - `(auth)/login.tsx` — utente: email/password, "Entrar como convidada" (anónimo), link para profissional
 - `(auth)/register.tsx` — utente signup
 - `(auth)/professional-login.tsx` — profissional: login + guest mode (convidado profissional só se `ALLOW_GUEST_PROFESSIONAL=true` no Convex; desligado em produção)
-- `(auth)/professional-signup.tsx` — pedido de verificação multi-secção (conta, identificação, cédula, documentos, notas). Fica `pending` (`users.submitProfessionalVerification`) até um admin aprovar ou recusar em `(admin)/index.tsx` → "Pedidos de verificação" (`users.approveProfessional` / `rejectProfessional`, com auditoria). Só profissionais `verified` (e admins) têm acesso no servidor: `convex/lib/professional.ts`; os pendentes/recusados veem `screens/ProfessionalVerificationStatus.tsx`.
+- `(auth)/professional-signup.tsx` — pedido de verificação multi-secção (conta, identificação, cédula, documentos, notas). Fica `pending` (`users.submitProfessionalVerification`) até um admin aprovar ou recusar em `(admin)/index.tsx` → "Pedidos de verificação" (`users.approveProfessional` / `rejectProfessional`, com auditoria). Só profissionais com `verified` explícito (e admins) têm acesso no servidor — estado em falta bloqueia: `convex/lib/professional.ts`; os pendentes/recusados veem `screens/ProfessionalVerificationStatus.tsx`. Contas nunca revistas por um admin voltam a `pending` com a migração interna `users:requireReviewForUnreviewedProfessionals` (passos em `docs/plans/professional-review-migration.md`).
 - Guest controlado por `EXPO_PUBLIC_GUEST_AUTH` — qualquer valor que não seja `false` ou `0` mantém os botões visíveis (default: ativo).
 
 ## Deploy
