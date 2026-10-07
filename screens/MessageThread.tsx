@@ -106,8 +106,10 @@ export function MessageThread({
 
   // Right after triage the thread holds only the triage card; tell the patient
   // what to do next instead of leaving a bare composer.
+  // Not in AI chats: the banner above already explains how the assistant works.
   const awaitingFirstQuestion =
     !isProfessional &&
+    !aiOnly &&
     canSend &&
     !closed &&
     filteredMessages.length > 0 &&
@@ -221,9 +223,7 @@ export function MessageThread({
             <View testID="thread-next-step" style={styles.nextStep}>
               <Text style={styles.nextStepTitle}>Agora, conta-nos o que se passa</Text>
               <Text style={styles.nextStepText}>
-                {aiOnly
-                  ? 'Escreve a tua dúvida em baixo. A assistente IA responde-te na hora.'
-                  : 'Escreve a tua dúvida em baixo. Um profissional responde normalmente em 24h.'}
+                Escreve a tua dúvida em baixo. Um profissional responde normalmente em 24h.
               </Text>
             </View>
           ) : null
