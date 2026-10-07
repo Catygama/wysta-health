@@ -210,9 +210,17 @@ export const finalizeAssistantMessage = internalMutation({
 // controls remain effective. The audit row never carries inputText/outputText
 // (per the existing data-minimisation contract), so even the audit reveals
 // nothing about *what* was asked.
+// Anonymous chat: nothing is stored as a conversation. The app keeps the
+// turns in memory and sends the recent ones back as `history` so the
+// assistant can follow the thread; closing the chat discards them.
 export const respondAnonymous = action({
-  args: { query: v.string() },
-  handler: async (ctx, { query }): Promise<{
+  args: {
+    query: v.string(),
+    history: v.optional(
+      v.array(v.object({ fromPatient: v.boolean(), content: v.string() }))
+    ),
+  },
+  handler: async (ctx, { query, history }): Promise<{
     sent: boolean;
     answer: string;
   }> => {
@@ -225,7 +233,12 @@ export const respondAnonymous = action({
 
     const baseVars = {
       query,
-      conversationHistory: 'Pergunta anónima — sem conversa associada.',
+      conversationHistory: history?.length
+        ? history
+            .slice(-20)
+            .map((m) => `${m.fromPatient ? 'Utente' : 'Assistente'}: ${m.content.slice(0, 2000)}`)
+            .join('\n')
+        : 'Conversa anónima, sem mensagens anteriores.',
       patientProfile: profile.patientProfile,
       recentSummary: profile.recentSummary,
       topicAndRisk: 'Anónimo (sem conversa)',
@@ -266,10 +279,13 @@ export const respondAnonymous = action({
     });
 
     const sent = judged.output.action === 'send';
+    // The chat prompt ends every answer with "…espera pela resposta do
+    // profissional…"; there is no professional in an anonymous chat.
     const answer = sent
-      ? stripSuggestClose(judged.output.finalAnswer).text +
-        '\n\n— Assistente AI. Pergunta anónima — não guardada no teu histórico.'
-      : 'Esta pergunta não foi enviada por ser de natureza clínica que requer profissional. Para acompanhamento, abre uma conversa normal — esta resposta não foi guardada.';
+      ? stripSuggestClose(judged.output.finalAnswer)
+          .text.replace(/\s*Para a tua situação concreta, espera pela resposta do profissional ou marca consulta presencial\.?/g, '')
+          .trim()
+      : 'Esta pergunta precisa de um profissional de saúde, por isso não lhe posso responder aqui. Para acompanhamento, abre uma conversa com um profissional no Início.';
 
     return { sent, answer };
   },
