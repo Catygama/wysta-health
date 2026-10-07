@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,7 @@ import {
   Modal,
   TextInput,
   Switch,
-  PanResponder,
-  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useAction } from 'convex/react';
@@ -32,8 +31,16 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { pregnancyClinicalLabel } from '@/constants/profile';
 import type { AlertLevel } from '@/convex/lib/alerts';
 
-type Tab = 'chat' | 'internal' | 'summary';
+// What the options panel shows: the menu, or one of the views it opens.
+type PanelView = 'menu' | 'internal' | 'summary' | 'triage';
 
+// From this width the options panel stays open beside the chat.
+const WIDE_LAYOUT = 900;
+
+// Case screen for professionals: the chat fills the screen (like the
+// patient's). The AI clinical profile and "Recomendar presencial" sit right
+// above the text field; everything else lives in an options panel, a drawer
+// on phones and a fixed column on wide screens.
 export default function ProfessionalConversation() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -47,31 +54,10 @@ export default function ProfessionalConversation() {
   const { setIsTabBarHidden } = useTabBar();
   const [redirectOpen, setRedirectOpen] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
-  const [tab, setTab] = useState<Tab>('chat');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [panelView, setPanelView] = useState<PanelView>('menu');
   const { theme } = useUnistyles();
-
-  // Draggable split between the case details (top) and the chat (bottom).
-  // null = default size (up to 45% of the screen) until the divider is dragged.
-  const [headHeight, setHeadHeight] = useState<number | null>(null);
-  const headHeightRef = useRef(0);
-  const bodyHeightRef = useRef(0);
-  const maxHeadRef = useRef(0);
-  const dragStartRef = useRef(0);
-  const splitResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderTerminationRequest: () => false,
-      onPanResponderGrant: () => {
-        dragStartRef.current = headHeightRef.current;
-        // The details can take whatever the chat body has beyond its minimum.
-        maxHeadRef.current = Math.max(0, headHeightRef.current + bodyHeightRef.current - MIN_THREAD_HEIGHT);
-      },
-      onPanResponderMove: (_, g) => {
-        setHeadHeight(Math.min(Math.max(dragStartRef.current + g.dy, 0), maxHeadRef.current));
-      },
-    })
-  ).current;
+  const wide = useWindowDimensions().width >= WIDE_LAYOUT;
 
   useFocusEffect(
     useCallback(() => {
@@ -91,8 +77,8 @@ export default function ProfessionalConversation() {
   if (!conversation) return null;
 
   const topic = TOPICS.find((t) => t.id === conversation.topic);
-  const pastel = theme.topic[topic?.color ?? 'general'];
   const triageMessage = messages?.find((m) => m.metadata?.triageData);
+  const triage = triageMessage?.metadata?.triageData;
   const isMine = conversation.professionalId === user._id;
   const isClosed = conversation.status === 'closed';
   const isAiOnly = conversation.kind === 'ai-only';
@@ -101,170 +87,141 @@ export default function ProfessionalConversation() {
   const isAssignedToOther = !!conversation.professionalId && !isMine;
   const canClose = isMine && !isClosed;
   const canEscalate = isMine && !isClosed;
-  const openRelated = (relatedId: string) =>
-    router.push({ pathname: '/(professional)/cases/[id]', params: { id: relatedId } });
+  const patientName =
+    conversation.patient?.displayName ?? conversation.patient?.email ?? 'Utente convidada';
+  const priorityLabel = PRIORITY_LABELS[conversation.priority] ?? conversation.priority;
 
-  const statusColor = STATUS_COLORS[conversation.status] ?? theme.colors.textSecondary;
-  const priorityColor = PRIORITY_COLORS[conversation.priority] ?? theme.colors.textSecondary;
+  const openPanel = (view: PanelView = 'menu') => {
+    setPanelView(view);
+    if (!wide) setDrawerOpen(true);
+  };
+
+  const panel = (
+    <OptionsPanel
+      view={panelView}
+      onView={setPanelView}
+      onClose={wide ? undefined : () => setDrawerOpen(false)}
+      conversationId={id}
+      currentUserId={user._id}
+      conversation={conversation}
+      triage={triage}
+      messageCount={messages?.length ?? 0}
+      isMine={isMine}
+      isClosed={isClosed}
+      canAssign={canAssign}
+      isAssignedToOther={isAssignedToOther}
+      canEscalate={canEscalate}
+      canClose={canClose}
+      onAssign={() => assign({ id: id as any })}
+      onMarkUrgent={() => markUrgent({ id: id as any })}
+      onRequestClose={() => setConfirmClose(true)}
+      onOpenRelated={(relatedId) =>
+        router.push({ pathname: '/(professional)/cases/[id]', params: { id: relatedId } })
+      }
+    />
+  );
+
+  // Top of the messages: the AI clinical profile (collapsed), then any linked
+  // chat with the AI.
+  const threadHeader = (
+    <View style={styles.threadHeader}>
+      {conversation.patient && (
+        <ClinicalProfile
+          patientId={conversation.patientId}
+          aiSummary={conversation.patient.aiSummary}
+          aiSummaryAt={conversation.patient.aiSummaryAt}
+        />
+      )}
+      <AiContextBlock conversationId={id} />
+    </View>
+  );
+
+  const aboveComposer = (
+    <View style={styles.quick}>
+      <View style={styles.quickRow}>
+        {canAssign && (
+          <QuickChip
+            testID="conversation-assign-button"
+            icon={{ sf: 'person.crop.circle.badge.checkmark', ion: 'person-add-outline' }}
+            label={isAssignedToOther ? 'Assumir conversa' : 'Atribuir a mim'}
+            primary
+            onPress={() => assign({ id: id as any })}
+          />
+        )}
+        {canEscalate && (
+          <QuickChip
+            testID="conversation-recommend-in-person"
+            icon={{ sf: 'cross.case', ion: 'medkit-outline' }}
+            label="Recomendar presencial"
+            onPress={() => setRedirectOpen(true)}
+          />
+        )}
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.root}>
-      {/* The topic is already the body heading; the header names the patient. */}
       <Stack.Screen
         options={{
-          title:
-            conversation.patient?.displayName ?? conversation.patient?.email ?? topic?.label ?? 'Conversa',
+          headerTitle: () => (
+            <View>
+              <Text style={styles.headerName} numberOfLines={1}>
+                {patientName}
+              </Text>
+              <Text style={styles.headerSub} numberOfLines={1}>
+                {topic?.label ?? conversation.topic} · Prioridade {priorityLabel.toLowerCase()}
+              </Text>
+            </View>
+          ),
+          headerRight: wide
+            ? undefined
+            : () => (
+                <Pressable
+                  testID="case-options-open"
+                  accessibilityRole="button"
+                  accessibilityLabel="Abrir opções do caso"
+                  hitSlop={8}
+                  onPress={() => openPanel('menu')}
+                  style={({ pressed }) => [styles.headerBtn, pressed && styles.dim]}
+                >
+                  <Icon
+                    name={{ sf: 'sidebar.right', ion: 'options-outline' }}
+                    size={22}
+                    color={theme.colors.textPrimary}
+                  />
+                </Pressable>
+              ),
         }}
       />
-      <ScrollView
-        style={[styles.headScroll, headHeight !== null && { height: headHeight, maxHeight: undefined }]}
-        contentContainerStyle={styles.head}
-      >
-        <View style={styles.topicRow}>
-          {topic && (
-            <View style={[styles.topicChip, { backgroundColor: pastel.fill }]}>
-              <Icon name={topic.icon} size={18} color={pastel.on} />
-            </View>
-          )}
-          <Text style={styles.title} numberOfLines={1}>
-            {topic?.label ?? conversation.topic}
-          </Text>
-        </View>
 
-        <View style={styles.badges}>
-          <Badge label={STATUS_LABELS[conversation.status] ?? conversation.status} color={statusColor} />
-          <Badge
-            label={`Prioridade ${PRIORITY_LABELS[conversation.priority] ?? conversation.priority}`}
-            color={priorityColor}
-          />
-          <Badge
-            label={isMine ? 'Atribuída a si' : 'Não atribuída a si'}
-            color={isMine ? theme.colors.success : theme.colors.textTertiary}
-          />
-        </View>
+      <View style={styles.main}>
+        <MessageThread
+          conversationId={id}
+          currentUserId={user._id}
+          isProfessional
+          scope="chat"
+          canSend={isMine}
+          closed={isClosed}
+          header={threadHeader}
+          aboveComposer={!isClosed && (canAssign || canEscalate) ? aboveComposer : null}
+        />
+      </View>
 
-        {conversation.patient && (
-          <View style={styles.patient}>
-            <Text style={styles.patientLine}>
-              {conversation.patient.displayName ?? conversation.patient.email}
-              {conversation.patient.ageRange ? ` • ${conversation.patient.ageRange}` : ''}
-              {conversation.patient.location ? ` • ${conversation.patient.location}` : ''}
-              {conversation.patient.pregnancyStatus
-                ? ` • ${pregnancyClinicalLabel(conversation.patient.pregnancyStatus)}`
-                : ''}
-            </Text>
-            {(conversation.patient.conditions?.length ?? 0) > 0 && (
-              <Text style={styles.patientMeta}>
-                <Text style={styles.patientMetaStrong}>Condições: </Text>
-                {conversation.patient.conditions?.join(', ')}
-              </Text>
-            )}
-            {(conversation.patient.medications?.length ?? 0) > 0 && (
-              <Text style={styles.patientMeta}>
-                <Text style={styles.patientMetaStrong}>Medicação: </Text>
-                {conversation.patient.medications?.join(', ')}
-              </Text>
-            )}
-            <UserSummaryBanner
-              patientId={conversation.patientId}
-              aiSummary={conversation.patient.aiSummary}
-              aiSummaryAt={conversation.patient.aiSummaryAt}
+      {wide && <View style={styles.sideColumn}>{panel}</View>}
+
+      {!wide && (
+        <Modal visible={drawerOpen} transparent animationType="fade" onRequestClose={() => setDrawerOpen(false)}>
+          <View style={styles.drawerWrap}>
+            <Pressable
+              style={styles.drawerShade}
+              accessibilityLabel="Fechar opções"
+              onPress={() => setDrawerOpen(false)}
             />
+            <View style={styles.drawer}>{panel}</View>
           </View>
-        )}
-
-        {triageMessage?.metadata?.triageData && (
-          <TriageSummary
-            riskLevel={triageMessage.metadata.triageData.riskLevel}
-            alertLevel={conversation.alertLevel}
-            responses={triageMessage.metadata.triageData.responses ?? {}}
-          />
-        )}
-
-        <View style={styles.actions}>
-          {canAssign && (
-            <ActionButton
-              testID="conversation-assign-button"
-              label={isAssignedToOther ? 'Assumir conversa' : 'Atribuir a mim'}
-              variant="primary"
-              onPress={() => assign({ id: id as any })}
-            />
-          )}
-          {canEscalate && conversation.priority !== 'urgent' && (
-            <ActionButton
-              testID="conversation-mark-urgent"
-              label="Aumentar prioridade"
-              variant="danger"
-              onPress={() => markUrgent({ id: id as any })}
-            />
-          )}
-          {canEscalate && (
-            <ActionButton
-              testID="conversation-recommend-in-person"
-              label="Recomendar presencial"
-              variant="secondary"
-              onPress={() => setRedirectOpen(true)}
-            />
-          )}
-          {canClose && (
-            <ActionButton
-              testID="conversation-close-button"
-              label="Encerrar"
-              variant="secondary"
-              onPress={() => setConfirmClose(true)}
-            />
-          )}
-        </View>
-        {/* Chats with the AI show inside the chat tab (AiContextBlock). */}
-        {conversation.contextConversation && conversation.contextConversation.kind !== 'ai-only' && (
-          <RelatedLink
-            testID="related-context-conversation"
-            text="Esta conversa tem contexto de uma conversa anterior com profissional."
-            action="Ver conversa anterior"
-            onPress={() => openRelated(conversation.contextConversation!._id)}
-          />
-        )}
-      </ScrollView>
-
-      <View
-        {...splitResponder.panHandlers}
-        // The handle sits right under the details, so its y is their height.
-        onLayout={(e) => (headHeightRef.current = e.nativeEvent.layout.y)}
-        style={[styles.splitHandle, Platform.OS === 'web' && (WEB_ROW_RESIZE as object)]}
-        accessibilityLabel="Arrastar para ajustar o tamanho do chat"
-        testID="case-split-handle"
-      >
-        <View style={styles.splitGrip} />
-      </View>
-
-      <View style={styles.tabBar}>
-        <TabButton testID="thread-tab-chat" label="Chat" active={tab === 'chat'} onPress={() => setTab('chat')} />
-        <TabButton testID="thread-tab-internal" label="Notas internas" active={tab === 'internal'} onPress={() => setTab('internal')} />
-        <TabButton testID="thread-tab-summary" label="Sumário" active={tab === 'summary'} onPress={() => setTab('summary')} />
-      </View>
-
-      <View style={styles.body} onLayout={(e) => (bodyHeightRef.current = e.nativeEvent.layout.height)}>
-        {tab === 'summary' ? (
-          <SummaryPanel
-            conversationId={id}
-            triage={triageMessage?.metadata?.triageData}
-            messageCount={messages?.length ?? 0}
-            aiSummary={conversation.aiSummary}
-            aiSummaryAt={conversation.aiSummaryAt}
-            canGenerate={isMine && !!messages && messages.length > 0}
-          />
-        ) : (
-          <MessageThread
-            conversationId={id}
-            currentUserId={user._id}
-            isProfessional
-            scope={tab === 'internal' ? 'internal' : 'chat'}
-            canSend={isMine}
-            closed={isClosed}
-            header={tab === 'chat' ? <AiContextBlock conversationId={id} /> : null}
-          />
-        )}
-      </View>
+        </Modal>
+      )}
 
       <ConfirmDialog
         testID="close-conversation-dialog"
@@ -276,6 +233,7 @@ export default function ProfessionalConversation() {
         onConfirm={async () => {
           await close({ id: id as any });
           setConfirmClose(false);
+          setDrawerOpen(false);
         }}
       />
       <RecommendInPersonSheet
@@ -289,21 +247,280 @@ export default function ProfessionalConversation() {
   );
 }
 
-function RelatedLink({
-  testID,
-  text,
-  action,
-  onPress,
-}: {
-  testID: string;
-  text: string;
-  action: string;
-  onPress: () => void;
-}) {
+type Triage = {
+  topic: string;
+  responses: Record<string, unknown>;
+  riskLevel: string;
+  alertLevel?: AlertLevel;
+};
+
+type OptionsPanelProps = {
+  view: PanelView;
+  onView: (v: PanelView) => void;
+  /** Drawer only: closes it. Absent in the fixed side column. */
+  onClose?: () => void;
+  conversationId: string;
+  currentUserId: string;
+  conversation: any;
+  triage?: Triage;
+  messageCount: number;
+  isMine: boolean;
+  isClosed: boolean;
+  canAssign: boolean;
+  isAssignedToOther: boolean;
+  canEscalate: boolean;
+  canClose: boolean;
+  onAssign: () => void;
+  onMarkUrgent: () => void;
+  onRequestClose: () => void;
+  onOpenRelated: (id: string) => void;
+};
+
+// The case options: status and patient details, then the menu (internal
+// notes, summary, triage answers, priority, close). Notes, summary and triage
+// open inside the panel with a "‹ Opções" back link.
+function OptionsPanel(p: OptionsPanelProps) {
+  const { theme } = useUnistyles();
+  const c = p.conversation;
+  const statusColor = STATUS_COLORS[c.status] ?? theme.colors.textSecondary;
+  const priorityColor = PRIORITY_COLORS[c.priority] ?? theme.colors.textSecondary;
+
+  const header = (title: string, back: boolean) => (
+    <View style={styles.panelHeader}>
+      {back ? (
+        <Pressable
+          testID="case-panel-back"
+          accessibilityRole="button"
+          accessibilityLabel="Voltar às opções"
+          hitSlop={8}
+          onPress={() => p.onView('menu')}
+          style={styles.panelBack}
+        >
+          <Icon name={{ sf: 'chevron.left', ion: 'chevron-back' }} size={20} color={theme.colors.textPrimary} />
+          <Text style={styles.panelTitle}>{title}</Text>
+        </Pressable>
+      ) : (
+        <Text style={styles.panelTitle}>{title}</Text>
+      )}
+      {p.onClose && (
+        <Pressable
+          testID="case-options-close"
+          accessibilityRole="button"
+          accessibilityLabel="Fechar opções"
+          hitSlop={8}
+          onPress={p.onClose}
+        >
+          <Icon name={{ sf: 'xmark', ion: 'close' }} size={22} color={theme.colors.textSecondary} />
+        </Pressable>
+      )}
+    </View>
+  );
+
+  if (p.view === 'internal') {
+    return (
+      <View style={styles.panel}>
+        {header('Notas internas', true)}
+        <View style={styles.panelFill}>
+          <MessageThread
+            conversationId={p.conversationId}
+            currentUserId={p.currentUserId}
+            isProfessional
+            scope="internal"
+            canSend={p.isMine}
+            closed={p.isClosed}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  if (p.view === 'summary') {
+    return (
+      <View style={styles.panel}>
+        {header('Sumário', true)}
+        <SummaryPanel
+          conversationId={p.conversationId}
+          messageCount={p.messageCount}
+          aiSummary={c.aiSummary}
+          aiSummaryAt={c.aiSummaryAt}
+          canGenerate={p.isMine && p.messageCount > 0}
+        />
+      </View>
+    );
+  }
+
+  if (p.view === 'triage') {
+    return (
+      <View style={styles.panel}>
+        {header('Respostas da triagem', true)}
+        <ScrollView contentContainerStyle={styles.panelBody}>
+          {p.triage ? (
+            <TriageSummary
+              riskLevel={p.triage.riskLevel}
+              alertLevel={c.alertLevel}
+              responses={p.triage.responses ?? {}}
+            />
+          ) : (
+            <Text style={styles.muted}>Esta conversa não tem questionário de triagem.</Text>
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
   return (
-    <Pressable testID={testID} onPress={onPress} style={styles.relatedBanner}>
-      <Text style={styles.relatedText}>{text}</Text>
-      <Text style={styles.relatedAction}>{action} →</Text>
+    <View style={styles.panel}>
+      {header('Opções', false)}
+      <ScrollView contentContainerStyle={styles.panelBody}>
+        <View style={styles.badges}>
+          <Badge label={STATUS_LABELS[c.status] ?? c.status} color={statusColor} />
+          <Badge label={`Prioridade ${PRIORITY_LABELS[c.priority] ?? c.priority}`} color={priorityColor} />
+          <Badge
+            label={p.isMine ? 'Atribuída a si' : 'Não atribuída a si'}
+            color={p.isMine ? theme.colors.success : theme.colors.textTertiary}
+          />
+        </View>
+
+        {c.patient && (
+          <View style={styles.patient}>
+            <Text style={styles.patientLine}>
+              {c.patient.displayName ?? c.patient.email ?? 'Utente convidada'}
+              {c.patient.ageRange ? ` • ${c.patient.ageRange}` : ''}
+              {c.patient.location ? ` • ${c.patient.location}` : ''}
+              {c.patient.pregnancyStatus ? ` • ${pregnancyClinicalLabel(c.patient.pregnancyStatus)}` : ''}
+            </Text>
+            {(c.patient.conditions?.length ?? 0) > 0 && (
+              <Text style={styles.patientMeta}>
+                <Text style={styles.patientMetaStrong}>Condições: </Text>
+                {c.patient.conditions.join(', ')}
+              </Text>
+            )}
+            {(c.patient.medications?.length ?? 0) > 0 && (
+              <Text style={styles.patientMeta}>
+                <Text style={styles.patientMetaStrong}>Medicação: </Text>
+                {c.patient.medications.join(', ')}
+              </Text>
+            )}
+          </View>
+        )}
+
+        <View style={styles.menu}>
+          {p.canAssign && (
+            <MenuItem
+              testID="case-menu-assign"
+              icon={{ sf: 'person.crop.circle.badge.checkmark', ion: 'person-add-outline' }}
+              label={p.isAssignedToOther ? 'Assumir conversa' : 'Atribuir a mim'}
+              onPress={p.onAssign}
+            />
+          )}
+          <MenuItem
+            testID="thread-tab-internal"
+            icon={{ sf: 'note.text', ion: 'document-text-outline' }}
+            label="Notas internas"
+            chevron
+            onPress={() => p.onView('internal')}
+          />
+          <MenuItem
+            testID="thread-tab-summary"
+            icon={{ sf: 'text.alignleft', ion: 'reader-outline' }}
+            label="Sumário"
+            chevron
+            onPress={() => p.onView('summary')}
+          />
+          <MenuItem
+            testID="case-menu-triage"
+            icon={{ sf: 'list.bullet.clipboard', ion: 'clipboard-outline' }}
+            label="Respostas da triagem"
+            chevron
+            onPress={() => p.onView('triage')}
+          />
+          {p.canEscalate && c.priority !== 'urgent' && (
+            <MenuItem
+              testID="conversation-mark-urgent"
+              icon={{ sf: 'arrow.up', ion: 'arrow-up' }}
+              label="Aumentar prioridade"
+              onPress={p.onMarkUrgent}
+            />
+          )}
+          {c.contextConversation && c.contextConversation.kind !== 'ai-only' && (
+            <MenuItem
+              testID="related-context-conversation"
+              icon={{ sf: 'clock.arrow.circlepath', ion: 'time-outline' }}
+              label="Ver conversa anterior"
+              chevron
+              onPress={() => p.onOpenRelated(c.contextConversation._id)}
+            />
+          )}
+          {p.canClose && (
+            <MenuItem
+              testID="conversation-close-button"
+              icon={{ sf: 'xmark.circle', ion: 'close-circle-outline' }}
+              label="Encerrar conversa"
+              danger
+              onPress={p.onRequestClose}
+            />
+          )}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function MenuItem({
+  icon,
+  label,
+  onPress,
+  chevron,
+  danger,
+  testID,
+}: {
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+  chevron?: boolean;
+  danger?: boolean;
+  testID?: string;
+}) {
+  const { theme } = useUnistyles();
+  const color = danger ? PRIORITY_COLORS.urgent : theme.colors.textPrimary;
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.menuItem, pressed && styles.dim]}
+    >
+      <Icon name={icon} size={18} color={color} />
+      <Text style={[styles.menuLabel, { color }]}>{label}</Text>
+      {chevron && <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={16} color={theme.colors.textTertiary} />}
+    </Pressable>
+  );
+}
+
+function QuickChip({
+  icon,
+  label,
+  onPress,
+  primary,
+  testID,
+}: {
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+  primary?: boolean;
+  testID?: string;
+}) {
+  const { theme } = useUnistyles();
+  const color = primary ? theme.colors.onInk : theme.colors.textPrimary;
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.chip, primary ? styles.chipPrimary : styles.chipOutline, pressed && styles.dim]}
+    >
+      <Icon name={icon} size={14} color={color} />
+      <Text style={[styles.chipText, { color }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -316,33 +533,14 @@ function Badge({ label, color }: { label: string; color: string }) {
   );
 }
 
-type TabButtonProps = { label: string; active: boolean; onPress: () => void; testID?: string };
-
-function TabButton({ label, active, onPress, testID }: TabButtonProps) {
-  styles.useVariants({ active });
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      style={styles.tab}
-    >
-      <Text style={styles.tabText}>{label}</Text>
-    </Pressable>
-  );
-}
-
 function SummaryPanel({
   conversationId,
-  triage,
   messageCount,
   aiSummary,
   aiSummaryAt,
   canGenerate,
 }: {
   conversationId: string;
-  triage?: { topic: string; responses: Record<string, unknown>; riskLevel: string; alertLevel?: AlertLevel };
   messageCount: number;
   aiSummary?: string;
   aiSummaryAt?: number;
@@ -368,27 +566,19 @@ function SummaryPanel({
   const genDisabled = !canGenerate || busy;
 
   return (
-    <ScrollView style={styles.summaryScroll} contentContainerStyle={styles.summary} contentInsetAdjustmentBehavior="automatic">
-      {triage && <TriageSummary riskLevel={triage.riskLevel} alertLevel={triage.alertLevel} responses={triage.responses ?? {}} />}
-      <View style={styles.statsCard}>
-        <Text style={styles.statsTitle}>Estatísticas da conversa</Text>
-        <Text style={styles.statsLine}>Mensagens: {messageCount}</Text>
-      </View>
-
+    <ScrollView contentContainerStyle={styles.panelBody}>
+      <Text style={styles.muted}>Mensagens nesta conversa: {messageCount}</Text>
       <View style={styles.aiCard}>
         <View style={styles.aiHeader}>
           <Text style={styles.aiTitle}>Sumário AI</Text>
           {aiSummaryAt && <Text style={styles.aiDate}>{new Date(aiSummaryAt).toLocaleString('pt-PT')}</Text>}
         </View>
-
         {aiSummary ? (
           <Text style={styles.aiBody}>{aiSummary}</Text>
         ) : (
-          <Text style={styles.aiEmpty}>Ainda sem sumário. Gera um resumo clínico desta conversa com AI.</Text>
+          <Text style={styles.muted}>Ainda sem sumário. Gera um resumo clínico desta conversa com AI.</Text>
         )}
-
         {error && <Text style={styles.error}>{error}</Text>}
-
         <Pressable
           testID="generate-ai-summary-button"
           disabled={genDisabled}
@@ -400,32 +590,17 @@ function SummaryPanel({
             {busy ? 'A gerar...' : aiSummary ? 'Re-gerar sumário' : 'Gerar sumário AI'}
           </Text>
         </Pressable>
-
         {!canGenerate && !busy && (
-          <Text style={styles.aiEmpty}>Atribui-te a conversa e aguarda mensagens antes de gerar.</Text>
+          <Text style={styles.muted}>Atribui-te a conversa e aguarda mensagens antes de gerar.</Text>
         )}
       </View>
     </ScrollView>
   );
 }
 
-type ActionButtonProps = {
-  label: string;
-  variant: 'primary' | 'secondary' | 'danger';
-  onPress: () => void;
-  testID?: string;
-};
-
-function ActionButton({ label, variant, onPress, testID }: ActionButtonProps) {
-  styles.useVariants({ kind: variant });
-  return (
-    <Pressable testID={testID} onPress={onPress} style={({ pressed }) => [styles.action, pressed && styles.dim]}>
-      <Text style={styles.actionText}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function UserSummaryBanner({
+// AI clinical profile of the patient, collapsed by default at the top of the
+// messages; tap to read it and to (re)generate it.
+function ClinicalProfile({
   patientId,
   aiSummary,
   aiSummaryAt,
@@ -436,6 +611,7 @@ function UserSummaryBanner({
 }) {
   const { theme } = useUnistyles();
   const generate = useAction(api.ai.userSummary.generate);
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -452,26 +628,42 @@ function UserSummaryBanner({
   }
 
   return (
-    <View style={styles.usbCard}>
-      <View style={styles.usbHeader}>
-        <Text style={styles.usbTitle}>Perfil clínico (AI)</Text>
-        {aiSummaryAt && <Text style={styles.usbDate}>{new Date(aiSummaryAt).toLocaleDateString('pt-PT')}</Text>}
-      </View>
-      {aiSummary ? (
-        <Text style={styles.usbBody}>{aiSummary}</Text>
-      ) : (
-        <Text style={styles.usbEmpty}>Sem perfil gerado.</Text>
-      )}
-      {error && <Text style={styles.errorXs}>{error}</Text>}
+    <View style={styles.profile}>
       <Pressable
-        testID="generate-user-summary-button"
-        disabled={busy}
-        onPress={onGenerate}
-        style={[styles.usbBtn, busy && styles.usbBtnOff]}
+        testID="clinical-profile-toggle"
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((o) => !o)}
+        style={({ pressed }) => [styles.profileHead, pressed && styles.dim]}
       >
-        {busy && <ActivityIndicator color={theme.colors.onInk} size="small" />}
-        <Text style={styles.usbBtnText}>{busy ? 'A gerar...' : aiSummary ? 'Atualizar' : 'Gerar perfil AI'}</Text>
+        <Icon name={{ sf: 'sparkles', ion: 'sparkles-outline' }} size={14} color={theme.topic.intimate.on} />
+        <Text style={styles.profileTitle}>Perfil clínico (IA)</Text>
+        {aiSummaryAt && <Text style={styles.aiDate}>{new Date(aiSummaryAt).toLocaleDateString('pt-PT')}</Text>}
+        <Icon
+          name={open ? { sf: 'chevron.up', ion: 'chevron-up' } : { sf: 'chevron.down', ion: 'chevron-down' }}
+          size={16}
+          color={theme.topic.intimate.on}
+        />
       </Pressable>
+      {open && (
+        <View style={styles.profileBody}>
+          {aiSummary ? (
+            <Text style={styles.profileText}>{aiSummary}</Text>
+          ) : (
+            <Text style={styles.muted}>Sem perfil gerado.</Text>
+          )}
+          {error && <Text style={styles.error}>{error}</Text>}
+          <Pressable
+            testID="generate-user-summary-button"
+            disabled={busy}
+            onPress={onGenerate}
+            style={[styles.profileBtn, busy && styles.dim]}
+          >
+            {busy && <ActivityIndicator color={theme.colors.onInk} size="small" />}
+            <Text style={styles.profileBtnText}>{busy ? 'A gerar...' : aiSummary ? 'Atualizar' : 'Gerar perfil AI'}</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -560,39 +752,74 @@ function RecommendInPersonSheet({
   );
 }
 
-// Room always left for the chat body (messages + composer) when dragging down.
-const MIN_THREAD_HEIGHT = 200;
-// Web-only cursor/selection props, not in RN's style types.
-const WEB_ROW_RESIZE = { cursor: 'row-resize', userSelect: 'none', touchAction: 'none' };
-
 const styles = StyleSheet.create((theme) => ({
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background },
-  root: { flex: 1, backgroundColor: theme.colors.background },
-  headScroll: { flexGrow: 0, maxHeight: '45%' },
-  splitHandle: {
-    height: 18,
+  root: { flex: 1, flexDirection: 'row', backgroundColor: theme.colors.background },
+  main: { flex: 1 },
+  headerName: { fontFamily: fonts.displayBold, fontSize: 17, color: theme.colors.textPrimary },
+  headerSub: { fontSize: 12, color: theme.colors.textSecondary },
+  headerBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.xs },
+  dim: { opacity: 0.7 },
+  threadHeader: { gap: theme.spacing.sm, marginBottom: theme.spacing.xs },
+  // Above the composer
+  quick: { gap: theme.spacing.sm },
+  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  chip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.divider,
-  },
-  splitGrip: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: theme.colors.border,
-  },
-  head: { padding: theme.spacing.md, gap: theme.spacing.sm },
-  topicRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  topicChip: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.pill,
     borderCurve: 'continuous',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  title: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText, flex: 1 },
+  chipPrimary: { backgroundColor: theme.colors.ink },
+  chipOutline: { borderWidth: 1.5, borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+  chipText: { fontSize: 13, fontWeight: '600' },
+  // Clinical profile
+  profile: {
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    backgroundColor: theme.colors.surface,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.topic.intimate.fill,
+    overflow: 'hidden',
+  },
+  profileHead: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, padding: theme.spacing.sm },
+  profileTitle: { flex: 1, fontSize: 13, fontWeight: '600', color: theme.topic.intimate.on },
+  profileBody: { gap: theme.spacing.sm, paddingHorizontal: theme.spacing.sm, paddingBottom: theme.spacing.sm },
+  profileText: { fontSize: 13, lineHeight: 19, color: theme.colors.textPrimary },
+  profileBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.ink,
+  },
+  profileBtnText: { fontSize: 12, fontWeight: '500', color: theme.colors.onInk },
+  // Options panel (drawer on phones, fixed column on wide screens)
+  sideColumn: { width: 340, borderLeftWidth: 1, borderLeftColor: theme.colors.divider },
+  drawerWrap: { flex: 1, flexDirection: 'row' },
+  drawerShade: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
+  drawer: { width: '85%', maxWidth: 380, backgroundColor: theme.colors.background },
+  panel: { flex: 1, backgroundColor: theme.colors.background },
+  panelFill: { flex: 1 },
+  panelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    minHeight: 52,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.divider,
+  },
+  panelBack: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  panelTitle: { fontFamily: fonts.displayBold, fontSize: 17, color: theme.colors.textPrimary },
+  panelBody: { padding: theme.spacing.md, gap: theme.spacing.md },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
   badge: { paddingVertical: 2, paddingHorizontal: theme.spacing.sm, borderRadius: theme.radius.pill },
   badgeText: { fontSize: 12, fontWeight: '500' },
@@ -600,81 +827,24 @@ const styles = StyleSheet.create((theme) => ({
   patientLine: { fontSize: 14, color: theme.colors.textSecondary },
   patientMeta: { fontSize: 12, color: theme.colors.textSecondary },
   patientMetaStrong: { fontWeight: '500' },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
-  relatedBanner: {
-    backgroundColor: theme.colors.surfaceSunken,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-    padding: theme.spacing.sm,
-    gap: 2,
-  },
-  relatedTitle: { fontSize: 12, fontWeight: '500', color: theme.colors.ink },
-  relatedText: { fontSize: 13, color: theme.colors.textPrimary },
-  relatedAction: { fontSize: 13, fontWeight: '500', color: theme.colors.accent },
-  // Tabs
-  tabBar: { flexDirection: 'row', backgroundColor: theme.colors.background },
-  tab: {
-    flex: 1,
-    paddingVertical: theme.spacing.sm,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    variants: {
-      active: {
-        true: { borderBottomColor: theme.colors.inkText },
-        false: { borderBottomColor: 'transparent' },
-      },
-    },
-  },
-  tabText: {
-    fontSize: 14,
-    variants: {
-      active: {
-        true: { color: theme.colors.inkText, fontWeight: '500' },
-        false: { color: theme.colors.textSecondary, fontWeight: '500' },
-      },
-    },
-  },
-  body: { flex: 1 },
-  // Action buttons
-  action: {
-    flex: 1,
-    borderRadius: theme.radius.pill,
-    borderCurve: 'continuous',
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    alignItems: 'center',
-    variants: {
-      kind: {
-        primary: { backgroundColor: theme.colors.ink },
-        danger: { backgroundColor: theme.colors.danger },
-        secondary: { backgroundColor: theme.colors.surface },
-      },
-    },
-  },
-  dim: { opacity: 0.85 },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    variants: {
-      kind: {
-        primary: { color: theme.colors.onInk },
-        danger: { color: theme.colors.onInk },
-        secondary: { color: theme.colors.textPrimary },
-      },
-    },
-  },
-  // Summary panel
-  summaryScroll: { flex: 1, backgroundColor: theme.colors.background },
-  summary: { padding: theme.spacing.lg, gap: theme.spacing.md },
-  statsCard: {
+  menu: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     borderCurve: 'continuous',
-    padding: theme.spacing.md,
-    gap: theme.spacing.xs,
+    overflow: 'hidden',
   },
-  statsTitle: { fontFamily: fonts.displayBold, fontSize: 14, color: theme.colors.textPrimary },
-  statsLine: { fontSize: 14, color: theme.colors.textSecondary },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    paddingVertical: 14,
+    paddingHorizontal: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.divider,
+  },
+  menuLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
+  muted: { fontSize: 13, color: theme.colors.textSecondary },
+  // Summary
   aiCard: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.md,
@@ -686,11 +856,9 @@ const styles = StyleSheet.create((theme) => ({
   },
   aiHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   aiTitle: { fontFamily: fonts.displayBold, fontSize: 14, color: theme.topic.intimate.on },
-  aiDate: { fontSize: 12, color: theme.colors.textSecondary },
+  aiDate: { fontSize: 12, color: theme.colors.textTertiary },
   aiBody: { fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 },
-  aiEmpty: { fontSize: 14, color: theme.colors.textSecondary },
-  error: { fontSize: 14, color: theme.colors.danger },
-  errorXs: { fontSize: 12, color: theme.colors.danger },
+  error: { fontSize: 13, color: theme.colors.danger },
   genBtn: {
     borderRadius: theme.radius.pill,
     paddingVertical: theme.spacing.sm,
@@ -704,34 +872,6 @@ const styles = StyleSheet.create((theme) => ({
   genBtnOff: { backgroundColor: theme.colors.surfaceSunken },
   genBtnText: { fontSize: 14, fontWeight: '500', color: theme.colors.onInk },
   genBtnTextOff: { color: theme.colors.textTertiary },
-  // UserSummaryBanner
-  usbCard: {
-    marginTop: theme.spacing.sm,
-    padding: theme.spacing.sm,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-    backgroundColor: theme.colors.surface,
-    borderLeftWidth: 3,
-    borderLeftColor: theme.topic.intimate.fill,
-    gap: theme.spacing.xs,
-  },
-  usbHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  usbTitle: { fontSize: 12, fontWeight: '500', color: theme.topic.intimate.on },
-  usbDate: { fontSize: 12, color: theme.colors.textTertiary },
-  usbBody: { fontSize: 12, color: theme.colors.textPrimary, lineHeight: 18 },
-  usbEmpty: { fontSize: 12, color: theme.colors.textSecondary },
-  usbBtn: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.ink,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
-  usbBtnOff: { opacity: 0.7 },
-  usbBtnText: { fontSize: 12, fontWeight: '500', color: theme.colors.onInk },
   // Sheets
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   sheet: {
@@ -744,17 +884,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sheetTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.textPrimary },
-  sheetNote: { fontSize: 12, color: theme.colors.textSecondary },
-  sheetInput: {
-    fontSize: 14,
-    color: theme.colors.textPrimary,
-    backgroundColor: theme.colors.surfaceSunken,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-    padding: theme.spacing.sm,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
   sheetInputShort: {
     fontSize: 14,
     color: theme.colors.textPrimary,
