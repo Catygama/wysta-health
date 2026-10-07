@@ -1,5 +1,5 @@
-import { ScrollView, View, Text, ActivityIndicator } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter, useSegments } from 'expo-router';
+import { ScrollView, View, Text, ActivityIndicator, Pressable } from 'react-native';
+import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
@@ -37,8 +37,23 @@ export function ArticleScreen() {
       contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
     >
-      {/* Header names where the back arrow goes; the topic is in the meta line. */}
-      <Stack.Screen options={{ title: 'Explorar' }} />
+      {/* In the text column (not the stack header) so it lines up with the
+          title on wide screens. Goes back, or to the list when opened by link. */}
+      <Pressable
+        testID="header-back"
+        accessibilityRole="button"
+        accessibilityLabel="Voltar ao Explorar"
+        hitSlop={8}
+        onPress={() =>
+          router.canGoBack()
+            ? router.back()
+            : router.replace(isPatient ? '/(patient)/education' : '/(professional)/library')
+        }
+        style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
+      >
+        <Icon name={{ sf: 'chevron.left', ion: 'chevron-back' }} size={20} color={theme.colors.textPrimary} />
+        <Text style={styles.backText}>Explorar</Text>
+      </Pressable>
       <View style={styles.head}>
         <Text style={styles.title}>{article.title}</Text>
 
@@ -170,13 +185,23 @@ const styles = StyleSheet.create((theme) => ({
   // Readable line length on wide screens: one centred column.
   content: {
     padding: theme.spacing.lg,
-    // The header ("‹ Explorar") already sits just above the title.
-    paddingTop: theme.spacing.xs,
+    paddingTop: theme.spacing.md,
     gap: theme.spacing.lg,
     width: '100%',
     maxWidth: 720,
     alignSelf: 'center',
   },
+  back: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: theme.spacing.xs,
+    minHeight: 44,
+    marginLeft: -4,
+    marginBottom: -theme.spacing.sm,
+  },
+  backPressed: { opacity: 0.6 },
+  backText: { fontFamily: fonts.displayBold, fontSize: 17, color: theme.colors.textPrimary },
   head: { gap: theme.spacing.sm },
   title: { fontFamily: fonts.displayExtraBold, fontSize: 26, color: theme.colors.inkText, lineHeight: 30 },
   metaText: { fontSize: 14, color: theme.colors.textSecondary },
