@@ -16,7 +16,7 @@ export default function ConversationsLayout() {
           title: 'Conversa',
           // Always our own back button: on web the stack's default one doesn't
           // show when the chat is opened from Home or straight after triage.
-          headerLeft: () => <HeaderBack fallback="/(patient)/conversations" />,
+          headerLeft: () => <HeaderBack to="/(patient)/conversations" />,
         }}
       />
     </Stack>
