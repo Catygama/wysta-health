@@ -6,6 +6,7 @@ import { api } from '@/convex/_generated/api';
 import { ConversationFeedCard } from '@/screens/ConversationFeedCard';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { TabTitle } from '@/components/ui/TabTitle';
 import { fonts } from '@/lib/fonts';
 
 // "Conversas" tab: every open conversation (professional and AI). Closed ones
@@ -16,56 +17,66 @@ export default function PatientConversations() {
   const { theme } = useUnistyles();
   const open = (conversations ?? []).filter((c) => c.status !== 'closed');
 
+  // Same title as the professional's; the arrow goes to Início, the patient's
+  // main screen.
+  const header = <TabTitle title="Conversas" home="/(patient)/" />;
+
   if (conversations !== undefined && open.length === 0) {
     return (
-      <View testID="conversations-empty" style={styles.empty}>
-        <View style={styles.iconChip}>
-          <Icon
-            name={{
-              sf: 'bubble.left.and.bubble.right.fill',
-              ion: 'chatbubbles-outline',
-            }}
-            size={34}
-            color={theme.topic.intimate.on}
-          />
-        </View>
-        <Text style={styles.title}>Sem conversas abertas</Text>
-        <Text style={styles.body}>
-          Escolhe um tópico no Início para falares com um profissional de saúde ou com a
-          assistente AI.
-        </Text>
-        <View style={styles.cta}>
-          <Button label="Iniciar conversa" onPress={() => router.push('/(patient)/')} />
+      <View style={styles.list}>
+        {header}
+        <View testID="conversations-empty" style={styles.empty}>
+          <View style={styles.iconChip}>
+            <Icon
+              name={{
+                sf: 'bubble.left.and.bubble.right.fill',
+                ion: 'chatbubbles-outline',
+              }}
+              size={34}
+              color={theme.topic.intimate.on}
+            />
+          </View>
+          <Text style={styles.title}>Sem conversas abertas</Text>
+          <Text style={styles.body}>
+            Escolhe um tópico no Início para falares com um profissional de saúde ou com a
+            assistente AI.
+          </Text>
+          <View style={styles.cta}>
+            <Button label="Iniciar conversa" onPress={() => router.push('/(patient)/')} />
+          </View>
         </View>
       </View>
     );
   }
 
   return (
-    <FlatList
-      testID="conversations-list"
-      data={open}
-      keyExtractor={(item) => item._id}
-      style={styles.list}
-      contentContainerStyle={styles.content}
-      contentInsetAdjustmentBehavior="automatic"
-      renderItem={({ item }) => (
-        <ConversationFeedCard
-          conversation={item}
-          onPress={() =>
-            router.push({ pathname: '/(patient)/conversations/[id]', params: { id: item._id } })
-          }
-        />
-      )}
-    />
+    <View style={styles.list}>
+      {header}
+      <FlatList
+        testID="conversations-list"
+        data={open}
+        keyExtractor={(item) => item._id}
+        style={styles.list}
+        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="automatic"
+        renderItem={({ item }) => (
+          <ConversationFeedCard
+            conversation={item}
+            onPress={() =>
+              router.push({ pathname: '/(patient)/conversations/[id]', params: { id: item._id } })
+            }
+          />
+        )}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
   list: { flex: 1, backgroundColor: theme.colors.background },
-  // Small top padding: the "Conversas" header already sits right above.
-  // Rows carry their own dividers, so no gap between them.
-  content: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.lg },
+  // Rows carry their own dividers, so no gap between them. Same side inset as
+  // the professional's list, so the rows line up under "‹ Conversas".
+  content: { paddingHorizontal: theme.spacing.md, paddingBottom: theme.spacing.lg },
   empty: {
     flex: 1,
     justifyContent: 'center',

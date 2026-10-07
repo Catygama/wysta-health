@@ -9,7 +9,8 @@ export const unstable_settings = { initialRouteName: 'index' };
 export default function ConversationsLayout() {
   return (
     <Stack screenOptions={useStackHeaderOptions()}>
-      <Stack.Screen name="index" options={{ title: 'Conversas' }} />
+      {/* The list draws "‹ Conversas" itself, like the professional's. */}
+      <Stack.Screen name="index" options={{ headerShown: false, title: 'Conversas' }} />
       <Stack.Screen
         name="[id]"
         options={{
