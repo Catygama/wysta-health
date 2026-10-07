@@ -170,6 +170,8 @@ const styles = StyleSheet.create((theme) => ({
   // Readable line length on wide screens: one centred column.
   content: {
     padding: theme.spacing.lg,
+    // The header ("‹ Explorar") already sits just above the title.
+    paddingTop: theme.spacing.xs,
     gap: theme.spacing.lg,
     width: '100%',
     maxWidth: 720,
