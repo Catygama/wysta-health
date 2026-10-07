@@ -81,16 +81,6 @@ export function ArticleScreen() {
         </View>
       )}
 
-      {article.tags.length > 0 && (
-        <View style={styles.tags}>
-          {article.tags.map((tag) => (
-            <View key={tag} style={styles.tag}>
-              <Text style={styles.tagText}>#{tag}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
       {isPatient && !article.whenToSeekHelp && (
         <View style={styles.ctaCard}>
           <Text style={styles.ctaTitle}>Precisas de apoio personalizado?</Text>
@@ -153,14 +143,6 @@ const styles = StyleSheet.create((theme) => ({
   bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.ink, marginTop: 10 },
   calloutBody: { flex: 1, fontSize: 16, color: theme.colors.textPrimary, lineHeight: 24 },
   calloutAction: { alignItems: 'flex-start', marginTop: theme.spacing.xs },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
-  tag: {
-    backgroundColor: theme.colors.surfaceSunken,
-    paddingVertical: 3,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radius.pill,
-  },
-  tagText: { fontSize: 12, color: theme.colors.textSecondary },
   ctaCard: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,
