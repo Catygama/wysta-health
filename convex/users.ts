@@ -17,15 +17,10 @@ export const currentUser = query({
   },
 });
 
+// Self-service profiles are always patients. Professionals go through
+// submitProfessionalVerification and admins are promoted via setRole.
 export const ensureProfile = mutation({
   args: {
-    role: v.optional(
-      v.union(
-        v.literal('patient'),
-        v.literal('professional'),
-        v.literal('admin')
-      )
-    ),
     isGuest: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -36,17 +31,10 @@ export const ensureProfile = mutation({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
     if (existing) return existing;
-    const role = args.role ?? 'patient';
     const id = await ctx.db.insert('userProfiles', {
       userId,
-      role,
+      role: 'patient',
       isGuest: args.isGuest,
-      // TODO: remove auto-verify before launching to real professionals.
-      // Guest professionals are auto-verified to keep the testing flow simple;
-      // real professional accounts must go through submitProfessionalVerification.
-      ...(role === 'professional'
-        ? { professionalVerificationStatus: 'verified' as const }
-        : {}),
     });
     return ctx.db.get(id);
   },
