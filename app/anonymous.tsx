@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   FlatList,
+  Image,
   Platform,
   Pressable,
   Text,
@@ -20,8 +21,16 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fonts } from '@/lib/fonts';
 import { ChatMessage } from '@/components/chat/ChatMessage';
 import { AiResponseMessage } from '@/screens/MessageThread';
+import { pickImage, pickDocument, type PickedFile } from '@/lib/upload';
 
-type Turn = { id: number; fromPatient: boolean; content: string };
+// Attachments stay on this device: shown in the chat, never uploaded, so the
+// conversation remains unsaved. The assistant only reads text (as in the
+// regular chat), so it's told a file was attached, not its contents.
+type Attachment = { kind: 'image' | 'file'; file: PickedFile };
+type Turn = { id: number; fromPatient: boolean; content: string; attachment?: Attachment };
+
+const INPUT_MIN_HEIGHT = 44;
+const INPUT_MAX_HEIGHT = 140;
 
 // Anonymous chat with the AI: a normal-looking chat, but nothing is saved.
 // Turns live only in this screen's state (sent back to the assistant as
@@ -37,6 +46,8 @@ export default function AnonymousChat() {
 
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState('');
+  const [pending, setPending] = useState<Attachment | null>(null);
+  const inputRef = useRef<TextInput>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -51,6 +62,16 @@ export default function AnonymousChat() {
     pendingLeave.current = () => navigation.dispatch(data.action);
     setConfirmLeave(true);
   });
+
+  // Web: one-line field that grows with its text (same as the regular chat).
+  useLayoutEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const el = inputRef.current as unknown as HTMLTextAreaElement | null;
+    if (!el?.style) return;
+    el.style.resize = 'none';
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, INPUT_MIN_HEIGHT), INPUT_MAX_HEIGHT)}px`;
+  }, [text]);
 
   // Web: closing or reloading the tab would also lose the chat.
   useEffect(() => {
@@ -72,14 +93,37 @@ export default function AnonymousChat() {
     else router.replace('/(patient)/');
   }
 
-  async function send() {
-    const query = text.trim();
-    if (!query || busy) return;
+  async function attach(kind: Attachment['kind']) {
     setError(null);
-    const mine: Turn = { id: nextId.current++, fromPatient: true, content: query };
-    const history = turns.map(({ fromPatient, content }) => ({ fromPatient, content }));
+    try {
+      const file = kind === 'image' ? await pickImage() : await pickDocument();
+      if (file) setPending({ kind, file });
+    } catch (e: any) {
+      setError(e?.message ?? 'Não foi possível abrir o ficheiro.');
+    }
+  }
+
+  const describe = (a: Attachment) =>
+    a.kind === 'image'
+      ? '[A utente anexou uma imagem, que não consegues ver.]'
+      : `[A utente anexou um documento${a.file.fileName ? ` ("${a.file.fileName}")` : ''}, que não consegues ler.]`;
+
+  async function send() {
+    const typed = text.trim();
+    if ((!typed && !pending) || busy) return;
+    setError(null);
+    const attachment = pending ?? undefined;
+    const mine: Turn = { id: nextId.current++, fromPatient: true, content: typed, attachment };
+    const history = turns.map(({ fromPatient, content, attachment: a }) => ({
+      fromPatient,
+      content: [content, a ? describe(a) : ''].filter(Boolean).join(' '),
+    }));
     setTurns((t) => [...t, mine]);
     setText('');
+    setPending(null);
+    // The assistant only reads text: nothing to answer for a file on its own.
+    if (!typed) return;
+    const query = attachment ? `${typed} ${describe(attachment)}` : typed;
     setBusy(true);
     try {
       const r = await respond({ query, history });
@@ -130,7 +174,20 @@ export default function AnonymousChat() {
           }
           renderItem={({ item }) =>
             item.fromPatient ? (
-              <ChatMessage side="own" content={item.content} messageType="text" />
+              <View style={styles.ownGroup}>
+                {item.attachment && (
+                  <ChatMessage
+                    side="own"
+                    messageType={item.attachment.kind}
+                    content={item.attachment.file.fileName ?? (item.attachment.kind === 'image' ? 'Imagem partilhada' : 'Documento')}
+                    imageUrl={item.attachment.kind === 'image' ? item.attachment.file.uri : null}
+                    attachmentUrl={item.attachment.kind === 'file' ? item.attachment.file.uri : null}
+                    attachmentName={item.attachment.file.fileName ?? 'Documento'}
+                    attachmentSize={item.attachment.file.size}
+                  />
+                )}
+                {item.content ? <ChatMessage side="own" content={item.content} messageType="text" /> : null}
+              </View>
             ) : (
               <AiResponseMessage content={item.content} />
             )
@@ -145,30 +202,77 @@ export default function AnonymousChat() {
         />
 
         <View style={[styles.composer, { paddingBottom: theme.spacing.md + insets.bottom }]}>
-          <TextInput
-            testID="anonymous-input"
-            value={text}
-            onChangeText={setText}
-            placeholder="Escreve a tua pergunta..."
-            placeholderTextColor={theme.colors.textTertiary as any}
-            multiline
-            editable={!busy}
-            style={styles.input}
-          />
-          <Pressable
-            testID="anonymous-send"
-            accessibilityRole="button"
-            accessibilityLabel="Enviar"
-            onPress={send}
-            disabled={!text.trim() || busy}
-            style={[styles.send, text.trim() && !busy ? styles.sendOn : styles.sendOff]}
-          >
-            <Icon
-              name={{ sf: 'arrow.up', ion: 'arrow-up' }}
-              size={18}
-              color={text.trim() && !busy ? theme.colors.onInk : theme.colors.textTertiary}
+          {pending && (
+            <View style={styles.pendingRow}>
+              {pending.kind === 'image' ? (
+                <Image source={{ uri: pending.file.uri }} style={styles.pendingThumb} resizeMode="cover" />
+              ) : (
+                <View style={styles.pendingDoc}>
+                  <Icon name={{ sf: 'doc', ion: 'document-outline' }} size={20} color={theme.colors.textSecondary} />
+                </View>
+              )}
+              <Text style={styles.pendingName} numberOfLines={1}>
+                {pending.file.fileName ?? (pending.kind === 'image' ? 'Imagem selecionada' : 'Documento selecionado')}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Remover anexo"
+                hitSlop={8}
+                onPress={() => setPending(null)}
+              >
+                <Icon name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }} size={22} color={theme.colors.textTertiary} />
+              </Pressable>
+            </View>
+          )}
+          <View style={styles.inputRow}>
+            <Pressable
+              testID="anonymous-attach-image"
+              accessibilityRole="button"
+              accessibilityLabel="Anexar imagem"
+              onPress={() => attach('image')}
+              disabled={busy}
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
+            >
+              <Icon name={{ sf: 'photo', ion: 'image-outline' }} size={20} color={theme.colors.textSecondary} />
+            </Pressable>
+            <Pressable
+              testID="anonymous-attach-document"
+              accessibilityRole="button"
+              accessibilityLabel="Anexar documento"
+              onPress={() => attach('file')}
+              disabled={busy}
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
+            >
+              <Icon name={{ sf: 'paperclip', ion: 'attach' }} size={20} color={theme.colors.textSecondary} />
+            </Pressable>
+            <TextInput
+              ref={inputRef}
+              // @ts-expect-error web-only: one visible row instead of the textarea default of two
+              rows={1}
+              testID="anonymous-input"
+              value={text}
+              onChangeText={setText}
+              placeholder="Escreve uma mensagem..."
+              placeholderTextColor={theme.colors.textTertiary as any}
+              multiline
+              editable={!busy}
+              style={styles.input}
             />
-          </Pressable>
+            <Pressable
+              testID="anonymous-send"
+              accessibilityRole="button"
+              accessibilityLabel="Enviar"
+              onPress={send}
+              disabled={(!text.trim() && !pending) || busy}
+              style={[styles.send, (text.trim() || pending) && !busy ? styles.sendOn : styles.sendOff]}
+            >
+              <Icon
+                name={{ sf: 'arrow.up', ion: 'arrow-up' }}
+                size={18}
+                color={(text.trim() || pending) && !busy ? theme.colors.onInk : theme.colors.textTertiary}
+              />
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -221,25 +325,58 @@ const styles = StyleSheet.create((theme) => ({
   },
   noticeText: { fontSize: 13, lineHeight: 19, color: theme.colors.textSecondary },
   error: { fontSize: 13, color: theme.colors.danger },
+  ownGroup: { gap: theme.spacing.xs },
+  // Composer: same look as the regular chat (screens/MessageThread).
   composer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
     gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
-    paddingTop: theme.spacing.sm,
+    paddingTop: theme.spacing.md,
   },
+  inputRow: { flexDirection: 'row', gap: theme.spacing.sm, alignItems: 'flex-end' },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.colors.divider,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surface,
+  },
+  iconBtnPressed: { backgroundColor: theme.colors.surfaceSunken },
   input: {
     flex: 1,
-    minHeight: 44,
-    maxHeight: 140,
+    minHeight: INPUT_MIN_HEIGHT,
+    maxHeight: INPUT_MAX_HEIGHT,
     borderRadius: theme.radius.lg,
     borderCurve: 'continuous',
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 22,
     color: theme.colors.textPrimary,
     backgroundColor: theme.colors.surfaceSunken,
   },
+  pendingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    padding: theme.spacing.sm,
+    borderRadius: theme.radius.md,
+    borderCurve: 'continuous',
+    backgroundColor: theme.colors.surface,
+  },
+  pendingThumb: { width: 40, height: 40, borderRadius: theme.radius.sm, backgroundColor: theme.colors.surfaceSunken },
+  pendingDoc: {
+    width: 40,
+    height: 40,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surfaceSunken,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingName: { flex: 1, fontSize: 14, fontWeight: '500', color: theme.colors.textPrimary },
   send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   sendOn: { backgroundColor: theme.colors.ink },
   sendOff: { backgroundColor: theme.colors.surfaceSunken },
