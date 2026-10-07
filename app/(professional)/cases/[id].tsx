@@ -403,14 +403,14 @@ function OptionsPanel(p: OptionsPanelProps) {
         )}
 
         <View style={styles.menu}>
-          {p.canAssign && (
-            <MenuItem
-              testID="case-menu-assign"
-              icon={{ sf: 'person.crop.circle.badge.checkmark', ion: 'person-add-outline' }}
-              label={p.isAssignedToOther ? 'Assumir conversa' : 'Atribuir a mim'}
-              onPress={p.onAssign}
-            />
-          )}
+          {/* "Atribuir a mim" lives only in the chat footer. */}
+          <MenuItem
+            testID="case-menu-triage"
+            icon={{ sf: 'list.bullet.clipboard', ion: 'clipboard-outline' }}
+            label="Respostas da triagem"
+            chevron
+            onPress={() => p.onView('triage')}
+          />
           <MenuItem
             testID="thread-tab-internal"
             icon={{ sf: 'note.text', ion: 'document-text-outline' }}
@@ -424,13 +424,6 @@ function OptionsPanel(p: OptionsPanelProps) {
             label="Sumário"
             chevron
             onPress={() => p.onView('summary')}
-          />
-          <MenuItem
-            testID="case-menu-triage"
-            icon={{ sf: 'list.bullet.clipboard', ion: 'clipboard-outline' }}
-            label="Respostas da triagem"
-            chevron
-            onPress={() => p.onView('triage')}
           />
           {p.canEscalate && c.priority !== 'urgent' && (
             <MenuItem
