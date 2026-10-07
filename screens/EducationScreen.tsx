@@ -138,7 +138,8 @@ export function EducationScreen() {
 
 const styles = StyleSheet.create((theme) => ({
   list: { flex: 1, backgroundColor: theme.colors.background },
-  content: { padding: theme.spacing.md, gap: theme.spacing.sm },
+  // Small top padding: the stack header ("Explorar") already sits right above.
+  content: { padding: theme.spacing.md, paddingTop: theme.spacing.xs, gap: theme.spacing.sm },
   header: { gap: theme.spacing.sm, paddingBottom: theme.spacing.xs },
   searchBar: {
     flexDirection: 'row',
