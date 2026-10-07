@@ -30,7 +30,7 @@ const topicsDark = {
   cycle: { fill: '#5C1E2C', on: '#F2C9D0' },
   intimate: { fill: '#4A2A44', on: '#E6D3E3' },
   pregnancy: { fill: '#5A3226', on: '#F5D6C8' },
-  general: { fill: '#3E2C26', on: '#E6D5CC' },
+  general: { fill: '#5E4A36', on: '#EBD9BF' },
   wellbeing: { fill: '#5A2A1E', on: '#E9C2B4' },
 } as const;
 
