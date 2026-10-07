@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { VerificationRequests } from '@/components/admin/VerificationRequests';
 import { fonts } from '@/lib/fonts';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -106,6 +107,8 @@ export default function AdminPanel() {
             <CountCard testID="admin-count-professional" label="Profissionais" value={counts.professional ?? 0} />
             <CountCard testID="admin-count-admin" label="Admins" value={counts.admin ?? 0} />
           </View>
+
+          <VerificationRequests />
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Conteúdo da plataforma</Text>

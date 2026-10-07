@@ -5,6 +5,7 @@ import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { calculateRiskLevel, type RiskAssessment } from './lib/risk';
 import { alertLevelFor, priorityFor, sortQueue, type AlertLevel } from './lib/alerts';
+import { hasProfessionalAccess } from './lib/professional';
 import { topicValidator as topic } from './lib/topics';
 
 const status = v.union(
@@ -97,7 +98,7 @@ export const listForProfessional = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    if (profile?.role !== 'professional' && profile?.role !== 'admin') return [];
+    if (!hasProfessionalAccess(profile)) return [];
 
     let conversations = args.status
       ? await ctx.db
@@ -160,7 +161,7 @@ export const queueStats = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    if (profile?.role !== 'professional' && profile?.role !== 'admin') return null;
+    if (!hasProfessionalAccess(profile)) return null;
     const all = (await ctx.db.query('conversations').collect()).filter(
       (c) => c.kind !== 'ai-only'
     );
@@ -183,14 +184,11 @@ export const get = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    const hasAccess =
-      conv.patientId === userId ||
-      conv.professionalId === userId ||
-      profile?.role === 'professional' ||
-      profile?.role === 'admin';
+    const isProfessional = hasProfessionalAccess(profile);
+    // The patient, or an admin / approved professional. A professional whose
+    // account is pending or was rejected has no access, even if assigned.
+    const hasAccess = conv.patientId === userId || isProfessional;
     if (!hasAccess) return null;
-    const isProfessional =
-      profile?.role === 'professional' || profile?.role === 'admin';
     if (
       conv.kind === 'ai-only' &&
       conv.patientId !== userId &&
@@ -347,7 +345,8 @@ async function requireProfessional(ctx: any, userId: any) {
     .query('userProfiles')
     .withIndex('by_user', (q: any) => q.eq('userId', userId))
     .unique();
-  if (profile?.role !== 'professional' && profile?.role !== 'admin') {
+  // Admins, and professionals an admin has approved (lib/professional.ts).
+  if (!hasProfessionalAccess(profile)) {
     throw new Error('Unauthorized');
   }
   return profile;
@@ -464,7 +463,7 @@ export const listHistory = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    const isProfessional = profile?.role === 'professional' || profile?.role === 'admin';
+    const isProfessional = hasProfessionalAccess(profile);
     const rows = isProfessional
       ? await ctx.db
           .query('conversations')
@@ -705,7 +704,7 @@ export const aiContext = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    if (profile?.role !== 'professional' && profile?.role !== 'admin') return [];
+    if (!hasProfessionalAccess(profile)) return [];
     const conv = await ctx.db.get(args.id);
     if (!conv || conv.kind === 'ai-only') return [];
     if (conv.professionalId && conv.professionalId !== userId) return [];

@@ -4,6 +4,7 @@
 // any conversation with this patient.
 
 import { action, internalMutation, internalQuery } from '../_generated/server';
+import { hasProfessionalAccess } from '../lib/professional';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
@@ -48,8 +49,7 @@ export const assertAccess = internalQuery({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', callerId))
       .unique();
-    const allowed =
-      callerProfile?.role === 'admin' || callerProfile?.role === 'professional';
+    const allowed = hasProfessionalAccess(callerProfile);
     if (!allowed) {
       return { allowed: false as const, profileData: '', conversationSummaries: '' };
     }

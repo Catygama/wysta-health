@@ -1,4 +1,5 @@
 import { mutation, query } from './_generated/server';
+import { hasProfessionalAccess } from './lib/professional';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
@@ -15,12 +16,10 @@ export const list = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    const isProfessional =
-      profile?.role === 'professional' || profile?.role === 'admin';
-    const hasAccess =
-      conv.patientId === userId ||
-      conv.professionalId === userId ||
-      isProfessional;
+    const isProfessional = hasProfessionalAccess(profile);
+    // The patient, or an admin / approved professional (a pending or rejected
+    // professional has no access, even to a case once assigned to them).
+    const hasAccess = conv.patientId === userId || isProfessional;
     if (!hasAccess) return [];
     if (
       conv.kind === 'ai-only' &&

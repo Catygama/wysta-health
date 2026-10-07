@@ -7,7 +7,8 @@ test('Professional guest sign-in (signup flow surfaces guest button)', async ({
   await gotoApp(page, '/(auth)/professional-signup');
   // Full signup requires real document uploads which we can't fake in
   // Playwright without bypassing the storage guard. Instead we exercise the
-  // guest path which is what the dev/test flow uses (auto-verified profile).
+  // guest path (auto-verified demo profile), which needs
+  // ALLOW_GUEST_PROFESSIONAL=true on the test deployment (see e2e/README.md).
   await page.getByTestId('prof-signup-guest-button').click();
   await expect(page.getByTestId('queue-sort')).toBeVisible({
     timeout: 20_000,
