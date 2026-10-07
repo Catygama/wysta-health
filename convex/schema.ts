@@ -223,6 +223,11 @@ export default defineSchema({
     tags: v.array(v.string()),
     isPublished: v.boolean(),
     readingTimeMinutes: v.number(),
+    // Last edit by an admin in Conteúdos (seeded articles have none).
+    updatedAt: v.optional(v.number()),
+    // Title of the built-in article this one came from, so re-running the
+    // seed still finds it after an admin renames it.
+    seedKey: v.optional(v.string()),
   })
     .index('by_topic', ['topic'])
     .index('by_published', ['isPublished']),
@@ -239,7 +244,8 @@ export default defineSchema({
   auditLog: defineTable({
     // Conversation actions set conversationId + professionalId; account
     // reviews (professional-approved/-rejected) set adminId + targetUserId;
-    // professional-review-required (a migration, no admin) sets targetUserId.
+    // professional-review-required (a migration, no admin) sets targetUserId;
+    // article edits (article-*) set adminId, with the article in details.
     conversationId: v.optional(v.id('conversations')),
     professionalId: v.optional(v.id('users')),
     adminId: v.optional(v.id('users')),
@@ -256,7 +262,10 @@ export default defineSchema({
       v.literal('redirect-recommended'),
       v.literal('professional-approved'),
       v.literal('professional-rejected'),
-      v.literal('professional-review-required')
+      v.literal('professional-review-required'),
+      v.literal('article-saved'),
+      v.literal('article-published'),
+      v.literal('article-unpublished')
     ),
     details: v.string(),
   }).index('by_conversation', ['conversationId']),

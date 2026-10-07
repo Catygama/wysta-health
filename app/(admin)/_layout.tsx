@@ -15,6 +15,8 @@ export default function AdminLayout() {
     <Stack screenOptions={headerOptions}>
       <Stack.Screen name="index" options={{ title: 'Administração' }} />
       <Stack.Screen name="verifications" options={{ title: 'Verificações' }} />
+      <Stack.Screen name="content/index" options={{ title: 'Conteúdos' }} />
+      <Stack.Screen name="content/[id]" options={{ title: 'Artigo' }} />
       <Stack.Screen name="ai" options={{ title: 'Gestão da IA' }} />
     </Stack>
   );

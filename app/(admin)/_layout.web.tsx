@@ -15,6 +15,12 @@ const ITEMS: NavItem[] = [
     icon: { sf: 'checkmark.seal', ion: 'shield-checkmark-outline' },
   },
   {
+    label: 'Conteúdos',
+    href: '/content',
+    icon: { sf: 'doc.text', ion: 'document-text-outline' },
+    match: (p) => p.startsWith('/content'),
+  },
+  {
     label: 'Gestão da IA',
     href: '/ai',
     icon: { sf: 'sparkles', ion: 'sparkles-outline' },

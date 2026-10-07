@@ -60,7 +60,7 @@ export default function AdminPanel() {
     try {
       const r = await seedAll();
       setSeedResult(
-        `Triagem: ${r.triage.inserted} inseridas, ${r.triage.updated} atualizadas. Artigos: ${r.articles.inserted} inseridos, ${r.articles.updated} atualizados. Níveis de alerta atribuídos a ${r.alertLevelsBackfilled} conversas.`
+        `Triagem: ${r.triage.inserted} inseridas, ${r.triage.updated} atualizadas. Artigos: ${r.articles.inserted} inseridos, ${r.articles.updated} atualizados, ${r.articles.kept} editados mantidos. Níveis de alerta atribuídos a ${r.alertLevelsBackfilled} conversas.`
       );
     } catch (e: any) {
       setSeedResult(e?.message ?? 'Erro ao executar seed.');
@@ -133,6 +133,15 @@ export default function AdminPanel() {
                   <View style={styles.linkBody}>
                     <Text style={styles.cardTitle}>Verificações</Text>
                     <Text style={styles.cardSub}>Aprovar ou recusar pedidos de profissionais.</Text>
+                  </View>
+                  <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={16} color={theme.colors.textTertiary} />
+                </Pressable>
+              </Link>
+              <Link href="/(admin)/content" asChild>
+                <Pressable testID="admin-content-link" style={styles.linkCard}>
+                  <View style={styles.linkBody}>
+                    <Text style={styles.cardTitle}>Conteúdos</Text>
+                    <Text style={styles.cardSub}>Escrever, editar e publicar os artigos do Explorar.</Text>
                   </View>
                   <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={16} color={theme.colors.textTertiary} />
                 </Pressable>

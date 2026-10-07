@@ -25,7 +25,10 @@ async function upsertArticle(ctx: MutationCtx, seed: ArticleSeed) {
     .query('educationalContent')
     .withIndex('by_topic', (q) => q.eq('topic', seed.topic))
     .collect();
-  const match = existing.find((a) => a.title === seed.title);
+  // Matched by the seed's own title (kept in seedKey when an admin renames
+  // it). Articles an admin edited in Conteúdos are left as they are.
+  const match = existing.find((a) => (a.seedKey ?? a.title) === seed.title);
+  if (match?.updatedAt) return 'kept' as const;
   if (match) {
     await ctx.db.patch(match._id, {
       summary: seed.summary,
@@ -37,7 +40,7 @@ async function upsertArticle(ctx: MutationCtx, seed: ArticleSeed) {
     });
     return 'updated' as const;
   }
-  await ctx.db.insert('educationalContent', { ...seed, isPublished: true });
+  await ctx.db.insert('educationalContent', { ...seed, isPublished: true, seedKey: seed.title });
   return 'inserted' as const;
 }
 
@@ -111,6 +114,7 @@ export const seedAll = mutation({
       articles: {
         inserted: articleResults.filter((r) => r === 'inserted').length,
         updated: articleResults.filter((r) => r === 'updated').length,
+        kept: articleResults.filter((r) => r === 'kept').length,
       },
     };
   },
@@ -140,6 +144,7 @@ export const seedArticles = internalMutation({
     return {
       inserted: results.filter((r) => r === 'inserted').length,
       updated: results.filter((r) => r === 'updated').length,
+      kept: results.filter((r) => r === 'kept').length,
     };
   },
 });

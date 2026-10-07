@@ -18,6 +18,9 @@ type Props = {
    */
   autoComplete?: TextInputProps['autoComplete'];
   testID?: string;
+  /** Several lines of text (grows from `minHeight`). */
+  multiline?: boolean;
+  minHeight?: number;
 };
 
 export function Input({
@@ -31,6 +34,8 @@ export function Input({
   autoCapitalize = 'sentences',
   autoComplete,
   testID,
+  multiline,
+  minHeight,
 }: Props) {
   const [focused, setFocused] = useState(false);
   styles.useVariants({ state: error ? 'error' : focused ? 'focused' : 'idle' });
@@ -65,7 +70,9 @@ export function Input({
         autoComplete={resolvedAutoComplete}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={[styles.field, WEB_NO_OUTLINE]}
+        multiline={multiline}
+        textAlignVertical={multiline ? 'top' : undefined}
+        style={[styles.field, WEB_NO_OUTLINE, multiline && { minHeight: minHeight ?? 120, lineHeight: 22 }]}
       />
       {error ? (
         <Text
