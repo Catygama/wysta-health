@@ -37,8 +37,7 @@ export function ArticleScreen() {
       contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
     >
-      {/* In the text column (not the stack header) so it lines up with the
-          title on wide screens. Goes back, or to the list when opened by link. */}
+      {/* Goes back, or to the list when the article was opened by link. */}
       <Pressable
         testID="header-back"
         accessibilityRole="button"
@@ -182,14 +181,15 @@ function helpItems(text: string): string[] {
 const styles = StyleSheet.create((theme) => ({
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background },
   screen: { flex: 1, backgroundColor: theme.colors.background },
-  // Readable line length on wide screens: one centred column.
+  // Readable line length on wide screens: a column starting at the left edge,
+  // under "‹ Explorar".
   content: {
     padding: theme.spacing.lg,
     paddingTop: theme.spacing.md,
     gap: theme.spacing.lg,
     width: '100%',
     maxWidth: 720,
-    alignSelf: 'center',
+    alignSelf: 'flex-start',
   },
   back: {
     flexDirection: 'row',
