@@ -116,19 +116,18 @@ export function EducationScreen() {
             onPress={() => router.push(`${basePath}/${item._id}`)}
             style={styles.articleCard}
           >
-            <View style={styles.articleHeader}>
-              <View style={[styles.topicPill, { backgroundColor: pastel.fill }]}>
-                {topic && <Icon name={topic.icon} size={12} color={pastel.on} />}
-                <Text style={[styles.topicPillText, { color: pastel.on }]}>
-                  {topic?.label ?? item.topic}
-                </Text>
-              </View>
-              <Text style={styles.readingTime}>{item.readingTimeMinutes} min</Text>
-            </View>
+            {/* Topic shown quietly: a colour bar on the left and a dot in the footer. */}
+            <View style={[styles.topicBar, { backgroundColor: pastel.fill }]} />
             <Text style={styles.articleTitle}>{item.title}</Text>
             <Text style={styles.articleSummary} numberOfLines={2}>
               {item.summary}
             </Text>
+            <View style={styles.articleFooter}>
+              <View style={[styles.topicDot, { backgroundColor: pastel.fill }]} />
+              <Text style={styles.articleMeta}>
+                {topic?.label ?? item.topic} · {item.readingTimeMinutes} min
+              </Text>
+            </View>
           </Card>
         );
       }}
@@ -166,22 +165,18 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: 'row',
   },
   disclaimerText: { fontSize: 12, color: theme.colors.textSecondary, flex: 1 },
-  articleCard: { gap: theme.spacing.xs },
-  articleHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  // overflow hidden clips the colour bar to the card's rounded corners.
+  articleCard: { gap: theme.spacing.xs, overflow: 'hidden', paddingLeft: theme.spacing.md + 6 },
+  topicBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 6 },
+  articleFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  topicDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  topicPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 3,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radius.pill,
-  },
-  topicPillText: { fontSize: 12, fontWeight: '500' },
-  readingTime: { fontSize: 12, color: theme.colors.textTertiary },
+  articleMeta: { fontSize: 12, color: theme.colors.textTertiary },
   articleTitle: { fontSize: 16, fontWeight: '500', color: theme.colors.textPrimary },
   articleSummary: { fontSize: 14, color: theme.colors.textSecondary },
 }));
