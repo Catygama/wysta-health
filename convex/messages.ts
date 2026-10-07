@@ -54,14 +54,9 @@ export const send = mutation({
   args: {
     conversationId: v.id('conversations'),
     content: v.string(),
+    // System and triage messages are written server-side only.
     messageType: v.optional(
-      v.union(
-        v.literal('text'),
-        v.literal('image'),
-        v.literal('file'),
-        v.literal('system'),
-        v.literal('triage-response')
-      )
+      v.union(v.literal('text'), v.literal('image'), v.literal('file'))
     ),
     imageId: v.optional(v.id('_storage')),
     attachmentId: v.optional(v.id('_storage')),
@@ -73,6 +68,18 @@ export const send = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error('Not authenticated');
+    const conv = await ctx.db.get(args.conversationId);
+    if (!conv) throw new Error('Conversation not found');
+
+    const isPatient = conv.patientId === userId;
+    const isAssignedProfessional = conv.professionalId === userId;
+    if (!isPatient && !isAssignedProfessional) {
+      throw new Error('Sem acesso a esta conversa.');
+    }
+    if (args.isInternal && !isAssignedProfessional) {
+      throw new Error('Só o profissional atribuído pode escrever notas internas.');
+    }
+
     await ctx.db.insert('messages', {
       conversationId: args.conversationId,
       senderId: userId,
@@ -90,9 +97,6 @@ export const send = mutation({
     });
 
     if (args.isInternal) return;
-
-    const conv = await ctx.db.get(args.conversationId);
-    if (!conv) return;
 
     // ai-only conversations auto-trigger an AI reply when the patient sends
     // a text message. The action is scheduled so the mutation returns
