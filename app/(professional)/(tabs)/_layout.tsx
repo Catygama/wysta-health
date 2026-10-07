@@ -12,7 +12,7 @@ export default function ProfessionalTabs() {
           sf={{ default: 'list.bullet.clipboard', selected: 'list.bullet.clipboard.fill' }}
           md="assignment"
         />
-        <NativeTabs.Trigger.Label>Fila</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Pedidos</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="ongoing">

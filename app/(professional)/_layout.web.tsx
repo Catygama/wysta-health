@@ -7,7 +7,7 @@ import { TabBarProvider } from '@/contexts/TabBarContext';
 
 const ITEMS: NavItem[] = [
   {
-    label: 'Fila',
+    label: 'Pedidos',
     href: '/queue',
     icon: {
       sf: 'list.bullet.clipboard',
