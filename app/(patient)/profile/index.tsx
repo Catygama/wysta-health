@@ -21,13 +21,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ThemeCard } from '@/components/ThemeCard';
 import { WebPushCard } from '@/components/WebPushCard';
 import { fonts } from '@/lib/fonts';
-import { PREGNANCY_OPTIONS } from '@/constants/profile';
 
 const AGE_RANGES = ['<18', '18-25', '26-35', '36-45', '46-55', '>55'];
-
-const PREGNANCY_LABELS: Record<string, string> = Object.fromEntries(
-  PREGNANCY_OPTIONS.map((o) => [o.value, o.label])
-);
 
 export default function Profile() {
   const router = useRouter();
@@ -41,7 +36,6 @@ export default function Profile() {
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [ageRange, setAgeRange] = useState('');
-  const [pregnancyStatus, setPregnancyStatus] = useState('');
   const [location, setLocation] = useState('');
   const [conditionInput, setConditionInput] = useState('');
   const [conditions, setConditions] = useState<string[]>([]);
@@ -52,7 +46,6 @@ export default function Profile() {
   function resetForm() {
     setDisplayName(user?.profile?.displayName ?? '');
     setAgeRange(user?.profile?.ageRange ?? '');
-    setPregnancyStatus(user?.profile?.pregnancyStatus ?? '');
     setLocation(user?.profile?.location ?? '');
     setConditions(user?.profile?.conditions ?? []);
     setMedications(user?.profile?.medications ?? []);
@@ -79,7 +72,6 @@ export default function Profile() {
       await updateProfile({
         displayName: displayName.trim() || undefined,
         ageRange: ageRange || undefined,
-        pregnancyStatus: pregnancyStatus || undefined,
         location: location.trim() || undefined,
         conditions: conditions.length ? conditions : undefined,
         medications: medications.length ? medications : undefined,
@@ -167,22 +159,6 @@ export default function Profile() {
             </View>
           </Card>
 
-          <Card title="Estado de gravidez">
-            <View style={styles.optionList}>
-              {PREGNANCY_OPTIONS.map((opt) => (
-                <SelectRow
-                  key={opt.value}
-                  testID={`profile-pregnancy-${opt.value}`}
-                  label={opt.label}
-                  active={pregnancyStatus === opt.value}
-                  onPress={() =>
-                    setPregnancyStatus(pregnancyStatus === opt.value ? '' : opt.value)
-                  }
-                />
-              ))}
-            </View>
-          </Card>
-
           <Card title="Condições de saúde (opcional)">
             <TagEditor
               value={conditionInput}
@@ -226,10 +202,6 @@ export default function Profile() {
           <Card title="Dados de saúde">
             <Row label="Nome" value={user?.profile?.displayName ?? '—'} />
             <Row label="Faixa etária" value={user?.profile?.ageRange ?? '—'} />
-            <Row
-              label="Estado de gravidez"
-              value={PREGNANCY_LABELS[user?.profile?.pregnancyStatus ?? ''] ?? '—'}
-            />
             <Row label="Localidade" value={user?.profile?.location ?? '—'} />
           </Card>
 
@@ -395,15 +367,6 @@ function SelectPill({ label, active, onPress, testID }: SelectPillProps) {
   );
 }
 
-type SelectRowProps = { label: string; active: boolean; onPress: () => void; testID?: string };
-function SelectRow({ label, active, onPress, testID }: SelectRowProps) {
-  return (
-    <Pressable testID={testID} onPress={onPress} style={[styles.selRow, active ? styles.selOn : styles.selOffSunken]}>
-      <Text style={[styles.selRowText, active ? styles.selTextOn : styles.selRowTextOff]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 type TagEditorProps = {
   value: string;
   onChangeText: (v: string) => void;
@@ -481,7 +444,6 @@ const styles = StyleSheet.create((theme) => ({
   rowLabel: { fontSize: 12, color: theme.colors.textSecondary },
   rowValue: { fontSize: 16, color: theme.colors.textPrimary },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
-  optionList: { gap: theme.spacing.sm },
   actions: { gap: theme.spacing.sm },
   selOn: { backgroundColor: theme.colors.ink },
   selOffSunken: { backgroundColor: theme.colors.surfaceSunken },
@@ -494,9 +456,6 @@ const styles = StyleSheet.create((theme) => ({
     borderCurve: 'continuous',
   },
   selPillText: { fontSize: 14, fontWeight: '500' },
-  selRow: { padding: theme.spacing.md, borderRadius: theme.radius.md, borderCurve: 'continuous' },
-  selRowText: { fontSize: 16 },
-  selRowTextOff: { color: theme.colors.textPrimary },
   privacy: {
     backgroundColor: theme.colors.surfaceSunken,
     borderRadius: theme.radius.md,

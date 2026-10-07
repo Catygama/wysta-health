@@ -7,7 +7,6 @@ import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { fonts } from '@/lib/fonts';
-import { PREGNANCY_OPTIONS } from '@/constants/profile';
 
 const AGE_RANGES = ['18-25', '26-35', '36-45', '46+'];
 
@@ -17,7 +16,6 @@ export default function Onboarding() {
   const updateProfile = useMutation(api.users.updateProfile);
   const [displayName, setDisplayName] = useState('');
   const [ageRange, setAgeRange] = useState('');
-  const [pregnancyStatus, setPregnancyStatus] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleContinue() {
@@ -27,7 +25,6 @@ export default function Onboarding() {
       await updateProfile({
         displayName: displayName.trim() || undefined,
         ageRange,
-        pregnancyStatus,
       });
       router.replace('/');
     } finally {
@@ -90,32 +87,13 @@ export default function Onboarding() {
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Estado de gravidez atual</Text>
-        {PREGNANCY_OPTIONS.map((opt) => {
-          const selected = pregnancyStatus === opt.value;
-          return (
-            <Pressable
-              key={opt.value}
-              testID={`onboarding-pregnancy-${opt.value}`}
-              onPress={() => setPregnancyStatus(opt.value)}
-              style={[styles.option, selected ? styles.optionOn : styles.optionOff]}
-            >
-              <Text style={[styles.optionText, selected ? styles.pillTextOn : styles.optionTextOff]}>
-                {opt.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
       <View style={styles.actions}>
         <Button
           testID="onboarding-continue-button"
           label="Continuar"
           onPress={handleContinue}
           loading={loading}
-          disabled={!ageRange || !pregnancyStatus}
+          disabled={!ageRange}
         />
         <Button
           testID="onboarding-skip-button"
@@ -149,14 +127,5 @@ const styles = StyleSheet.create((theme) => ({
   pillText: { fontSize: 14, fontWeight: '500' },
   pillTextOn: { color: theme.colors.onInk },
   pillTextOff: { color: theme.colors.textSecondary },
-  option: {
-    padding: theme.spacing.md,
-    borderRadius: theme.radius.md,
-    borderCurve: 'continuous',
-  },
-  optionOn: { backgroundColor: theme.colors.ink },
-  optionOff: { backgroundColor: theme.colors.surface },
-  optionText: { fontSize: 16 },
-  optionTextOff: { color: theme.colors.textPrimary },
   actions: { gap: theme.spacing.sm },
 }));
