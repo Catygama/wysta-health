@@ -36,9 +36,9 @@ export default function Ongoing() {
               {unassigned > 0 && (
                 <Button
                   testID="ongoing-empty-show-requests"
-                  kind="secondary"
+                  kind="primary"
                   size="sm"
-                  label={`Ver pedidos (${unassigned})`}
+                  label="Ver pedidos"
                   onPress={() => router.push('/(professional)/queue')}
                 />
               )}
