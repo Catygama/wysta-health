@@ -21,8 +21,6 @@ import { Icon, type IconName } from '@/components/ui/Icon';
 import { TOPICS } from '@/constants/topics';
 import { fonts } from '@/lib/fonts';
 import {
-  STATUS_LABELS,
-  STATUS_COLORS,
   PRIORITY_LABELS,
   PRIORITY_COLORS,
 } from '@/constants/conversation';
@@ -282,8 +280,6 @@ type OptionsPanelProps = {
 function OptionsPanel(p: OptionsPanelProps) {
   const { theme } = useUnistyles();
   const c = p.conversation;
-  const statusColor = STATUS_COLORS[c.status] ?? theme.colors.textSecondary;
-  const priorityColor = PRIORITY_COLORS[c.priority] ?? theme.colors.textSecondary;
 
   const header = (title: string, back: boolean) => (
     <View style={styles.panelHeader}>
@@ -372,15 +368,6 @@ function OptionsPanel(p: OptionsPanelProps) {
     <View style={styles.panel}>
       {header('Opções', false)}
       <ScrollView contentContainerStyle={styles.panelBody}>
-        <View style={styles.badges}>
-          <Badge label={STATUS_LABELS[c.status] ?? c.status} color={statusColor} />
-          <Badge label={`Prioridade ${PRIORITY_LABELS[c.priority] ?? c.priority}`} color={priorityColor} />
-          <Badge
-            label={p.isMine ? 'Atribuída a si' : 'Não atribuída a si'}
-            color={p.isMine ? theme.colors.success : theme.colors.textTertiary}
-          />
-        </View>
-
         {c.patient && (
           <View style={styles.patient}>
             <Text style={styles.patientLine}>
@@ -522,14 +509,6 @@ function QuickChip({
       <Icon name={icon} size={14} color={color} />
       <Text style={[styles.chipText, { color }]}>{label}</Text>
     </Pressable>
-  );
-}
-
-function Badge({ label, color }: { label: string; color: string }) {
-  return (
-    <View style={[styles.badge, { backgroundColor: color + '20' }]}>
-      <Text style={[styles.badgeText, { color }]}>{label}</Text>
-    </View>
   );
 }
 
@@ -820,9 +799,6 @@ const styles = StyleSheet.create((theme) => ({
   panelBack: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
   panelTitle: { fontFamily: fonts.displayBold, fontSize: 17, color: theme.colors.textPrimary },
   panelBody: { padding: theme.spacing.md, gap: theme.spacing.md },
-  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
-  badge: { paddingVertical: 2, paddingHorizontal: theme.spacing.sm, borderRadius: theme.radius.pill },
-  badgeText: { fontSize: 12, fontWeight: '500' },
   patient: { gap: theme.spacing.xs },
   patientLine: { fontSize: 14, color: theme.colors.textSecondary },
   patientMeta: { fontSize: 12, color: theme.colors.textSecondary },
