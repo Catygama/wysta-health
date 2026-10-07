@@ -492,10 +492,13 @@ function TriageMessage({
         />
         <Text style={styles.triageTitle}>Triagem concluída</Text>
       </View>
-      {/* The AI already reads the answers; the note only matters for professionals. */}
-      {!aiOnly && (
-        <Text style={styles.triageBody}>Respostas guardadas para o profissional de saúde.</Text>
-      )}
+      {/* In AI chats the answers also reach a professional: switching to one
+          copies the triage over, and professionals can open the AI chat. */}
+      <Text style={styles.triageBody}>
+        {aiOnly
+          ? 'Respostas guardadas para a assistente IA. O profissional de saúde também tem acesso.'
+          : 'Respostas guardadas para o profissional de saúde.'}
+      </Text>
     </View>
   );
 }
