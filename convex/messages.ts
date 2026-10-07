@@ -125,17 +125,14 @@ export const send = mutation({
       throw new Error('Só a utente pode escrever na conversa com a assistente IA.');
     }
 
-    const preview =
-      args.messageType === 'image'
-        ? 'Enviou uma imagem'
-        : args.messageType === 'file'
-          ? `Enviou um documento${args.attachmentName ? `: ${args.attachmentName}` : ''}`
-          : args.content.slice(0, 200);
-
+    // Lock screens are visible to others: never put message content (or
+    // attachment names) in the notification.
+    const senderName = senderProfile?.displayName?.trim();
     await ctx.scheduler.runAfter(0, internal.notifications.sendToUser, {
       userId: conv.patientId,
-      title: senderProfile?.displayName ?? 'Profissional Wysta',
-      body: preview,
+      title: senderName
+        ? `Nova mensagem de ${senderName}`
+        : 'Nova mensagem de um profissional',
       data: { conversationId: args.conversationId },
     });
   },

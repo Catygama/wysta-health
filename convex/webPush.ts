@@ -14,7 +14,7 @@ export const send = internalAction({
       v.object({ endpoint: v.string(), p256dh: v.string(), auth: v.string() })
     ),
     title: v.string(),
-    body: v.string(),
+    body: v.optional(v.string()),
     data: v.optional(v.any()),
   },
   handler: async (ctx, args) => {

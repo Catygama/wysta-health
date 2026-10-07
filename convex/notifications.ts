@@ -122,7 +122,7 @@ export const sendToUser = internalAction({
   args: {
     userId: v.id('users'),
     title: v.string(),
-    body: v.string(),
+    body: v.optional(v.string()),
     data: v.optional(v.any()),
   },
   handler: async (ctx, args) => {

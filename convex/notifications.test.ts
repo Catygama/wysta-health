@@ -90,3 +90,42 @@ describe('web push subscriptions', () => {
     });
   });
 });
+
+describe('message notifications', () => {
+  it('only reveal the sender, never the message content', async () => {
+    const t = convexTest(schema, modules);
+    const { userId: patientId } = await patient(t);
+    const { proId, conversationId } = await t.run(async (ctx) => {
+      const proId = (await ctx.db.insert('users', {})) as Id<'users'>;
+      await ctx.db.insert('userProfiles', {
+        userId: proId,
+        role: 'professional',
+        displayName: 'Ana Gomes',
+      });
+      const conversationId = await ctx.db.insert('conversations', {
+        patientId,
+        professionalId: proId,
+        topic: 'contraception',
+        priority: 'high',
+        status: 'waiting',
+        title: 'Pílula',
+        lastMessageAt: Date.now(),
+      });
+      return { proId, conversationId };
+    });
+    await t
+      .withIdentity({ subject: proId as string })
+      .mutation(api.messages.send, { conversationId, content: 'Resultado do teste: positivo' });
+
+    const scheduled = await t.run((ctx) =>
+      ctx.db.system.query('_scheduled_functions').collect()
+    );
+    const push = scheduled.find((s) => s.name.includes('sendToUser'));
+    expect(push?.args[0]).toMatchObject({
+      userId: patientId,
+      title: 'Nova mensagem de Ana Gomes',
+      data: { conversationId },
+    });
+    expect(JSON.stringify(push?.args)).not.toContain('positivo');
+  });
+});
