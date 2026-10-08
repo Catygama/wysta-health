@@ -24,8 +24,8 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  // Age and privacy consent, above "Entrar": needed to sign in and to enter
-  // without an account.
+  // Age and privacy consent, above "Entrar": needed to sign in with an
+  // account. "Entrar sem conta" doesn't ask for it.
   const [consented, setConsented] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,11 +45,8 @@ export default function Login() {
 
   async function handleGuest() {
     setError('');
-    if (!consented) return;
     setGuestLoading(true);
     try {
-      // Set before signing in: the session can become active before signIn() resolves.
-      consent.markPending('sem-conta');
       await signIn('anonymous');
     } catch (e: any) {
       setError(errorText(e, 'Não foi possível entrar sem conta. Tenta de novo.'));
@@ -121,7 +118,6 @@ export default function Login() {
             variant="secondary"
             onPress={handleGuest}
             loading={guestLoading}
-            disabled={!consented}
           />
         </View>
       )}
