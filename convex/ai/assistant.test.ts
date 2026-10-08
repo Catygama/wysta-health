@@ -358,6 +358,8 @@ describe('rule-based safety detection before the model', () => {
     const msg = await aiMessage(t, conversationId);
     expect(msg?.content).toContain('SNS Grávida (808 24 24 24)');
     expect(msg?.streaming).toBe(false);
+    // Marked, so the app shows it as the alert card.
+    expect(msg?.metadata).toEqual({ safetyRule: 'baby-movement' });
     const [ai, pro, invocations, system] = await t.run(async (ctx) => [
       await ctx.db.get(conversationId),
       await ctx.db.get(proConvId),
@@ -387,6 +389,7 @@ describe('rule-based safety detection before the model', () => {
       .withIdentity({ subject: `${userId}|s` })
       .action(api.ai.assistant.respondAnonymous, { query: 'Ele obrigou-me a ter relações.' });
     expect(anon.answer).toContain('Linha de Apoio à Vítima (116 006)');
+    expect(anon.safetyRule).toBe('sexual-violence');
     expect(vi.mocked(callLlmText)).not.toHaveBeenCalled();
   });
 });
@@ -528,7 +531,7 @@ describe('switching to the AI answers what the nurse has not answered yet', () =
     expect(calls[calls.length - 1][0].userPrompt).toBe('E se tiver relações hoje?');
   });
 
-  it('a pending message that matches a safety rule gets the fixed message, without the model', async () => {
+  it('a pending message that matches a safety rule (written before the nurse-side detection) gets the fixed message, without the model', async () => {
     const t = convexTest(schema, modules);
     const { patient, proConvId } = await seedProConversation(t, [
       { from: 'patient', content: 'Acho que puseram alguma coisa na minha bebida.' },
@@ -542,6 +545,36 @@ describe('switching to the AI answers what the nurse has not answered yet', () =
     expect(answers[0].content).toContain('Linha de Apoio à Vítima (116 006)');
     expect(vi.mocked(callLlmText)).not.toHaveBeenCalled();
     expect(vi.mocked(callLlmObject)).not.toHaveBeenCalled();
+  });
+
+  it('a message that already got the fixed message in the nurse conversation is not answered again; the others are', async () => {
+    const t = convexTest(schema, modules);
+    const { patient, proConvId } = await seedProConversation(t, []);
+    approve();
+    await patient.mutation(api.messages.send, {
+      conversationId: proConvId,
+      content: 'Acho que puseram alguma coisa na minha bebida.',
+    });
+    await patient.mutation(api.messages.send, { conversationId: proConvId, content: 'Também me esqueci da pílula.' });
+
+    const { id: aiId } = await switchAndDrain(t, patient, proConvId);
+
+    const answers = await aiResponses(t, aiId);
+    expect(answers).toHaveLength(1);
+    expect(answers[0]).toMatchObject({ content: 'Resposta da IA' });
+    expect(vi.mocked(callLlmText).mock.calls[0][0].userPrompt).toBe('Também me esqueci da pílula.');
+  });
+
+  it('only messages that triggered a rule pending: no AI answer at all', async () => {
+    const t = convexTest(schema, modules);
+    const { patient, proConvId } = await seedProConversation(t, []);
+    approve();
+    await patient.mutation(api.messages.send, { conversationId: proConvId, content: 'Já não quero viver mais.' });
+
+    const { id: aiId } = await switchAndDrain(t, patient, proConvId);
+
+    expect(await aiResponses(t, aiId)).toEqual([]);
+    expect(vi.mocked(callLlmText)).not.toHaveBeenCalled();
   });
 
   it('a blocked answer points to the nurse conversation without forwarding the question again', async () => {

@@ -89,6 +89,16 @@ describe('rule-based safety detection', () => {
     }
   });
 
+  it('every phone number in a fixed message has a call button with an accessible label', () => {
+    for (const rule of SAFETY_RULES) {
+      const numbers = new Set(
+        (rule.message.match(/\b112\b|808 24 24 24|116 006/g) ?? []).map((n) => `tel:${n.replace(/ /g, '')}`)
+      );
+      expect(new Set(rule.calls.map((c) => c.tel)), rule.id).toEqual(numbers);
+      for (const call of rule.calls) expect(call.a11yLabel).toMatch(/^Ligar para /);
+    }
+  });
+
   it('every rule has a fixed message with a concrete contact', () => {
     const contacts: Record<string, RegExp> = {
       'baby-movement': /SNS Grávida \(808 24 24 24\).*112/,

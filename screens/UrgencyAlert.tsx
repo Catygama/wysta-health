@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { View, Text, Pressable, Linking, AccessibilityInfo, Modal } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { strings } from '@/constants/strings';
@@ -25,6 +25,9 @@ const SNS24_TEL = 'tel:808242424';
 const EMERGENCY_TEL = 'tel:112';
 const PHONE_ICON: IconName = { sf: 'phone.fill', ion: 'call' };
 
+/** A phone number to call from an alert card. */
+export type UrgencyCall = { label: string; a11yLabel: string; tel: string; testID: string };
+
 // Shown over a dimmed screen when an answer needs attention (triage alert
 // levels, wellbeing pain check): call 112 or SNS 24, or carry on.
 export function UrgencyAlert({
@@ -47,63 +50,107 @@ export function UrgencyAlert({
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
-        <View testID={id('', 'urgency-alert')} accessibilityRole="alert" style={styles.card}>
-          <View style={styles.iconChip}>
-            <Icon
-              name={{ sf: 'exclamationmark.triangle.fill', ion: 'warning-outline' }}
-              size={22}
-              color={theme.colors.inkText}
-            />
-          </View>
-          <Text style={styles.title} accessibilityRole="header">
-            {title}
-          </Text>
-          <Text testID={id('-message', 'urgency-message')} style={styles.message}>
-            {message}
-          </Text>
-
-          {calls.length > 0 && (
-            <>
-              <View style={styles.calls}>
-                {calls.map((call, i) =>
-                  call === '112' ? (
-                    <CallButton
-                      key={call}
-                      testID={id(i === 0 ? '-call' : '-112', 'urgency-call-112')}
-                      label="Ligar 112"
-                      accessibilityLabel={strings.urgency.emergencyCta}
-                      primary={i === 0}
-                      onPress={() => Linking.openURL(EMERGENCY_TEL)}
-                    />
-                  ) : (
-                    <CallButton
-                      key={call}
-                      testID={id(i === 0 ? '-call' : '-sns24', 'urgency-call-sns24')}
-                      label="Ligar SNS 24"
-                      accessibilityLabel={snsAccessibilityLabel}
-                      primary={i === 0}
-                      onPress={() => Linking.openURL(SNS24_TEL)}
-                    />
-                  )
-                )}
-              </View>
-
-              <View style={styles.divider} />
-            </>
+        <UrgencyCard
+          role="alert"
+          testID={id('', 'urgency-alert')}
+          messageTestID={id('-message', 'urgency-message')}
+          title={title}
+          message={message}
+          calls={calls.map((call, i) =>
+            call === '112'
+              ? {
+                  label: 'Ligar 112',
+                  a11yLabel: strings.urgency.emergencyCta,
+                  tel: EMERGENCY_TEL,
+                  testID: id(i === 0 ? '-call' : '-112', 'urgency-call-112'),
+                }
+              : {
+                  label: 'Ligar SNS 24',
+                  a11yLabel: snsAccessibilityLabel,
+                  tel: SNS24_TEL,
+                  testID: id(i === 0 ? '-call' : '-sns24', 'urgency-call-sns24'),
+                }
           )}
-
-          <Pressable
-            testID={id('-dismiss', 'urgency-dismiss')}
-            accessibilityRole="button"
-            onPress={onDismiss}
-            style={({ pressed }) => [styles.continue, pressed && styles.pressed]}
-          >
-            <Text style={styles.continueText}>{dismissLabel}</Text>
-            <Icon name={{ sf: 'arrow.right', ion: 'arrow-forward' }} size={16} color={theme.colors.inkText} />
-          </Pressable>
-        </View>
+          footer={
+            <Pressable
+              testID={id('-dismiss', 'urgency-dismiss')}
+              accessibilityRole="button"
+              onPress={onDismiss}
+              style={({ pressed }) => [styles.continue, pressed && styles.pressed]}
+            >
+              <Text style={styles.continueText}>{dismissLabel}</Text>
+              <Icon name={{ sf: 'arrow.right', ion: 'arrow-forward' }} size={16} color={theme.colors.inkText} />
+            </Pressable>
+          }
+        />
       </View>
     </Modal>
+  );
+}
+
+// The alert's card: warning icon, title, message (left-aligned) and call
+// buttons, the first one filled. Also shown inline in a chat for the fixed
+// messages of the safety rules (screens/SafetyRuleMessage).
+export function UrgencyCard({
+  title,
+  message,
+  calls,
+  footer,
+  inline,
+  role,
+  testID,
+  messageTestID,
+}: {
+  title: string;
+  message: string;
+  calls: UrgencyCall[];
+  /** Below the calls, after a divider (the modal's "carry on" button). */
+  footer?: ReactNode;
+  /** In a chat, not over a dimmed screen: the card takes the colour of the
+   *  chat's AI answers (surface) so it stands out from the page. */
+  inline?: boolean;
+  role?: 'alert';
+  testID?: string;
+  messageTestID?: string;
+}) {
+  const { theme } = useUnistyles();
+  return (
+    <View
+      testID={testID}
+      accessibilityRole={role}
+      style={[styles.card, inline && { backgroundColor: theme.colors.surface }]}
+    >
+      <View style={styles.iconChip}>
+        <Icon
+          name={{ sf: 'exclamationmark.triangle.fill', ion: 'warning-outline' }}
+          size={22}
+          color={theme.colors.inkText}
+        />
+      </View>
+      <Text style={styles.title} accessibilityRole="header">
+        {title}
+      </Text>
+      <Text testID={messageTestID} style={styles.message}>
+        {message}
+      </Text>
+
+      {calls.length > 0 && (
+        <View style={styles.calls}>
+          {calls.map((call, i) => (
+            <CallButton
+              key={call.testID}
+              testID={call.testID}
+              label={call.label}
+              accessibilityLabel={call.a11yLabel}
+              primary={i === 0}
+              onPress={() => Linking.openURL(call.tel)}
+            />
+          ))}
+        </View>
+      )}
+      {calls.length > 0 && footer ? <View style={styles.divider} /> : null}
+      {footer}
+    </View>
   );
 }
 

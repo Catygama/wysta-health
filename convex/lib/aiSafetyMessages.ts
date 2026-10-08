@@ -8,7 +8,37 @@
 // normalised text (lower case, no accents), so "bebé"/"bebe", "forçada"/"forcada"
 // and "violação"/"violacao" all match.
 
+import { v } from 'convex/values';
+
 export type SafetyRuleId = 'baby-movement' | 'sexual-violence' | 'suicide';
+
+// Message metadata: which rule a fixed message answers, or which rule a
+// patient's message triggered (convex/schema.ts).
+export const safetyRuleIdValidator = v.union(
+  v.literal('baby-movement'),
+  v.literal('sexual-violence'),
+  v.literal('suicide'),
+);
+
+/** Tappable contact under the fixed message (screens/SafetyRuleMessage). */
+export type SafetyCall = { label: string; a11yLabel: string; tel: string };
+
+const CALL_112: SafetyCall = { label: 'Ligar 112', a11yLabel: 'Ligar para o 112', tel: 'tel:112' };
+const CALL_SNS24: SafetyCall = {
+  label: 'Ligar SNS 24',
+  a11yLabel: 'Ligar para o SNS 24, 808 24 24 24',
+  tel: 'tel:808242424',
+};
+const CALL_SNS_GRAVIDA: SafetyCall = {
+  label: 'Ligar SNS 24',
+  a11yLabel: 'Ligar para a linha SNS Grávida, 808 24 24 24',
+  tel: 'tel:808242424',
+};
+const CALL_APAV: SafetyCall = {
+  label: 'Ligar APAV',
+  a11yLabel: 'Ligar para a APAV, Linha de Apoio à Vítima, 116 006',
+  tel: 'tel:116006',
+};
 
 export type SafetyRule = {
   id: SafetyRuleId;
@@ -23,6 +53,9 @@ export type SafetyRule = {
   /** Fixed answer to the patient. Plain text: the chat does not render
    *  markdown, so contacts are separated by blank lines, not bold. */
   message: string;
+  /** The message's phone contacts as call buttons, in order; the first one is
+   *  the filled button. */
+  calls: SafetyCall[];
 };
 
 // Lower case, accents removed, apostrophes/quotes and extra spaces tidied.
@@ -59,6 +92,7 @@ export const SAFETY_RULES: SafetyRule[] = [
     ],
     message:
       'Uma diminuição ou ausência de movimentos do bebé deve ser avaliada sem demora. Liga já para a linha SNS Grávida (808 24 24 24) e não esperes pelo dia seguinte. Se tiveres também sangramento ou dor forte, liga 112.',
+    calls: [CALL_SNS_GRAVIDA, CALL_112],
   },
   {
     id: 'sexual-violence',
@@ -109,6 +143,7 @@ export const SAFETY_RULES: SafetyRule[] = [
         'SNS 24 (808 24 24 24): orientação de saúde e aconselhamento psicológico.',
         'APAV, Linha de Apoio à Vítima (116 006): apoio emocional, jurídico e social, gratuito e confidencial.',
       ].join('\n\n'),
+    calls: [CALL_112, CALL_SNS24, CALL_APAV],
   },
   {
     id: 'suicide',
@@ -127,6 +162,7 @@ export const SAFETY_RULES: SafetyRule[] = [
     ],
     message:
       'Lamento muito que te sintas assim, e ainda bem que o partilhaste. Se estás em perigo imediato ou pensas fazer-te mal agora, liga 112. Podes também ligar para o SNS 24 (808 24 24 24), que tem aconselhamento psicológico. Se puderes, fala com alguém de confiança e não fiques sozinha.',
+    calls: [CALL_112, CALL_SNS24],
   },
 ];
 

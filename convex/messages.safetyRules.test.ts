@@ -63,6 +63,10 @@ describe('safety rules on messages to a nurse', () => {
       ['system', fixed('sexual-violence')],
     ]);
     expect(msgs.some((m) => m.messageType === 'ai-response')).toBe(false);
+    // Marked: her message as answered by the rule, the fixed message as such
+    // (alert card in the app, left out of previews).
+    expect(msgs[0].metadata).toEqual({ triggeredSafetyRule: 'sexual-violence' });
+    expect(msgs[1].metadata).toEqual({ safetyRule: 'sexual-violence' });
     const conv = await t.run((ctx) => ctx.db.get(convId));
     expect(conv).toMatchObject({ priority: 'urgent', alertLevel: 'urgent', status: 'waiting' });
     const after = await nurse.query(api.conversations.listForProfessional, { scope: 'unassigned' });
@@ -72,6 +76,31 @@ describe('safety rules on messages to a nurse', () => {
     expect(seenByNurse.some((m: any) => m.content.includes('puseram alguma coisa'))).toBe(true);
     const audit = await t.run((ctx) => ctx.db.query('auditLog').collect());
     expect(audit.some((a) => a.conversationId === convId && a.action === 'escalation')).toBe(true);
+  });
+
+  it('list previews show the last message from the patient or the nurse, not the fixed message', async () => {
+    const { t, patient, nurse, nurseId, convId } = await setup();
+    await patient.mutation(api.messages.send, {
+      conversationId: convId,
+      content: 'Acho que puseram alguma coisa na minha bebida ontem.',
+    });
+    const mine = await patient.query(api.conversations.listForPatient, {});
+    expect(mine.find((c: any) => c._id === convId)?.preview).toBe(
+      'Acho que puseram alguma coisa na minha bebida ontem.'
+    );
+    const queue = await nurse.query(api.conversations.listForProfessional, { scope: 'unassigned' });
+    expect(queue.find((c: any) => c._id === convId)?.preview).toBe(
+      'Acho que puseram alguma coisa na minha bebida ontem.'
+    );
+
+    // A system line after the nurse's reply doesn't take over the preview either.
+    await t.run((ctx) => ctx.db.patch(convId, { status: 'active', professionalId: nurseId }));
+    await nurse.mutation(api.messages.send, { conversationId: convId, content: 'Estou aqui. Estás em segurança?' });
+    await t.run((ctx) =>
+      ctx.db.insert('messages', { conversationId: convId, senderId: nurseId, content: 'Linha de sistema', messageType: 'system' })
+    );
+    const after = await patient.query(api.conversations.listForPatient, {});
+    expect(after.find((c: any) => c._id === convId)?.preview).toBe('Estou aqui. Estás em segurança?');
   });
 
   it('suicidal ideation makes it an emergency', async () => {

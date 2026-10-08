@@ -28,7 +28,7 @@ import { SUGGEST_CLOSE_MARKER } from './defaults';
 import type { Doc, Id } from '../_generated/dataModel';
 import { findOpenProfessionalConversation } from '../conversations';
 import { userError, NOT_AUTHENTICATED } from '../lib/errors';
-import { detectSafetyRule } from '../lib/aiSafetyMessages';
+import { detectSafetyRule, safetyRuleIdValidator, type SafetyRuleId } from '../lib/aiSafetyMessages';
 import type { TopicId } from '../lib/topics';
 
 // Removes the suggest-close marker from planner output — also a partial
@@ -163,6 +163,7 @@ async function streamAndValidate(
     await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
       messageId,
       content: rule.message,
+      safetyRule: rule.id,
     });
     await ctx.runMutation(internal.conversations.flagSafetyRule, {
       conversationId: args.conversationId,
@@ -221,13 +222,15 @@ export const finalizeAssistantMessage = internalMutation({
     content: v.string(),
     invocationId: v.optional(v.id('aiInvocations')),
     suggestClose: v.optional(v.boolean()),
+    safetyRule: v.optional(safetyRuleIdValidator),
   },
-  handler: async (ctx, { messageId, content, invocationId, suggestClose }) => {
+  handler: async (ctx, { messageId, content, invocationId, suggestClose, safetyRule }) => {
     await ctx.db.patch(messageId, {
       content,
       streaming: false,
       ...(invocationId ? { aiInvocationId: invocationId } : {}),
       ...(suggestClose ? { metadata: { suggestClose: true } } : {}),
+      ...(safetyRule ? { metadata: { safetyRule } } : {}),
     });
   },
 });
@@ -251,13 +254,15 @@ export const respondAnonymous = action({
   handler: async (ctx, { query, history }): Promise<{
     sent: boolean;
     answer: string;
+    /** Set when the answer is a safety rule's fixed message. */
+    safetyRule?: SafetyRuleId;
   }> => {
     const userId = await getActiveUserIdInAction(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
 
     // Same rule-based detection as the conversations: fixed answer, no model.
     const rule = detectSafetyRule(query);
-    if (rule) return { sent: true, answer: rule.message };
+    if (rule) return { sent: true, answer: rule.message, safetyRule: rule.id };
 
     const profile = await ctx.runQuery(internal.ai.assistant.gatherProfileOnly, {
       userId,

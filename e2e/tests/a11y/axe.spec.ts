@@ -69,6 +69,23 @@ test.describe('Accessibility (axe, WCAG 2.1 AA)', () => {
 
     await page.goto('/(patient)/education');
     await audit(page, 'education');
+
+    // Fixed message of a safety rule (alert card with call buttons), light and dark.
+    const { conversationId: ruleConvId } = await seedConversation({
+      patientEmail: email,
+      topic: 'pregnancy',
+      title: 'A11y regra',
+      status: 'waiting',
+    });
+    await page.goto(`/(patient)/conversations/${ruleConvId}`);
+    await page.getByTestId('message-input').fill('Não sinto o bebé mexer desde ontem.');
+    await page.getByTestId('message-send').click();
+    await expect(page.getByTestId('safety-rule-message')).toBeVisible({ timeout: 15_000 });
+    await audit(page, 'safety-rule-message');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.waitForTimeout(500);
+    await audit(page, 'safety-rule-message-dark');
+    await page.emulateMedia({ colorScheme: 'light' });
   });
 
   test('professional: queue and case', async ({ page }, testInfo) => {

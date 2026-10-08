@@ -30,6 +30,7 @@ import {
   type PickedFile,
 } from '@/lib/upload';
 import { errorText } from '@/lib/errorText';
+import { SafetyRuleMessage } from '@/screens/SafetyRuleMessage';
 
 function formatBytes(bytes?: number): string | null {
   if (!bytes || bytes <= 0) return null;
@@ -265,6 +266,9 @@ export function MessageThread({
             item.metadata?.triageData
           ) {
             return <TriageMessage data={item.metadata.triageData} aiOnly={aiOnly} />;
+          }
+          if (item.metadata?.safetyRule && !item.streaming) {
+            return <SafetyRuleMessage ruleId={item.metadata.safetyRule} content={item.content} />;
           }
           if (item.messageType === 'system') {
             return <SystemMessage content={item.content} />;

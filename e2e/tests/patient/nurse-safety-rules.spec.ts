@@ -38,10 +38,34 @@ test('a message to the nurse that matches a safety rule shows the contacts and r
 
   const thread = page.getByTestId('messages-list-chat');
   await expect(thread.getByText('Acho que puseram alguma coisa na minha bebida ontem.')).toBeVisible();
-  await expect(thread.getByText('Não estás sozinha', { exact: false })).toBeVisible({ timeout: 10_000 });
-  await expect(thread.getByText('Linha de Apoio à Vítima (116 006)', { exact: false })).toBeVisible();
+  // The fixed message as the triage alert card: label, level, text and calls.
+  const card = thread.getByTestId('safety-rule-message');
+  await expect(card).toBeVisible({ timeout: 10_000 });
+  await expect(card.getByText('Mensagem automática da Wysta')).toBeVisible();
+  await expect(card.getByText('Urgente', { exact: true })).toBeVisible();
+  await expect(card.getByText('Linha de Apoio à Vítima (116 006)', { exact: false })).toBeVisible();
+  for (const name of [
+    'Ligar para o 112',
+    'Ligar para o SNS 24, 808 24 24 24',
+    'Ligar para a APAV, Linha de Apoio à Vítima, 116 006',
+  ]) {
+    await expect(card.getByRole('link', { name })).toBeVisible();
+  }
   await expect(thread.getByText('A preparar a resposta…')).toHaveCount(0);
   expect(await getConversation(conversationId)).toMatchObject({ priority: 'urgent', alertLevel: 'urgent' });
+
+  // The list preview is her message, not the fixed one.
+  await page.goto('/(patient)/conversations');
+  const row = page.getByTestId(`patient-conversation-${conversationId}`);
+  await expect(row.getByText('Acho que puseram alguma coisa', { exact: false })).toBeVisible({ timeout: 10_000 });
+  await expect(row.getByText('Não estás sozinha', { exact: false })).toHaveCount(0);
+
+  // Switching to the AI doesn't show the same fixed message again.
+  await row.click();
+  await page.getByTestId('conversation-switch-to-ai').click();
+  await expect(page.getByTestId('conversation-switch-to-professional')).toBeVisible({ timeout: 10_000 });
+  await page.waitForTimeout(1_500);
+  await expect(page.getByTestId('messages-list-chat').getByTestId('safety-rule-message')).toHaveCount(0);
 
   // The nurse: her request is now above the older high-priority one.
   await logoutViaBridge(page);

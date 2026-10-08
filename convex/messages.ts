@@ -148,11 +148,19 @@ export const send = mutation({
       }
     }
 
+    // Same rule-based detection as the AI chat (lib/aiSafetyMessages), on what
+    // the patient writes to a nurse (AI chats run it in assistant.respondAuto).
+    const rule =
+      isPatient && messageType === 'text' && conv.kind !== 'ai-only' && !args.isInternal
+        ? detectSafetyRule(args.content)
+        : null;
+
     await ctx.db.insert('messages', {
       conversationId: args.conversationId,
       senderId: userId,
       content: args.content,
       messageType,
+      ...(rule ? { metadata: { triggeredSafetyRule: rule.id } } : {}),
       imageId: args.imageId,
       attachmentId: args.attachmentId,
       attachmentName: args.attachmentId ? args.attachmentName : undefined,
@@ -177,18 +185,17 @@ export const send = mutation({
       return;
     }
 
-    // Same rule-based detection as the AI chat (lib/aiSafetyMessages), on what
-    // the patient writes to a nurse: she gets the fixed message with the
-    // contacts straight away, without the model, and the conversation becomes
-    // urgent at the top of the queue. Her message reaches the nurse as usual.
-    if (isPatient && messageType === 'text') {
-      const rule = detectSafetyRule(args.content);
-      if (rule && (await raiseForSafetyRule(ctx, args.conversationId, rule.alertLevel))) {
+    // A rule matched: she gets the fixed message with the contacts straight
+    // away, without the model, and the conversation becomes urgent at the top
+    // of the queue. Her message reaches the nurse as usual.
+    if (rule) {
+      if (await raiseForSafetyRule(ctx, args.conversationId, rule.alertLevel)) {
         await ctx.db.insert('messages', {
           conversationId: args.conversationId,
           senderId: userId,
           content: rule.message,
           messageType: 'system',
+          metadata: { safetyRule: rule.id },
         });
         await ctx.db.insert('auditLog', {
           conversationId: args.conversationId,
