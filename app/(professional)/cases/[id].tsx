@@ -561,13 +561,13 @@ function SummaryPanel({
       <Text style={styles.muted}>Mensagens nesta conversa: {messageCount}</Text>
       <View style={styles.aiCard}>
         <View style={styles.aiHeader}>
-          <Text style={styles.aiTitle}>Sumário AI</Text>
+          <Text style={styles.aiTitle}>Sumário IA</Text>
           {aiSummaryAt && <Text style={styles.aiDate}>{new Date(aiSummaryAt).toLocaleString('pt-PT')}</Text>}
         </View>
         {aiSummary ? (
           <Text style={styles.aiBody}>{aiSummary}</Text>
         ) : (
-          <Text style={styles.muted}>Ainda sem sumário. Gera um resumo clínico desta conversa com AI.</Text>
+          <Text style={styles.muted}>Ainda sem sumário. Gera um resumo clínico desta conversa com IA.</Text>
         )}
         {error && <Text style={styles.error}>{error}</Text>}
         <Pressable
@@ -579,7 +579,7 @@ function SummaryPanel({
         >
           {busy && <ActivityIndicator color={theme.colors.onInk} size="small" />}
           <Text style={[styles.genBtnText, genDisabled && styles.genBtnTextOff]}>
-            {busy ? 'A gerar...' : aiSummary ? 'Re-gerar sumário' : 'Gerar sumário AI'}
+            {busy ? 'A gerar...' : aiSummary ? 'Re-gerar sumário' : 'Gerar sumário IA'}
           </Text>
         </Pressable>
         {!canGenerate && !busy && (
@@ -654,7 +654,7 @@ function ClinicalProfile({
             style={[styles.profileBtn, busy && styles.dim]}
           >
             {busy && <ActivityIndicator color={theme.colors.onInk} size="small" />}
-            <Text style={styles.profileBtnText}>{busy ? 'A gerar...' : aiSummary ? 'Atualizar' : 'Gerar perfil AI'}</Text>
+            <Text style={styles.profileBtnText}>{busy ? 'A gerar...' : aiSummary ? 'Atualizar' : 'Gerar perfil IA'}</Text>
           </Pressable>
         </View>
       )}

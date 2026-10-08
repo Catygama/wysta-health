@@ -43,7 +43,7 @@ export default function PatientConversations() {
           <Text style={styles.title}>Sem conversas abertas</Text>
           <Text style={styles.body}>
             Escolhe um tópico no Início para falares com um enfermeiro ou com a
-            assistente AI.
+            assistente IA.
           </Text>
           <View style={styles.cta}>
             <Button label="Iniciar conversa" onPress={() => router.push('/(patient)/')} />

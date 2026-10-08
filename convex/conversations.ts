@@ -639,7 +639,7 @@ export const switchMode = mutation({
     const newId = await ctx.db.insert('conversations', {
       patientId: userId,
       topic: conv.topic,
-      title: toAi ? 'Conversa com AI' : 'Conversa com enfermeiro',
+      title: toAi ? 'Conversa com IA' : 'Conversa com enfermeiro',
       priority: conv.priority,
       status: toAi ? 'active' : 'waiting',
       lastMessageAt: now,
@@ -671,8 +671,8 @@ export const switchMode = mutation({
       conversationId: newId,
       senderId: userId,
       content: toAi
-        ? 'Conversa com a assistente AI. A assistente tem acesso à tua conversa com o enfermeiro.'
-        : 'Pediste acompanhamento por um enfermeiro. O enfermeiro terá acesso à tua conversa com a assistente AI.',
+        ? 'Conversa com a assistente IA. A assistente tem acesso à tua conversa com o enfermeiro.'
+        : 'Pediste acompanhamento por um enfermeiro. O enfermeiro terá acesso à tua conversa com a assistente IA.',
       messageType: 'system',
     });
     if (toAi) await answerPendingWithAi(ctx, conv, newId);
