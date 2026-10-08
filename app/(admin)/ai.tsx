@@ -602,7 +602,7 @@ function PromptEditor({
           style={[styles.chip, scope === 'default' && styles.chipActive]}
         >
           <Text style={[styles.chipText, scope === 'default' && styles.chipTextActive]}>
-            Geral
+            Todos os temas (predefinição)
           </Text>
         </Pressable>
         {availableTopics.map((tp) => {
