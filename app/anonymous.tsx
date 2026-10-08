@@ -264,9 +264,11 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: '500',
     lineHeight: 22,
     color: theme.colors.textPrimary,
-    backgroundColor: theme.colors.surfaceSunken,
+    backgroundColor: theme.colors.composerFill,
+    borderWidth: 1,
+    borderColor: theme.colors.composerBorder,
   },
   send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   sendOn: { backgroundColor: theme.colors.ink },
-  sendOff: { backgroundColor: theme.colors.surfaceSunken },
+  sendOff: { backgroundColor: theme.colors.composerFill },
 }));

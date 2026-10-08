@@ -693,9 +693,11 @@ const styles = StyleSheet.create((theme) => ({
     lineHeight: 22,
     maxHeight: INPUT_MAX_HEIGHT,
     minHeight: INPUT_MIN_HEIGHT,
+    borderWidth: 1,
+    borderColor: theme.colors.composerBorder,
     variants: {
       scope: {
-        chat: { backgroundColor: theme.colors.surfaceSunken },
+        chat: { backgroundColor: theme.colors.composerFill },
         internal: { backgroundColor: theme.colors.warningSurface },
       },
     },
@@ -707,7 +709,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sendBtnIdle: { backgroundColor: theme.colors.surfaceSunken },
+  sendBtnIdle: { backgroundColor: theme.colors.composerFill },
   sendBtnActive: {
     variants: {
       scope: {

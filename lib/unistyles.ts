@@ -77,6 +77,9 @@ export const lightTheme = {
     inputBorder: 'rgba(80,0,13,0.22)',
     // Soft glow around a focused input (paired with an ink border).
     focusRing: 'rgba(80,0,13,0.14)',
+    // Message field in the chats (and its idle send button).
+    composerFill: '#F3E6E1',
+    composerBorder: 'transparent',
   },
   topic: topicsLight,
 } as const;
@@ -109,6 +112,9 @@ export const darkTheme = {
     divider: 'rgba(255,255,255,0.08)',
     border: 'rgba(255,255,255,0.16)',
     borderStrong: 'rgba(255,255,255,0.30)',
+    // Message field: lighter than the page, with an outline, so it shows.
+    composerFill: '#382A2F',
+    composerBorder: 'rgba(255,255,255,0.16)',
     // 3:1 against the field fill, the page and the cards (WCAG 1.4.11).
     inputBorder: 'rgba(255,255,255,0.40)',
     focusRing: 'rgba(227,199,199,0.25)',
