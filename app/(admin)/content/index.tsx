@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { TriageEditor } from '@/components/admin/TriageEditor';
-import { SeedContentCard } from '@/components/admin/SeedContentCard';
 import { TOPICS } from '@/constants/topics';
 import { relativeTime } from '@/lib/format';
 import { fonts } from '@/lib/fonts';
@@ -64,9 +63,6 @@ export default function AdminContent() {
 
       {tab === 'articles' ? <ArticlesPanel /> : <TriageEditor />}
 
-      <View style={styles.seed}>
-        <SeedContentCard />
-      </View>
     </ScrollView>
   );
 }
@@ -229,5 +225,4 @@ const styles = StyleSheet.create((theme) => ({
   pillText: { fontSize: 12, fontWeight: '600' },
   pillTextPublished: { color: theme.colors.success },
   pillTextDraft: { color: theme.colors.warning },
-  seed: { marginTop: theme.spacing.lg },
 }));
