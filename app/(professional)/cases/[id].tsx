@@ -382,6 +382,7 @@ function OptionsPanel(p: OptionsPanelProps) {
               riskLevel={p.triage.riskLevel}
               alertLevel={c.alertLevel}
               responses={p.triage.responses ?? {}}
+              topic={p.triage.topic ?? c.topic}
             />
           ) : (
             <Text style={styles.muted}>Esta conversa não tem questionário de triagem.</Text>
