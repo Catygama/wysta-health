@@ -8,8 +8,8 @@ test('Guest patient sign-in lands on home', async ({ page }) => {
   await expect(page.getByText('Sou enfermeiro/a', { exact: false })).toBeVisible();
   // Entering without an account needs the same consent as signing up.
   await expect(page.getByTestId('auth-guest-button')).toHaveAttribute('aria-disabled', 'true');
-  await page.getByTestId('auth-guest-consent-checkbox').click();
-  await expect(page.getByTestId('auth-guest-consent-checkbox')).toHaveAttribute('aria-checked', 'true');
+  await page.getByTestId('auth-consent-checkbox').click();
+  await expect(page.getByTestId('auth-consent-checkbox')).toHaveAttribute('aria-checked', 'true');
   await page.getByTestId('auth-guest-button').click();
   // Patient home: both ways to start a conversation are offered.
   await expect(page.getByTestId('home-path-professional')).toBeVisible({ timeout: 20_000 });

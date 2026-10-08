@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, Text, TextInput, View, Platform } from 'react-native';
 import { useMutation, useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -13,7 +13,6 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
-import { fonts } from '@/lib/fonts';
 import { errorText } from '@/lib/errorText';
 
 type QuestionType = 'yes-no' | 'multiple-choice' | 'scale' | 'text';
@@ -76,11 +75,13 @@ export function TriageEditor() {
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   // Load the topic's questions (again after a save) unless there are edits.
-  useEffect(() => {
-    if (data !== undefined && !dirty) {
-      setQuestions((data?.questions ?? []).map(clean));
-    }
-  }, [data, dirty]);
+  // Adjusted during render: re-sync whenever the server data changes or the
+  // list was cleared (topic switch).
+  const [syncedFrom, setSyncedFrom] = useState<typeof data>(undefined);
+  if (data !== undefined && !dirty && (data !== syncedFrom || questions === null)) {
+    setSyncedFrom(data);
+    setQuestions((data?.questions ?? []).map(clean));
+  }
 
   const topicLabel = TOPICS.find((t) => t.id === topic)?.label ?? topic;
 
@@ -423,7 +424,7 @@ function QuestionForm({
                 ...ALERT_LEVELS.map((l) => ({ value: l, label: ALERT_LABELS[l] })),
               ]}
             />
-            {q.alert && q.type === 'yes-no' && <Text style={styles.note}>Dá alerta quando a resposta é "Sim".</Text>}
+            {q.alert && q.type === 'yes-no' && <Text style={styles.note}>Dá alerta quando a resposta é &quot;Sim&quot;.</Text>}
             {q.alert && q.type === 'scale' && (
               <NumberField
                 label="A partir de"
@@ -509,7 +510,11 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
 
 function NumberField({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
   const [text, setText] = useState(String(value));
-  useEffect(() => setText(String(value)), [value]);
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setText(String(value));
+  }
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>

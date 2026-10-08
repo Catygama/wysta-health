@@ -28,7 +28,7 @@ import { SUGGEST_CLOSE_MARKER } from './defaults';
 import type { Doc, Id } from '../_generated/dataModel';
 import { findOpenProfessionalConversation } from '../conversations';
 import { userError, NOT_AUTHENTICATED } from '../lib/errors';
-import { detectSafetyRule } from '../lib/aiSafetyMessages';
+import { detectSafetyRule, safetyRuleIdValidator, type SafetyRuleId } from '../lib/aiSafetyMessages';
 import type { TopicId } from '../lib/topics';
 
 // Removes the suggest-close marker from planner output — also a partial
@@ -63,6 +63,10 @@ const BLOCKED_RESPOND =
   'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um enfermeiro.';
 const BLOCKED_ESCALATE =
   'Esta pergunta precisa de um enfermeiro. Encaminhei-a para a tua conversa com o enfermeiro, que te vai responder lá.';
+// The question came from the conversation with the nurse (switchMode), so it
+// is already there waiting for an answer: nothing to forward.
+const BLOCKED_PENDING =
+  'Esta pergunta precisa de um enfermeiro. Já está na tua conversa com o enfermeiro, que te vai responder lá.';
 
 type StreamVars = {
   query: string;
@@ -159,6 +163,7 @@ async function streamAndValidate(
     await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
       messageId,
       content: rule.message,
+      safetyRule: rule.id,
     });
     await ctx.runMutation(internal.conversations.flagSafetyRule, {
       conversationId: args.conversationId,
@@ -217,13 +222,15 @@ export const finalizeAssistantMessage = internalMutation({
     content: v.string(),
     invocationId: v.optional(v.id('aiInvocations')),
     suggestClose: v.optional(v.boolean()),
+    safetyRule: v.optional(safetyRuleIdValidator),
   },
-  handler: async (ctx, { messageId, content, invocationId, suggestClose }) => {
+  handler: async (ctx, { messageId, content, invocationId, suggestClose, safetyRule }) => {
     await ctx.db.patch(messageId, {
       content,
       streaming: false,
       ...(invocationId ? { aiInvocationId: invocationId } : {}),
       ...(suggestClose ? { metadata: { suggestClose: true } } : {}),
+      ...(safetyRule ? { metadata: { safetyRule } } : {}),
     });
   },
 });
@@ -247,13 +254,15 @@ export const respondAnonymous = action({
   handler: async (ctx, { query, history }): Promise<{
     sent: boolean;
     answer: string;
+    /** Set when the answer is a safety rule's fixed message. */
+    safetyRule?: SafetyRuleId;
   }> => {
     const userId = await getActiveUserIdInAction(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
 
     // Same rule-based detection as the conversations: fixed answer, no model.
     const rule = detectSafetyRule(query);
-    if (rule) return { sent: true, answer: rule.message };
+    if (rule) return { sent: true, answer: rule.message, safetyRule: rule.id };
 
     const profile = await ctx.runQuery(internal.ai.assistant.gatherProfileOnly, {
       userId,
@@ -293,8 +302,11 @@ export const respondAuto = internalAction({
   args: {
     conversationId: v.id('conversations'),
     query: v.string(),
+    // Unanswered messages from the conversation with the nurse, answered on
+    // a switch to the AI (conversations.switchMode).
+    pendingFromProfessional: v.optional(v.boolean()),
   },
-  handler: async (ctx, { conversationId, query }) => {
+  handler: async (ctx, { conversationId, query, pendingFromProfessional }) => {
     const owner = await ctx.runQuery(internal.ai.assistant.getConversationPatient, {
       conversationId,
     });
@@ -315,11 +327,16 @@ export const respondAuto = internalAction({
         topicAndRisk: ctxData.topicAndRisk,
       },
       topic: ctxData.topic,
-      blockedMessage: ctxData.escalatesOnBlock ? BLOCKED_ESCALATE : BLOCKED_AUTO,
+      blockedMessage: pendingFromProfessional
+        ? BLOCKED_PENDING
+        : ctxData.escalatesOnBlock
+          ? BLOCKED_ESCALATE
+          : BLOCKED_AUTO,
     });
     // In an AI side chat of an open professional conversation, a question the
-    // AI can't answer is forwarded to that professional conversation.
-    if (blocked && ctxData.escalatesOnBlock) {
+    // AI can't answer is forwarded to that professional conversation (unless
+    // it came from there).
+    if (blocked && ctxData.escalatesOnBlock && !pendingFromProfessional) {
       await ctx.runMutation(internal.conversations.escalateAiConversation, {
         conversationId,
       });

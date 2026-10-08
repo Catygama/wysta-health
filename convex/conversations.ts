@@ -1,4 +1,4 @@
-import { internalMutation, mutation, query, type QueryCtx } from './_generated/server';
+import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { getActiveUserId } from './lib/accounts';
@@ -45,7 +45,11 @@ export const listForPatient = query({
           .order('desc')
           .take(15);
         const visible = recent.filter((m) => !m.isInternal);
-        const last = visible[0];
+        // Preview: the last thing the patient, the nurse or the AI wrote; not
+        // system lines, the fixed safety messages or a reply still in progress.
+        const last = visible.find(
+          (m) => m.messageType !== 'system' && !m.metadata?.safetyRule && !(m.messageType === 'ai-response' && m.streaming)
+        );
         const lastFromPro = visible.find((m) => m.senderId !== userId);
         let responderName: string | null = null;
         if (lastFromPro && conv.kind !== 'ai-only') {
@@ -139,7 +143,10 @@ export const listForProfessional = query({
           .order('desc')
           .take(10);
         const lastText = recent.find(
-          (m) => !m.isInternal && (m.messageType === 'text' || m.messageType === 'ai-response')
+          (m) =>
+            !m.isInternal &&
+            !m.metadata?.safetyRule &&
+            (m.messageType === 'text' || m.messageType === 'ai-response')
         );
         return {
           ...c,
@@ -610,6 +617,7 @@ export const switchMode = mutation({
         other.status !== 'closed' &&
         (other.kind ?? 'human-async') === targetKind
       ) {
+        if (targetKind === 'ai-only') await answerPendingWithAi(ctx, conv, other._id);
         return { id: other._id, created: false };
       }
     }
@@ -622,6 +630,7 @@ export const switchMode = mutation({
       if (!existing.counterpartConversationId) {
         await ctx.db.patch(existing._id, { counterpartConversationId: conv._id });
       }
+      if (targetKind === 'ai-only') await answerPendingWithAi(ctx, conv, existing._id);
       return { id: existing._id, created: false };
     }
 
@@ -666,9 +675,53 @@ export const switchMode = mutation({
         : 'Pediste acompanhamento por um enfermeiro. O enfermeiro terá acesso à tua conversa com a assistente AI.',
       messageType: 'system',
     });
+    if (toAi) await answerPendingWithAi(ctx, conv, newId);
     return { id: newId, created: true };
   },
 });
+
+// Switching from a conversation with a nurse to the AI: the patient's text
+// messages the nurse hasn't answered yet (sent after the nurse's last reply,
+// or all of them if the nurse hasn't replied) are answered by the AI straight
+// away, as if typed in the AI chat (assistant.respondAuto: safety rules, the
+// agent chain, pseudonymisation, daily cost cap, "A preparar a resposta…").
+// The nurse conversation keeps its status, priority, lastMessageAt and place
+// in the queue; it only records how far the AI has answered, so switching back
+// and forth never answers the same question twice.
+async function answerPendingWithAi(
+  ctx: MutationCtx,
+  proConv: Doc<'conversations'>,
+  aiConvId: Id<'conversations'>
+) {
+  const answeredThrough = proConv.aiAnsweredPendingThrough ?? 0;
+  const recent = await ctx.db
+    .query('messages')
+    .withIndex('by_conversation', (q) => q.eq('conversationId', proConv._id))
+    .order('desc')
+    .take(50);
+  const pending: Doc<'messages'>[] = [];
+  for (const m of recent) {
+    if (m._creationTime <= answeredThrough) break;
+    if (m.isInternal) continue;
+    const fromPatient = m.senderId === proConv.patientId;
+    // The nurse's last reply: everything before it is answered.
+    if (!fromPatient && ['text', 'image', 'file'].includes(m.messageType)) break;
+    // A message that triggered a safety rule already got the fixed message.
+    if (fromPatient && m.messageType === 'text' && m.content.trim() && !m.metadata?.triggeredSafetyRule) {
+      pending.push(m);
+    }
+  }
+  if (pending.length === 0) return;
+  pending.reverse();
+  await ctx.db.patch(proConv._id, {
+    aiAnsweredPendingThrough: pending[pending.length - 1]._creationTime,
+  });
+  await ctx.scheduler.runAfter(0, internal.ai.assistant.respondAuto, {
+    conversationId: aiConvId,
+    query: pending.map((m) => m.content).join('\n'),
+    pendingFromProfessional: true,
+  });
+}
 
 // Called by the assistant when the judge blocks a draft in an ai-only chat
 // that is paired with an open professional conversation: the question goes to
@@ -698,6 +751,24 @@ export const escalateAiConversation = internalMutation({
 // A safety rule matched the patient's message to the AI (lib/aiSafetyMessages):
 // the conversation becomes urgent with the rule's alert level, and a linked
 // open conversation with a nurse is raised the same way and told why.
+// Makes an open conversation urgent with the rule's alert level (never lowers
+// a more severe one), which puts it at the top of the nurse's queue. Returns
+// the conversation as it was, or null if it is gone or closed.
+export async function raiseForSafetyRule(
+  ctx: MutationCtx,
+  id: Id<'conversations'>,
+  alertLevel: 'emergency' | 'urgent'
+) {
+  const conv = await ctx.db.get(id);
+  if (!conv || conv.status === 'closed') return null;
+  await ctx.db.patch(id, {
+    priority: 'urgent',
+    alertLevel: conv.alertLevel ? moreSevere(conv.alertLevel, alertLevel) : alertLevel,
+    lastMessageAt: Date.now(),
+  });
+  return conv;
+}
+
 export const flagSafetyRule = internalMutation({
   args: {
     conversationId: v.id('conversations'),
@@ -705,16 +776,7 @@ export const flagSafetyRule = internalMutation({
     label: v.string(),
   },
   handler: async (ctx, { conversationId, alertLevel, label }) => {
-    const raise = async (id: Id<'conversations'>) => {
-      const conv = await ctx.db.get(id);
-      if (!conv || conv.status === 'closed') return null;
-      await ctx.db.patch(id, {
-        priority: 'urgent',
-        alertLevel: conv.alertLevel ? moreSevere(conv.alertLevel, alertLevel) : alertLevel,
-        lastMessageAt: Date.now(),
-      });
-      return conv;
-    };
+    const raise = (id: Id<'conversations'>) => raiseForSafetyRule(ctx, id, alertLevel);
     const aiConv = await raise(conversationId);
     if (!aiConv) return;
     await ctx.db.insert('auditLog', {

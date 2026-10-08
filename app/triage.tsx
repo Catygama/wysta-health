@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,10 @@ import { TOPICS, type TopicId } from '@/constants/topics';
 import { kindForMode, type ConversationMode } from '@/constants/conversation';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fonts } from '@/lib/fonts';
+import { haptics } from '@/lib/haptics';
+
+// How long a chosen triage option stays on screen before the next question.
+const CHOICE_HOLD_MS = 180;
 
 type Question = {
   id: string;
@@ -132,6 +136,23 @@ export default function Triage() {
       return;
     }
     advance(next);
+  }
+
+  // Tapping an option: a haptic, the option shows as chosen for a moment, then
+  // the next question. Advancing at once replaced the screen before the
+  // selection was ever visible, so a tap felt like it did nothing.
+  const chooseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (chooseTimer.current) clearTimeout(chooseTimer.current);
+  }, []);
+  function chooseOption(value: string | number) {
+    if (!current || chooseTimer.current) return;
+    haptics.select();
+    setAnswers({ ...answers, [current.id]: value });
+    chooseTimer.current = setTimeout(() => {
+      chooseTimer.current = null;
+      handleAnswer(value);
+    }, CHOICE_HOLD_MS);
   }
 
   function dismissAlert() {
@@ -300,8 +321,8 @@ export default function Triage() {
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
                   aria-checked={selected}
-                  onPress={() => handleAnswer(opt)}
-                  style={[styles.yesNo, selected ? styles.optOn : styles.optOff]}
+                  onPress={() => chooseOption(opt)}
+                  style={({ pressed }) => [styles.yesNo, selected ? styles.optOn : styles.optOff, pressed && styles.optPressed]}
                 >
                   <Text style={[styles.optText, selected ? styles.optTextOn : styles.optTextOff]}>
                     {opt === 'yes' ? 'Sim' : 'Não'}
@@ -323,8 +344,8 @@ export default function Triage() {
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
                   aria-checked={selected}
-                  onPress={() => handleAnswer(opt)}
-                  style={[styles.option, selected ? styles.optOn : styles.optOff]}
+                  onPress={() => chooseOption(opt)}
+                  style={({ pressed }) => [styles.option, selected ? styles.optOn : styles.optOff, pressed && styles.optPressed]}
                 >
                   <Text style={[styles.optText, selected ? styles.optTextOn : styles.optTextOff]}>
                     {opt}
@@ -349,8 +370,8 @@ export default function Triage() {
                     accessibilityLabel={`${opt} de ${current.options!.length}`}
                     accessibilityState={{ selected }}
                     aria-checked={selected}
-                    onPress={() => handleAnswer(value)}
-                    style={[styles.scaleCell, selected ? styles.optOn : styles.optOff]}
+                    onPress={() => chooseOption(value)}
+                    style={({ pressed }) => [styles.scaleCell, selected ? styles.optOn : styles.optOff, pressed && styles.optPressed]}
                   >
                     <Text style={[styles.optText, selected ? styles.optTextOn : styles.optTextOff]}>
                       {opt}
@@ -492,8 +513,15 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.md,
     borderCurve: 'continuous',
   },
-  optOn: { backgroundColor: theme.colors.ink },
-  optOff: { backgroundColor: theme.colors.surfaceSunken },
+  optOn: {
+    backgroundColor: theme.colors.ink,
+    _web: { transition: 'transform 120ms ease-out, background-color 120ms ease-out' },
+  },
+  optOff: {
+    backgroundColor: theme.colors.surfaceSunken,
+    _web: { transition: 'transform 120ms ease-out, background-color 120ms ease-out' },
+  },
+  optPressed: { transform: [{ scale: 0.97 }], opacity: 0.85 },
   optText: { fontSize: 16, fontWeight: '500' },
   optTextOn: { color: theme.colors.onInk },
   optTextOff: { color: theme.colors.textPrimary },

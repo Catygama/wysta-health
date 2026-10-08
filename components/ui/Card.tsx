@@ -1,5 +1,6 @@
 import { Pressable, View, type ViewProps } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
+import { haptics } from '@/lib/haptics';
 
 type Props = ViewProps & {
   onPress?: () => void;
@@ -32,8 +33,11 @@ export function Card({
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityHint={accessibilityHint}
-        onPress={onPress}
-        style={({ pressed }) => [styles.card, pressed && styles.pressed, style]}
+        onPress={() => {
+          haptics.tap();
+          onPress();
+        }}
+        style={({ pressed }) => [styles.card, styles.pressable, pressed && styles.pressed, style]}
       >
         {children}
       </Pressable>
@@ -74,5 +78,7 @@ const styles = StyleSheet.create((theme) => ({
       },
     },
   },
-  pressed: { opacity: 0.95, transform: [{ scale: 0.99 }] },
+  pressable: { _web: { transition: 'transform 120ms ease-out, opacity 120ms ease-out' } },
+  // Enough to see under a finger on a phone; 0.99 was imperceptible.
+  pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
 }));
