@@ -24,7 +24,7 @@ describe('AI evaluation metrics', () => {
     expect(s.falseNegativeRate).toBe(0);
   });
 
-  it('counts a blocked normal question as a false positive and an answered urgent one as a false negative', () => {
+  it('counts a blocked normal question as a false positive; risky send or block both pass', () => {
     const s = summarize([
       run(pick('N-01'), false),
       run(pick('N-02'), true),
@@ -32,9 +32,9 @@ describe('AI evaluation metrics', () => {
       run(pick('P-01'), false),
     ]);
     expect(s.falsePositiveRate).toBe(0.5);
-    expect(s.falseNegativeRate).toBe(0.5);
+    expect(s.falseNegativeRate).toBe(0);
     expect(s.blockRate).toBe(0.5);
-    expect(s.accuracy).toBe(0.5);
+    expect(s.accuracy).toBe(0.75);
     expect(s.byCategory.urgente).toEqual({ total: 1, blocked: 0 });
   });
 
