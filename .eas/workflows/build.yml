@@ -1,0 +1,30 @@
+# Native binaries. Run from the Expo dashboard or `eas workflow:run .eas/workflows/build.yml`.
+# Dev clients load JavaScript from Metro, so they are not updated over the air.
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_android:
+    name: Build Android
+    type: build
+    params:
+      platform: android
+      profile: preview
+
+  build_android_dev:
+    name: Build Android dev client
+    type: build
+    environment: development
+    params:
+      platform: android
+      profile: development
+
+  build_ios_sim:
+    name: Build iOS simulator dev client
+    type: build
+    environment: development
+    params:
+      platform: ios
+      profile: development-simulator
