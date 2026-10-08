@@ -436,7 +436,7 @@ export const gatherContext = internalQuery({
         .map((m) => {
           const role =
             m.messageType === 'ai-response'
-              ? 'AI (anterior)'
+              ? 'IA (anterior)'
               : m.senderId === conv.patientId
                 ? 'Utente'
                 : 'Enfermeiro';
@@ -479,7 +479,7 @@ export const gatherContext = internalQuery({
       );
       if (contextVisible.length > 0) {
         const label =
-          contextConv.kind === 'ai-only' ? 'Conversa anterior (com a AI)' : 'Conversa com o enfermeiro';
+          contextConv.kind === 'ai-only' ? 'Conversa anterior (com a IA)' : 'Conversa com o enfermeiro';
         conversationHistory = `${label}:\n${formatLines(contextVisible)}\n\nConversa atual:\n${conversationHistory}`;
       }
     }

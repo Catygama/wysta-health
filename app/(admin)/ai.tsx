@@ -71,7 +71,7 @@ export default function AdminAi() {
     >
       <Card title="Limite diário por utente">
         <Text style={styles.hint}>
-          Cada chamada AI conta para o gasto total do utente nas últimas 24h. Acima
+          Cada chamada de IA conta para o gasto total do utente nas últimas 24h. Acima
           do limite, o `runAgent` rejeita até passarem 24h.
         </Text>
         <View style={styles.inlineRow}>

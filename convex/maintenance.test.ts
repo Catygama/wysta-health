@@ -36,3 +36,48 @@ describe('maintenance.useNurseWording', () => {
     expect((await t.mutation(internal.maintenance.useNurseWording, {})).updated).toEqual([]);
   });
 });
+
+describe('maintenance.useIaWording', () => {
+  it('rewrites "AI" as "IA" in system messages, titles and prompts', async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      const userId = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
+      const conversationId = await ctx.db.insert('conversations', {
+        patientId: userId,
+        topic: 'contraception',
+        title: 'Conversa com AI',
+        priority: 'low',
+        status: 'active',
+        lastMessageAt: 0,
+        kind: 'ai-only',
+      });
+      await ctx.db.insert('messages', {
+        conversationId,
+        senderId: userId,
+        content: 'Conversa com a assistente AI.',
+        messageType: 'system',
+      } as any);
+      await ctx.db.insert('messages', {
+        conversationId,
+        senderId: userId,
+        content: 'Uma mensagem com AI escrita pela utente.',
+        messageType: 'text',
+      } as any);
+      await ctx.db.insert('aiPrompts', { purpose: 'chat', systemPrompt: 'És um assistente AI.', createdBy: userId });
+    });
+
+    const res = await t.mutation(internal.maintenance.useIaWording, {});
+    expect(res).toMatchObject({ messages: 1, titles: 1, prompts: ['chat/'], done: true });
+    const [msgs, convs, prompts] = await t.run(async (ctx) => [
+      await ctx.db.query('messages').collect(),
+      await ctx.db.query('conversations').collect(),
+      await ctx.db.query('aiPrompts').order('desc').collect(),
+    ]);
+    expect(msgs.map((m) => m.content)).toEqual([
+      'Conversa com a assistente IA.',
+      'Uma mensagem com AI escrita pela utente.',
+    ]);
+    expect(convs[0].title).toBe('Conversa com IA');
+    expect(prompts[0].systemPrompt).toBe('És um assistente IA.');
+  });
+});

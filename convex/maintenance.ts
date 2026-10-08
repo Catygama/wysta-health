@@ -1,4 +1,5 @@
 import { internalMutation } from './_generated/server';
+import { internal } from './_generated/api';
 import { v } from 'convex/values';
 import { CHAT_CLOSING_RULE } from './ai/defaults';
 import { toNurseWording } from './lib/nurseWording';
@@ -18,7 +19,7 @@ export const closeLegacyAiConversions = internalMutation({
       const legacy =
         c.kind === 'human-async' &&
         c.aiHandoffRequestedAt !== undefined &&
-        c.title === 'Conversa com AI' &&
+        (c.title === 'Conversa com AI' || c.title === 'Conversa com IA') &&
         c.status !== 'closed';
       if (!legacy) continue;
       closed++;
@@ -111,5 +112,65 @@ export const useNurseWording = internalMutation({
       });
     }
     return { updated, dryRun: !!dryRun };
+  },
+});
+
+// "AI" (inteligência artificial) is written "IA" in the app. Rewrites the
+// texts already stored: system messages and conversation titles (one page per
+// run, rescheduling itself), then a new version of every stored prompt that
+// still says "AI". Run: "bunx convex run maintenance:useIaWording" (add --prod).
+const toIa = (text: string) => text.replace(/\bAI\b/g, 'IA');
+
+export const useIaWording = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
+  handler: async (
+    ctx,
+    { cursor }
+  ): Promise<{ messages: number; done: boolean; titles?: number; prompts?: string[] }> => {
+    const page = await ctx.db.query('messages').paginate({ numItems: 500, cursor: cursor ?? null });
+    let messages = 0;
+    for (const m of page.page) {
+      if (m.messageType !== 'system') continue;
+      const content = toIa(m.content);
+      if (content === m.content) continue;
+      await ctx.db.patch(m._id, { content });
+      messages++;
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.maintenance.useIaWording, { cursor: page.continueCursor });
+      return { messages, done: false };
+    }
+
+    // Last page: titles and prompts (small tables).
+    let titles = 0;
+    for await (const c of ctx.db.query('conversations')) {
+      const title = toIa(c.title);
+      if (title === c.title) continue;
+      await ctx.db.patch(c._id, { title });
+      titles++;
+    }
+    const latest = new Map<string, Doc<'aiPrompts'>>();
+    for (const p of await ctx.db.query('aiPrompts').order('desc').take(2000)) {
+      const key = `${p.purpose}/${p.topic ?? ''}`;
+      if (!latest.has(key)) latest.set(key, p);
+    }
+    const prompts: string[] = [];
+    for (const [key, p] of latest) {
+      const systemPrompt = toIa(p.systemPrompt);
+      const userTemplate = p.userTemplate === undefined ? undefined : toIa(p.userTemplate);
+      if (systemPrompt === p.systemPrompt && userTemplate === p.userTemplate) continue;
+      prompts.push(key);
+      await ctx.db.insert('aiPrompts', {
+        purpose: p.purpose,
+        topic: p.topic,
+        systemPrompt,
+        userTemplate,
+        temperature: p.temperature,
+        maxTokens: p.maxTokens,
+        notes: '"AI" passa a "IA"',
+        createdBy: p.createdBy,
+      });
+    }
+    return { messages, titles, prompts, done: true };
   },
 });
