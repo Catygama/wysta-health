@@ -23,6 +23,8 @@ export type ChatMessageProps = {
   testID?: string;
   /** Extra node rendered under the bubble (e.g. the inline "ask AI" pill). */
   footer?: React.ReactNode;
+  /** Who wrote it, shown above someone else's message (e.g. "Enf.ª Ana"). */
+  author?: string;
 };
 
 export function ChatMessage({
@@ -37,6 +39,7 @@ export function ChatMessage({
   messageType,
   testID,
   footer,
+  author,
 }: ChatMessageProps) {
   const isOwn = side === 'own';
   const kind = internal ? 'internal' : isOwn ? 'own' : 'other';
@@ -53,7 +56,13 @@ export function ChatMessage({
 
   return (
     <View style={styles.row} testID={testID}>
-      {internal ? <Text style={styles.internalLabel}>Nota interna</Text> : null}
+      {internal ? (
+        <Text style={styles.internalLabel}>{author ? `Nota interna · ${author}` : 'Nota interna'}</Text>
+      ) : author && !isOwn ? (
+        <Text testID={testID ? `${testID}-author` : undefined} style={styles.authorLabel}>
+          {author}
+        </Text>
+      ) : null}
       <View style={[styles.bubble, hasImage && styles.bubbleMedia]}>
         {hasImage ? (
           <Image
@@ -104,6 +113,12 @@ const styles = StyleSheet.create((theme) => ({
         other: { alignSelf: 'flex-start', alignItems: 'flex-start' },
       },
     },
+  },
+  authorLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+    marginBottom: 2,
   },
   internalLabel: {
     fontSize: 12,

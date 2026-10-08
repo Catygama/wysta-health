@@ -39,11 +39,26 @@ export const list = query({
     const filtered = isProfessional
       ? messages
       : messages.filter((m) => !m.isInternal);
+    // Who wrote each reply: the professional's name (the AI's answers say so
+    // themselves in the app). The patient's own messages need no label.
+    const authorNames = new Map<string, string>();
+    for (const m of filtered) {
+      if (m.senderId === conv.patientId || authorNames.has(m.senderId)) continue;
+      const author = await ctx.db
+        .query('userProfiles')
+        .withIndex('by_user', (q) => q.eq('userId', m.senderId))
+        .unique();
+      authorNames.set(m.senderId, author?.displayName?.trim() || 'Enfermeiro/a');
+    }
     return Promise.all(
       filtered.map(async (m) => ({
         ...m,
         // An AI answer still being prepared has no content to show yet.
         content: m.streaming ? '' : m.content,
+        authorName:
+          m.messageType === 'text' || m.messageType === 'image' || m.messageType === 'file'
+            ? authorNames.get(m.senderId)
+            : undefined,
         imageUrl: m.imageId ? await ctx.storage.getUrl(m.imageId) : null,
         attachmentUrl: m.attachmentId
           ? await ctx.storage.getUrl(m.attachmentId)

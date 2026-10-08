@@ -99,6 +99,18 @@ describe('A1: messages.send only for the conversation members', () => {
   });
 });
 
+describe('D4: replies say who wrote them', () => {
+  it('professional replies carry the name; the patient\'s own messages none', async () => {
+    const { patient, nurse, convId } = await setup();
+    await send(nurse, convId);
+    const msgs = await patient.query(api.messages.list, { conversationId: convId });
+    const byNurse = msgs.find((m: any) => m.content === 'mensagem');
+    const byPatient = msgs.find((m: any) => m.content === 'Olá');
+    expect(byNurse?.authorName).toBe('Enf.ª Ana');
+    expect(byPatient?.authorName).toBeUndefined();
+  });
+});
+
 describe('B1: an AI answer being prepared is never returned', () => {
   it('messages.list hides the content of a streaming answer', async () => {
     const { t, patient, patientId, convId } = await setup();

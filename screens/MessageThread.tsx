@@ -299,6 +299,7 @@ export function MessageThread({
                 attachmentName={item.attachmentName}
                 attachmentSize={item.attachmentSize}
                 messageType={item.messageType}
+                author={(item as any).authorName}
               />
             </Animated.View>
           );
@@ -551,7 +552,7 @@ export function AiResponseMessage({
           size={14}
           color={styles.aiLabel.color}
         />
-        <Text style={styles.aiLabel}>Assistente Wysta</Text>
+        <Text style={styles.aiLabel}>Assistente de IA</Text>
       </View>
       {streaming ? (
         // The answer is shown only once the safety checks have approved it.
