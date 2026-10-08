@@ -3,7 +3,8 @@ import { hasProfessionalAccess } from './lib/professional';
 import { getActiveUserId } from './lib/accounts';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
-import { professionalCanSeeAi } from './conversations';
+import { professionalCanSeeAi, raiseForSafetyRule } from './conversations';
+import { detectSafetyRule } from './lib/aiSafetyMessages';
 import { userError, NOT_AUTHENTICATED, NOT_ALLOWED } from './lib/errors';
 import { storedAttachmentError } from './lib/attachments';
 
@@ -174,6 +175,27 @@ export const send = mutation({
         query: args.content,
       });
       return;
+    }
+
+    // Same rule-based detection as the AI chat (lib/aiSafetyMessages), on what
+    // the patient writes to a nurse: she gets the fixed message with the
+    // contacts straight away, without the model, and the conversation becomes
+    // urgent at the top of the queue. Her message reaches the nurse as usual.
+    if (isPatient && messageType === 'text') {
+      const rule = detectSafetyRule(args.content);
+      if (rule && (await raiseForSafetyRule(ctx, args.conversationId, rule.alertLevel))) {
+        await ctx.db.insert('messages', {
+          conversationId: args.conversationId,
+          senderId: userId,
+          content: rule.message,
+          messageType: 'system',
+        });
+        await ctx.db.insert('auditLog', {
+          conversationId: args.conversationId,
+          action: 'escalation',
+          details: `Deteção automática na conversa com o enfermeiro: ${rule.label}.`,
+        });
+      }
     }
 
     if (isPatient) return;
