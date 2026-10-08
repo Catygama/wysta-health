@@ -1,12 +1,15 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { useUnistyles } from 'react-native-unistyles';
 import { useTabBar } from '@/contexts/TabBarContext';
 
 // Native tab bar. The case screen sits outside it (see ../_layout.tsx): native
 // tabs can't navigate to a route that isn't a tab.
 export default function ProfessionalTabs() {
   const { isTabBarHidden } = useTabBar();
+  const { theme } = useUnistyles();
   return (
-    <NativeTabs hidden={isTabBarHidden}>
+    // Selected tab in the brand colour (iOS defaults to system blue).
+    <NativeTabs hidden={isTabBarHidden} tintColor={theme.colors.inkText}>
       <NativeTabs.Trigger name="queue">
         <NativeTabs.Trigger.Icon
           sf={{ default: 'list.bullet.clipboard', selected: 'list.bullet.clipboard.fill' }}
