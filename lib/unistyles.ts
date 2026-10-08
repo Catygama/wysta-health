@@ -72,6 +72,9 @@ const lightTheme = {
     // faint to delimit a control, especially in dark mode).
     border: 'rgba(80,0,13,0.22)',
     borderStrong: 'rgba(80,0,13,0.5)',
+    // Idle outline of a text field (components/ui/Input). Its own token so the
+    // field can reach 3:1 (WCAG 1.4.11) without changing button outlines.
+    inputBorder: 'rgba(80,0,13,0.22)',
     // Soft glow around a focused input (paired with an ink border).
     focusRing: 'rgba(80,0,13,0.14)',
   },
@@ -106,6 +109,8 @@ const darkTheme = {
     divider: 'rgba(255,255,255,0.08)',
     border: 'rgba(255,255,255,0.16)',
     borderStrong: 'rgba(255,255,255,0.30)',
+    // 3:1 against the field fill, the page and the cards (WCAG 1.4.11).
+    inputBorder: 'rgba(255,255,255,0.40)',
     focusRing: 'rgba(227,199,199,0.25)',
   },
   topic: topicsDark,

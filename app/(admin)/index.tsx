@@ -132,7 +132,7 @@ export default function AdminPanel() {
           {Platform.OS !== 'web' && (
             <>
               <Link href="/(admin)/verifications" asChild>
-                <Pressable testID="admin-verifications-link" style={styles.linkCard}>
+                <Pressable testID="admin-verifications-link" accessibilityRole="link" style={styles.linkCard}>
                   <View style={styles.linkBody}>
                     <Text style={styles.cardTitle}>Verificações</Text>
                     <Text style={styles.cardSub}>Aprovar ou recusar pedidos de enfermeiros.</Text>
@@ -141,7 +141,7 @@ export default function AdminPanel() {
                 </Pressable>
               </Link>
               <Link href="/(admin)/content" asChild>
-                <Pressable testID="admin-content-link" style={styles.linkCard}>
+                <Pressable testID="admin-content-link" accessibilityRole="link" style={styles.linkCard}>
                   <View style={styles.linkBody}>
                     <Text style={styles.cardTitle}>Conteúdos</Text>
                     <Text style={styles.cardSub}>Escrever, editar e publicar os artigos do Explorar.</Text>
@@ -150,7 +150,7 @@ export default function AdminPanel() {
                 </Pressable>
               </Link>
               <Link href="/(admin)/my-account" asChild>
-                <Pressable testID="admin-profile-link" style={styles.linkCard}>
+                <Pressable testID="admin-profile-link" accessibilityRole="link" style={styles.linkCard}>
                   <View style={styles.linkBody}>
                     <Text style={styles.cardTitle}>Perfil</Text>
                     <Text style={styles.cardSub}>Tema e terminar sessão.</Text>
@@ -159,7 +159,7 @@ export default function AdminPanel() {
                 </Pressable>
               </Link>
               <Link href="/(admin)/ai" asChild>
-                <Pressable testID="admin-ai-link" style={styles.linkCard}>
+                <Pressable testID="admin-ai-link" accessibilityRole="link" style={styles.linkCard}>
                   <View style={styles.linkBody}>
                     <Text style={styles.cardTitle}>Gestão da IA</Text>
                     <Text style={styles.cardSub}>Configs, prompts, audit das invocações + teste rápido.</Text>

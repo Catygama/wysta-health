@@ -582,6 +582,7 @@ function SuggestEndButton({ onPress }: { onPress: () => void }) {
       <Text style={styles.suggestEndText}>Já tens o que precisavas?</Text>
       <Pressable
         testID="ai-suggest-end-button"
+        accessibilityRole="button"
         onPress={onPress}
         style={({ pressed }) => [styles.suggestEndBtn, pressed && styles.suggestEndPressed]}
       >

@@ -113,7 +113,7 @@ const styles = StyleSheet.create((theme) => ({
     borderWidth: 1.5,
     variants: {
       state: {
-        idle: { borderColor: theme.colors.border },
+        idle: { borderColor: theme.colors.inputBorder },
         focused: { borderColor: theme.colors.inkText, boxShadow: `0 0 0 4px ${theme.colors.focusRing}` },
         error: { borderColor: theme.colors.danger },
       },

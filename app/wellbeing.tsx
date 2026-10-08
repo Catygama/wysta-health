@@ -134,6 +134,7 @@ export default function Wellbeing() {
               <Pressable
                 key={g.id}
                 testID={`wellbeing-goal-${g.id}`}
+                accessibilityRole="button"
                 onPress={() => pickGoal(g)}
                 style={styles.goalCard}
               >
@@ -153,13 +154,15 @@ export default function Wellbeing() {
           {PAIN_REDFLAGS.map((q, idx) => (
             <View key={idx} style={styles.card}>
               <Text style={styles.question}>{q}</Text>
-              <View style={styles.yesNoRow}>
+              <View style={styles.yesNoRow} accessibilityRole="radiogroup" aria-label={q}>
                 {(['yes', 'no'] as const).map((opt) => {
                   const selected = painAnswers[idx] === opt;
                   return (
                     <Pressable
                       key={opt}
                       testID={`wellbeing-pain-${idx}-${opt}`}
+                      accessibilityRole="radio"
+                      aria-checked={selected}
                       onPress={() => answerPain(idx, opt)}
                       style={[styles.yesNo, selected ? styles.optOn : styles.optOff]}
                     >
@@ -193,13 +196,15 @@ export default function Wellbeing() {
           {CHECKIN.map((c) => (
             <View key={c.key} style={styles.card}>
               <Text style={styles.question}>{c.label}</Text>
-              <View style={styles.scaleRow}>
+              <View style={styles.scaleRow} accessibilityRole="radiogroup" aria-label={c.label}>
                 {Array.from({ length: c.max - c.min + 1 }, (_, i) => c.min + i).map((value) => {
                   const selected = scores[c.key] === value;
                   return (
                     <Pressable
                       key={value}
                       testID={`wellbeing-scale-${c.key}-${value}`}
+                      accessibilityRole="radio"
+                      aria-checked={selected}
                       onPress={() => setScores((s) => ({ ...s, [c.key]: value }))}
                       style={[styles.scaleCell, selected ? styles.optOn : styles.optOff]}
                     >
@@ -221,13 +226,13 @@ export default function Wellbeing() {
             label="Começar conversa"
             onPress={() => finish(true)}
           />
-          <Pressable testID="wellbeing-skip" onPress={() => finish(false)} hitSlop={8}>
+          <Pressable testID="wellbeing-skip" accessibilityRole="button" onPress={() => finish(false)} hitSlop={8}>
             <Text style={styles.skip}>Saltar check-in e começar</Text>
           </Pressable>
         </View>
       )}
 
-      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backWrap}>
+      <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backWrap} accessibilityRole="button" accessibilityLabel="Voltar">
         <Text style={styles.navLink}>← Voltar</Text>
       </Pressable>
     </ScrollView>

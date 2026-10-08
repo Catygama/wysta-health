@@ -68,13 +68,15 @@ export default function Onboarding() {
 
       <View style={styles.section}>
         <Text style={styles.label}>Faixa etária</Text>
-        <View style={styles.pillRow}>
+        <View style={styles.pillRow} accessibilityRole="radiogroup" aria-label="Faixa etária">
           {AGE_RANGES.map((age) => {
             const selected = ageRange === age;
             return (
               <Pressable
                 key={age}
                 testID={`onboarding-age-${age}`}
+                accessibilityRole="radio"
+                aria-checked={selected}
                 onPress={() => setAgeRange(age)}
                 style={[styles.pill, selected ? styles.pillOn : styles.pillOff]}
               >
