@@ -48,7 +48,7 @@ async function setup() {
 }
 
 describe('C1: export my data', () => {
-  it('contains the profile, conversations, visible messages, triage and wellbeing', async () => {
+  it('contains the profile, conversations, visible messages, triage, wellbeing and the team notes apart', async () => {
     const { patient } = await setup();
     const data = await patient.query(api.privacy.exportMyData, {});
     expect(data.conta.email).toBe('ines@exemplo.pt');
@@ -62,10 +62,15 @@ describe('C1: export my data', () => {
     ]);
     expect(conv.mensagens[1].anexo?.ligacao).toMatch(/^https:/);
     expect(data.registosDeBemEstar).toHaveLength(1);
-    const text = JSON.stringify(data);
-    expect(text).not.toContain('Nota interna');
-    expect(text).not.toContain('Resumo para profissionais');
-    expect(text).not.toContain('Da outra');
+    // Internal notes and the AI summaries for the team: only in their own section.
+    expect(JSON.stringify(data.conversas)).not.toContain('Nota interna');
+    const team = data.notasDaEquipaDeEnfermagem;
+    expect(team.notas).toEqual([
+      expect.objectContaining({ tipo: 'nota interna', texto: 'Nota interna', conversa: 'Contraceção' }),
+      expect.objectContaining({ tipo: 'resumo de IA da conversa', texto: 'Sumário' }),
+    ]);
+    expect(team.resumoDoPerfil?.texto).toBe('Resumo para profissionais');
+    expect(JSON.stringify(data)).not.toContain('Da outra');
   });
 
   it('is for patients only', async () => {

@@ -82,4 +82,6 @@ A CF Pages dispara em cada push para `main`. O `--cmd` do `convex deploy` garant
 - `CLAUDE.md` — contexto rápido para o assistente
 - `docs/ENGINEERING.md` — schema, decisões de arquitetura
 - `docs/TASKS.md` — roadmap e estado das fases
+- `docs/testing/RESULTADOS.md` — resultados dos testes (orientadores)
+- `docs/TESTING.md` — como correr os testes
 - `contexto-plataforma.md` — visão de produto

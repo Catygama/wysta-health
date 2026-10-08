@@ -18,6 +18,7 @@ export default function AdminLayout() {
       <Stack.Screen name="content/index" options={{ title: 'Conteúdos' }} />
       <Stack.Screen name="content/[id]" options={{ title: 'Artigo' }} />
       <Stack.Screen name="ai" options={{ title: 'Gestão da IA' }} />
+      <Stack.Screen name="my-account" options={{ title: 'Perfil' }} />
     </Stack>
   );
 }

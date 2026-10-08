@@ -22,9 +22,9 @@ async function patientOrThrow(ctx: QueryCtx | MutationCtx) {
   return { userId, profile };
 }
 
-// Everything the patient can see about herself, as plain JSON. Internal notes
-// written by professionals and the AI summaries prepared for them are not
-// part of what she sees in the app, so they are left out (see the report).
+// Everything about the patient, as plain JSON (GDPR art. 15). What she sees in
+// the app, plus, in a separate section, the internal notes written by the
+// nursing team and the AI summaries prepared for them.
 export const exportMyData = query({
   args: {},
   handler: async (ctx) => {
@@ -35,12 +35,37 @@ export const exportMyData = query({
       .withIndex('by_patient', (q) => q.eq('patientId', userId))
       .take(MAX_CONVERSATIONS);
     const conversationsOut = [];
+    const teamNotes: Array<{
+      conversa: string;
+      tema: string;
+      tipo: 'nota interna' | 'resumo de IA da conversa';
+      data: string;
+      texto: string;
+    }> = [];
     for (const c of conversations) {
       const messages = await ctx.db
         .query('messages')
         .withIndex('by_conversation', (q) => q.eq('conversationId', c._id))
         .take(MAX_MESSAGES_PER_CONVERSATION);
       const visible = messages.filter((m) => !m.isInternal && !m.streaming);
+      for (const m of messages.filter((m) => m.isInternal)) {
+        teamNotes.push({
+          conversa: c.title,
+          tema: c.topic,
+          tipo: 'nota interna',
+          data: new Date(m._creationTime).toISOString(),
+          texto: m.content,
+        });
+      }
+      if (c.aiSummary) {
+        teamNotes.push({
+          conversa: c.title,
+          tema: c.topic,
+          tipo: 'resumo de IA da conversa',
+          data: new Date(c.aiSummaryAt ?? c._creationTime).toISOString(),
+          texto: c.aiSummary,
+        });
+      }
       const triage = visible.find((m) => m.metadata?.triageData)?.metadata?.triageData;
       conversationsOut.push({
         tema: c.topic,
@@ -92,6 +117,14 @@ export const exportMyData = query({
           }
         : null,
       conversas: conversationsOut,
+      notasDaEquipaDeEnfermagem: {
+        descricao:
+          'Notas internas escritas pela equipa de enfermagem e resumos preparados pela assistente de IA para a equipa.',
+        resumoDoPerfil: profile?.aiSummary
+          ? { data: new Date(profile.aiSummaryAt ?? 0).toISOString(), texto: profile.aiSummary }
+          : null,
+        notas: teamNotes,
+      },
       registosDeBemEstar: checkins.map((c) => ({
         data: new Date(c._creationTime).toISOString(),
         desejo: c.desire,

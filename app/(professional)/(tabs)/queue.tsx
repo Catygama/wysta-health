@@ -103,6 +103,7 @@ export default function Requests() {
         conversations={sorted as any}
         basePath="/(professional)/cases"
         showPriority
+        showAlertLevel={false}
         // Nothing while loading, so a filter change doesn't flash the empty text.
         emptyComponent={
           requests === undefined ? null : (
