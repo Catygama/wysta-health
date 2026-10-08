@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 vi.mock('./llm', () => ({
   callLlmText: vi.fn(),
   callLlmObject: vi.fn(),
-  callLlmText: vi.fn(),
+  callLlmStream: vi.fn(),
 }));
 import { callLlmText, callLlmObject } from './llm';
 import { describe, it, expect, beforeEach } from 'vitest';
