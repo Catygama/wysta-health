@@ -71,7 +71,8 @@ export function ConversationFeedCard({
           onPress={onEnd}
           style={({ pressed }) => [styles.endBtn, pressed && styles.pressed]}
         >
-          <Icon name={{ sf: 'xmark.circle', ion: 'close-circle-outline' }} size={22} color={theme.colors.textSecondary} />
+          <Icon name={{ sf: 'xmark.circle', ion: 'close-circle-outline' }} size={20} color={theme.colors.textSecondary} />
+          <Text style={styles.endText}>Terminar</Text>
         </Pressable>
       )}
     </View>
@@ -90,7 +91,8 @@ const styles = StyleSheet.create((theme) => ({
     paddingLeft: theme.spacing.md,
     paddingRight: theme.spacing.sm,
   },
-  endBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  endBtn: { minWidth: 56, minHeight: 44, alignItems: 'center', justifyContent: 'center', gap: 1 },
+  endText: { fontSize: 11, fontWeight: '500', color: theme.colors.textSecondary },
   pressed: { opacity: 0.6 },
   icon: {
     width: 40,

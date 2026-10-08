@@ -155,7 +155,7 @@ function SwitchButton({
 
 function EndButton({ onPress }: { onPress: () => void }) {
   const { theme } = useUnistyles();
-  // Narrow phones: icon only, so the topic title keeps its room.
+  // Narrow phones: icon above a small label, so the topic title keeps its room.
   const compact = useWindowDimensions().width < COMPACT_HEADER_WIDTH;
   return (
     <Pressable
@@ -163,14 +163,15 @@ function EndButton({ onPress }: { onPress: () => void }) {
       onPress={onPress}
       hitSlop={8}
       accessibilityLabel="Terminar conversa"
-      style={({ pressed }) => [styles.endBtn, pressed && styles.ctaBusy]}
+      style={({ pressed }) => [styles.endBtn, compact && styles.endBtnCompact, pressed && styles.ctaBusy]}
     >
       <Icon
         name={{ sf: 'xmark.circle', ion: 'close-circle-outline' }}
-        size={compact ? 18 : 14}
+        size={compact ? 16 : 14}
         color={theme.colors.inkText}
       />
-      {!compact && <Text style={styles.endText}>Terminar</Text>}
+      {/* Narrow phones: the word sits under the icon, so it stays visible. */}
+      <Text style={compact ? styles.endTextCompact : styles.endText}>Terminar</Text>
     </Pressable>
   );
 }
@@ -281,4 +282,12 @@ const styles = StyleSheet.create((theme) => ({
     gap: 4,
   },
   endText: { fontSize: 12, fontWeight: '500', color: theme.colors.inkText },
+  endBtnCompact: {
+    flexDirection: 'column',
+    gap: 0,
+    paddingHorizontal: theme.spacing.xs,
+    paddingVertical: 4,
+    borderRadius: theme.radius.md,
+  },
+  endTextCompact: { fontSize: 10, fontWeight: '500', color: theme.colors.inkText },
 }));
