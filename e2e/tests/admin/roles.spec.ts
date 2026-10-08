@@ -8,11 +8,10 @@ test('Admin can promote a patient to professional', async ({ page }) => {
   const row = page.getByTestId(`admin-user-row-${TEST_USERS.patientB.email}`);
   await expect(row).toBeVisible({ timeout: 15_000 });
 
-  // The role-change button confirms via window.confirm on web.
-  page.once('dialog', (d) => d.accept());
-  await page
-    .getByTestId(`admin-role-${TEST_USERS.patientB.email}-professional`)
-    .click();
+  // Tapping the card opens the role dialog.
+  await row.click();
+  await page.getByTestId('admin-role-option-professional').click();
+  await page.getByTestId('role-change-dialog-confirm').click();
 
   // After promotion the row re-renders with the new role pill text.
   await expect(row.getByText('Profissional')).toBeVisible({ timeout: 10_000 });

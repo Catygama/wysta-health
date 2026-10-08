@@ -28,15 +28,31 @@ const ROLE_COLORS_DARK: Record<string, string> = {
   admin: '#F0B45E',
 };
 
+type Role = 'patient' | 'professional' | 'admin';
+
+const GUEST_LABELS: Record<string, string> = {
+  patient: 'Utente convidada',
+  professional: 'Profissional convidado',
+  admin: 'Convidado',
+};
+
+// What the admin sees as the user's name: the name they gave, else the email,
+// else a guest label (anonymous accounts have neither).
+function nameOf(u: { displayName?: string; role: string; user?: { email?: string; name?: string } | null }) {
+  return u.displayName?.trim() || u.user?.name?.trim() || u.user?.email || GUEST_LABELS[u.role] || 'Sem nome';
+}
+
 export default function AdminPanel() {
   const users = useQuery(api.users.listUsers);
   const setRole = useMutation(api.users.setRole);
   const [search, setSearch] = useState('');
-  // Pending role change awaiting confirmation (Alert.alert is a no-op on web).
-  const [pendingRole, setPendingRole] = useState<{
+  // The user whose card was tapped: the dialog to change their role.
+  const [editing, setEditing] = useState<{
     userId: string;
-    currentRole: string;
-    newRole: 'patient' | 'professional' | 'admin';
+    name: string;
+    email?: string;
+    role: string;
+    newRole: string;
   } | null>(null);
   const { theme } = useUnistyles();
 
@@ -48,21 +64,15 @@ export default function AdminPanel() {
     );
   }
 
-  function confirmRoleChange(
-    userId: string,
-    currentRole: string,
-    newRole: 'patient' | 'professional' | 'admin'
-  ) {
-    setPendingRole({ userId, currentRole, newRole });
-  }
 
   const filtered = users
     .slice()
-    .sort((a, b) => (a.user?.email ?? '').localeCompare(b.user?.email ?? ''))
+    .sort((a, b) => nameOf(a).localeCompare(nameOf(b)))
     .filter((u) => {
       const q = search.trim().toLowerCase();
       if (!q) return true;
       return (
+        nameOf(u).toLowerCase().includes(q) ||
         (u.user?.email ?? '').toLowerCase().includes(q) ||
         (u.role ?? '').toLowerCase().includes(q)
       );
@@ -144,7 +154,7 @@ export default function AdminPanel() {
               testID="admin-search-input"
               value={search}
               onChangeText={setSearch}
-              placeholder="Pesquisar por email ou role..."
+              placeholder="Pesquisar por nome, email ou role..."
               placeholderTextColor={theme.colors.textTertiary as any}
               autoCapitalize="none"
               autoCorrect={false}
@@ -162,11 +172,29 @@ export default function AdminPanel() {
       renderItem={({ item }) => {
         const dark = theme.name === 'dark';
         const roleColor = (dark ? ROLE_COLORS_DARK : ROLE_COLORS)[item.role] ?? theme.colors.textSecondary;
+        const name = nameOf(item);
+        const meta = [name !== item.user?.email ? item.user?.email : null, item.ageRange, item.location]
+          .filter(Boolean)
+          .join(' • ');
         return (
-          <View testID={`admin-user-row-${item.user?.email ?? item.userId}`} style={styles.userRow}>
+          <Pressable
+            testID={`admin-user-row-${item.user?.email ?? item.userId}`}
+            accessibilityRole="button"
+            accessibilityLabel={`${name}, ${ROLE_LABELS[item.role] ?? item.role}. Alterar role`}
+            onPress={() =>
+              setEditing({
+                userId: item.userId,
+                name,
+                email: item.user?.email,
+                role: item.role,
+                newRole: item.role,
+              })
+            }
+            style={({ pressed }) => [styles.userRow, pressed && styles.userRowPressed]}
+          >
             <View style={styles.userTop}>
-              <Text style={styles.userEmail} selectable numberOfLines={1}>
-                {item.user?.email ?? item.userId}
+              <Text style={styles.userEmail} numberOfLines={1}>
+                {name}
               </Text>
               <View style={[styles.roleBadge, { backgroundColor: roleColor + (dark ? '29' : '20') }]}>
                 <Text style={[styles.roleBadgeText, { color: roleColor }]}>
@@ -175,48 +203,56 @@ export default function AdminPanel() {
               </View>
             </View>
 
-            {(item.displayName || item.location || item.ageRange) && (
-              <Text style={styles.userMeta}>
-                {[item.displayName, item.ageRange, item.location].filter(Boolean).join(' • ')}
-              </Text>
-            )}
-
-            <View style={styles.roleActions}>
-              {(['patient', 'professional', 'admin'] as const)
-                .filter((r) => r !== item.role)
-                .map((r) => (
-                  <Pressable
-                    key={r}
-                    testID={`admin-role-${item.user?.email ?? item.userId}-${r}`}
-                    onPress={() => confirmRoleChange(item.userId, item.role, r)}
-                    style={styles.rolePill}
-                  >
-                    <Icon name={{ sf: 'arrow.right.circle.fill', ion: 'arrow-forward-circle' }} size={12} color={theme.colors.inkText} />
-                    <Text style={styles.rolePillText}>{ROLE_LABELS[r]}</Text>
-                  </Pressable>
-                ))}
-            </View>
-          </View>
+            {meta ? <Text style={styles.userMeta}>{meta}</Text> : null}
+          </Pressable>
         );
       }}
     />
     <ConfirmDialog
       testID="role-change-dialog"
-      visible={pendingRole !== null}
-      title="Alterar role"
-      message={
-        pendingRole
-          ? `Mudar de ${ROLE_LABELS[pendingRole.currentRole] ?? pendingRole.currentRole} para ${ROLE_LABELS[pendingRole.newRole]}?`
-          : undefined
-      }
-      confirmLabel="Confirmar"
-      onCancel={() => setPendingRole(null)}
+      visible={editing !== null}
+      title={editing?.name ?? ''}
+      message={editing ? (editing.email ?? 'Conta de convidado, sem email.') : undefined}
+      confirmLabel="Guardar"
+      confirmDisabled={!editing || editing.newRole === editing.role}
+      onCancel={() => setEditing(null)}
       onConfirm={async () => {
-        if (!pendingRole) return;
-        await setRole({ targetUserId: pendingRole.userId as any, role: pendingRole.newRole });
-        setPendingRole(null);
+        if (!editing) return;
+        await setRole({ targetUserId: editing.userId as any, role: editing.newRole as Role });
+        setEditing(null);
       }}
-    />
+    >
+      <View style={styles.roleOptions} accessibilityRole="radiogroup">
+        <Text style={styles.roleOptionsLabel}>Role</Text>
+        {(['patient', 'professional', 'admin'] as const).map((r) => {
+          const selected = editing?.newRole === r;
+          return (
+            <Pressable
+              key={r}
+              testID={`admin-role-option-${r}`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              onPress={() => editing && setEditing({ ...editing, newRole: r })}
+              style={[styles.roleOption, selected && styles.roleOptionOn]}
+            >
+              <Icon
+                name={
+                  selected
+                    ? { sf: 'largecircle.fill.circle', ion: 'radio-button-on' }
+                    : { sf: 'circle', ion: 'radio-button-off' }
+                }
+                size={18}
+                color={selected ? theme.colors.inkText : theme.colors.textTertiary}
+              />
+              <Text style={[styles.roleOptionText, selected && styles.roleOptionTextOn]}>
+                {ROLE_LABELS[r]}
+                {editing?.role === r ? ' (atual)' : ''}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </ConfirmDialog>
     </>
   );
 }
@@ -291,15 +327,20 @@ const styles = StyleSheet.create((theme) => ({
   roleBadge: { paddingVertical: 2, paddingHorizontal: theme.spacing.sm, borderRadius: theme.radius.pill },
   roleBadgeText: { fontSize: 12, fontWeight: '500' },
   userMeta: { fontSize: 12, color: theme.colors.textSecondary },
-  roleActions: { flexDirection: 'row', gap: theme.spacing.xs, flexWrap: 'wrap' },
-  rolePill: {
-    backgroundColor: theme.colors.surfaceSunken,
-    borderRadius: theme.radius.pill,
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.md,
+  userRowPressed: { opacity: 0.7 },
+  roleOptions: { gap: theme.spacing.xs },
+  roleOptionsLabel: { fontSize: 14, fontWeight: '500', color: theme.colors.textSecondary },
+  roleOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
   },
-  rolePillText: { fontSize: 12, fontWeight: '500', color: theme.colors.inkText },
+  roleOptionOn: { borderColor: theme.colors.inkText, backgroundColor: theme.colors.surfaceSunken },
+  roleOptionText: { fontSize: 15, color: theme.colors.textPrimary },
+  roleOptionTextOn: { fontWeight: '600', color: theme.colors.inkText },
 }));
