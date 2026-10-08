@@ -14,10 +14,12 @@ import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
 import { errorText } from '@/lib/errorText';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
+import { useConsentAfterSignIn } from '@/hooks/useConsentAfterSignIn';
 
 export default function Login() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
+  const consent = useConsentAfterSignIn();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,6 +45,8 @@ export default function Login() {
     if (!guestConsent) return;
     setGuestLoading(true);
     try {
+      // Set before signing in: the session can become active before signIn() resolves.
+      consent.markPending('sem-conta');
       await signIn('anonymous');
     } catch (e: any) {
       setError(errorText(e, 'Não foi possível entrar sem conta. Tenta de novo.'));
@@ -54,7 +58,7 @@ export default function Login() {
 
   // Navigate once the session is actually active: redirecting right after
   // signIn() resolves races the auth state and bounces back to login.
-  if (isAuthenticated) return <Redirect href="/" />;
+  if (isAuthenticated && consent.ready) return <Redirect href="/" />;
   return (
     <ScrollView
       style={styles.screen}

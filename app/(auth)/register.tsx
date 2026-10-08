@@ -11,10 +11,12 @@ import { strings } from '@/constants/strings';
 import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
+import { useConsentAfterSignIn } from '@/hooks/useConsentAfterSignIn';
 
 export default function Register() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
+  const consentRecord = useConsentAfterSignIn();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,6 +37,8 @@ export default function Register() {
     }
     setLoading(true);
     try {
+      // Set before signing in: the session can become active before signIn() resolves.
+      consentRecord.markPending('registo');
       await signIn('password', { email, password, flow: 'signUp' });
     } catch {
       setError(strings.errors.generic);
@@ -46,7 +50,7 @@ export default function Register() {
 
   // Navigate once the session is actually active: redirecting right after
   // signIn() resolves races the auth state and bounces back to login.
-  if (isAuthenticated) return <Redirect href="/" />;
+  if (isAuthenticated && consentRecord.ready) return <Redirect href="/" />;
   return (
     <ScrollView
       style={styles.screen}

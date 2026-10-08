@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { gotoApp } from '../../helpers/auth';
-import { setUserProfile, seedUser, TEST_USERS } from '../../helpers/convex';
+import { setUserProfile, seedUser, TEST_USERS, listConsents } from '../../helpers/convex';
 
 const FRESH_EMAIL = 'patient-signup@e2e.local';
 const FRESH_PASSWORD = 'e2e-test-pw';
@@ -32,6 +32,9 @@ test.describe('Patient signup + onboarding', () => {
     // Patient home: both ways to start a conversation are offered.
     await expect(page.getByTestId('home-path-professional')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('home-path-ai')).toBeVisible();
+    // The consent was recorded on the server (date + policy version).
+    const consents = await listConsents(FRESH_EMAIL);
+    expect(consents).toEqual([expect.objectContaining({ method: 'registo', policyVersion: expect.any(String) })]);
   });
 
   test('mismatched password shows error', async ({ page }) => {

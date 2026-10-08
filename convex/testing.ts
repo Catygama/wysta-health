@@ -35,6 +35,8 @@ const DOMAIN_TABLES = [
   'aiPrompts',
   'aiInvocations',
   'aiSettings',
+  'wellbeingCheckins',
+  'privacyConsents',
 ] as const;
 
 const AUTH_TABLES = [
@@ -419,5 +421,35 @@ export const seedDomainContent = mutation({
       }
     }
     return { ok: true };
+  },
+});
+
+// Privacy consents recorded for an account (E2E checks of sign-up / guest).
+export const listConsents = query({
+  args: { email: v.optional(v.string()), userId: v.optional(v.id('users')) },
+  handler: async (ctx, args) => {
+    assertE2E();
+    let userId = args.userId;
+    if (!userId && args.email) {
+      const user = await ctx.db
+        .query('users')
+        .withIndex('email', (q) => q.eq('email', args.email!))
+        .unique();
+      userId = user?._id;
+    }
+    if (!userId) return [];
+    return ctx.db
+      .query('privacyConsents')
+      .withIndex('by_user', (q) => q.eq('userId', userId!))
+      .take(10);
+  },
+});
+
+// The most recently created consent (guest sign-ins have no email).
+export const latestConsent = query({
+  args: {},
+  handler: async (ctx) => {
+    assertE2E();
+    return ctx.db.query('privacyConsents').order('desc').first();
   },
 });

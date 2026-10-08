@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { gotoApp } from '../../helpers/auth';
+import { latestConsent } from '../../helpers/convex';
 
 test('Guest patient sign-in lands on home', async ({ page }) => {
   await gotoApp(page, '/(auth)/login');
@@ -14,6 +15,8 @@ test('Guest patient sign-in lands on home', async ({ page }) => {
   await expect(page.getByTestId('home-path-professional')).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId('home-path-ai')).toBeVisible();
   await expect(page.getByTestId('home-path-professional')).toContainText('Enfermeiro/a');
+  // Entering without an account records the consent too.
+  expect(await latestConsent()).toMatchObject({ method: 'sem-conta' });
   // Topic names in sentence case.
   await page.getByTestId('home-path-professional').click();
   await expect(page.getByText('Ciclo menstrual', { exact: true }).filter({ visible: true })).toBeVisible();
