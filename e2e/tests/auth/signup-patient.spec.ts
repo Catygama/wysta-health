@@ -18,6 +18,7 @@ test.describe('Patient signup + onboarding', () => {
     await page.getByTestId('auth-email-input').fill(FRESH_EMAIL);
     await page.getByTestId('auth-password-input').fill(FRESH_PASSWORD);
     await page.getByTestId('auth-password-confirm-input').fill(FRESH_PASSWORD);
+    await page.getByTestId('auth-consent-checkbox').click();
     await page.getByTestId('auth-register-button').click();
 
     // Onboarding screen: pick options + continue
@@ -40,5 +41,19 @@ test.describe('Patient signup + onboarding', () => {
     await page.getByTestId('auth-password-confirm-input').fill('passwordB');
     await page.getByTestId('auth-register-button').click();
     await expect(page.getByTestId('auth-error')).toBeVisible();
+  });
+
+  test('creating an account needs the age and privacy consent', async ({ page }) => {
+    await gotoApp(page, '/(auth)/register');
+    await page.getByTestId('auth-email-input').fill('no-consent@e2e.local');
+    await page.getByTestId('auth-password-input').fill(FRESH_PASSWORD);
+    await page.getByTestId('auth-password-confirm-input').fill(FRESH_PASSWORD);
+    await page.getByTestId('auth-register-button').click();
+    await expect(page.getByTestId('auth-error')).toContainText('18 anos');
+    await expect(page).toHaveURL(/register/);
+    // The policy is one tap away.
+    await page.getByRole('link', { name: 'política de privacidade' }).click();
+    await expect(page.getByTestId('privacy-policy')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Quem acede aos teus dados')).toBeVisible();
   });
 });

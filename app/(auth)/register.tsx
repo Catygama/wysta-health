@@ -10,6 +10,7 @@ import { Icon } from '@/components/ui/Icon';
 import { strings } from '@/constants/strings';
 import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
+import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 
 export default function Register() {
   const { signIn } = useAuthActions();
@@ -20,11 +21,16 @@ export default function Register() {
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [consent, setConsent] = useState(false);
 
   async function handleRegister() {
     setError('');
     if (password !== confirm) {
       setError(strings.errors.passwordMismatch);
+      return;
+    }
+    if (!consent) {
+      setError('Para criar conta, confirma que tens 18 anos ou mais e que leste a política de privacidade.');
       return;
     }
     setLoading(true);
@@ -82,6 +88,7 @@ export default function Register() {
             {error}
           </Text>
         ) : null}
+        <ConsentCheckbox testID="auth-consent-checkbox" checked={consent} onChange={setConsent} />
         <Button
           testID="auth-register-button"
           label={strings.auth.register}

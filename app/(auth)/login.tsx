@@ -13,6 +13,7 @@ import { guestAuthEnabled } from '@/lib/env';
 import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
 import { errorText } from '@/lib/errorText';
+import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 
 export default function Login() {
   const { signIn } = useAuthActions();
@@ -21,6 +22,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [guestConsent, setGuestConsent] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -38,6 +40,7 @@ export default function Login() {
 
   async function handleGuest() {
     setError('');
+    if (!guestConsent) return;
     setGuestLoading(true);
     try {
       await signIn('anonymous');
@@ -102,6 +105,8 @@ export default function Login() {
       {guestAuthEnabled && (
         <View style={styles.guest}>
           <Divider label="ou" />
+          {/* Entering without an account also needs the age and privacy consent. */}
+          <ConsentCheckbox testID="auth-guest-consent-checkbox" checked={guestConsent} onChange={setGuestConsent} />
           <Button
             testID="auth-guest-button"
             strongBorder
@@ -109,6 +114,7 @@ export default function Login() {
             variant="secondary"
             onPress={handleGuest}
             loading={guestLoading}
+            disabled={!guestConsent}
           />
         </View>
       )}

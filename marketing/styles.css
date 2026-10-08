@@ -264,3 +264,10 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   .nav-links { gap: 14px; }
   .nav-links a:not(.btn) { display: none; }
 }
+
+/* Privacy policy page (privacidade.html) */
+.policy { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+.policy h1 { font-family: 'Fraunces', serif; color: var(--ink); font-size: 36px; margin: 0 0 4px; }
+.policy h2 { font-family: 'Fraunces', serif; color: var(--ink); font-size: 22px; margin: 32px 0 8px; }
+.policy p { color: var(--text); font-size: 17px; line-height: 1.6; margin: 0 0 12px; }
+.policy .policy-updated { color: var(--text-2); font-size: 14px; }
