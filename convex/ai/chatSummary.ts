@@ -7,14 +7,14 @@ import { action, internalAction, internalMutation, internalQuery } from '../_gen
 import { hasProfessionalAccess } from '../lib/professional';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserIdInAction } from '../lib/accounts';
 import { runAgent } from './runAgent';
 import { userError, NOT_AUTHENTICATED, ADMIN_ONLY } from '../lib/errors';
 
 export const generate = action({
   args: { conversationId: v.id('conversations') },
   handler: async (ctx, { conversationId }): Promise<{ summary: string; invocationId: string }> => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserIdInAction(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
 
     const access = await ctx.runQuery(internal.ai.chatSummary.assertAccess, {
@@ -136,7 +136,7 @@ export const generateOnClose = internalAction({
 export const adminTest = action({
   args: { conversationText: v.string() },
   handler: async (ctx, { conversationText }): Promise<{ summary: string; invocationId: string }> => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserIdInAction(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     const isAdmin = await ctx.runQuery(internal.ai.chatSummary.isCallerAdmin, { userId });
     if (!isAdmin) throw userError(ADMIN_ONLY);

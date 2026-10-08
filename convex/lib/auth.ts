@@ -1,4 +1,4 @@
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserId } from './accounts';
 import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Doc } from '../_generated/dataModel';
 import { userError, NOT_AUTHENTICATED, ADMIN_ONLY } from './errors';
@@ -11,7 +11,7 @@ export type AdminContext = {
 export async function requireAdmin(
   ctx: QueryCtx | MutationCtx
 ): Promise<AdminContext> {
-  const userId = await getAuthUserId(ctx);
+  const userId = await getActiveUserId(ctx);
   if (!userId) throw userError(NOT_AUTHENTICATED);
   const profile = await ctx.db
     .query('userProfiles')

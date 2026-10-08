@@ -1,6 +1,8 @@
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
 import { ConvexReactClient } from 'convex/react';
 import { Stack } from 'expo-router';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { AccountBlocked } from '@/screens/AccountBlocked';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useUnistyles } from 'react-native-unistyles';
 import { authStorage } from '@/lib/storage';
@@ -34,6 +36,9 @@ function RootStack() {
   // that don't paint their own root view (e.g. the Stack containers inside
   // route groups like /conversations).
   const { theme } = useUnistyles();
+  // An account blocked by an admin sees only the blocked notice.
+  const { user } = useCurrentUser();
+  if (user?.profile?.blockedAt) return <AccountBlocked />;
   return (
     <Stack
       screenOptions={{

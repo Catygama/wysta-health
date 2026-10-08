@@ -7,14 +7,14 @@ import { action, internalMutation, internalQuery } from '../_generated/server';
 import { hasProfessionalAccess } from '../lib/professional';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserIdInAction } from '../lib/accounts';
 import { runAgent } from './runAgent';
 import { userError, NOT_AUTHENTICATED } from '../lib/errors';
 
 export const generate = action({
   args: { patientId: v.id('users') },
   handler: async (ctx, { patientId }): Promise<{ summary: string; invocationId: string }> => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserIdInAction(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
 
     const access = await ctx.runQuery(internal.ai.userSummary.assertAccess, {

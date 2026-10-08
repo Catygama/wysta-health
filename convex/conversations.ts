@@ -1,7 +1,7 @@
 import { internalMutation, mutation, query, type QueryCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserId } from './lib/accounts';
 import { v } from 'convex/values';
 import { calculateRiskLevel, type RiskAssessment } from './lib/risk';
 import { alertLevelFor, moreSevere, priorityFor, sortQueue, type AlertLevel } from './lib/alerts';
@@ -26,7 +26,7 @@ const PRIORITY_RANK: Record<string, number> = {
 export const listForPatient = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return [];
     const conversations = await ctx.db
       .query('conversations')
@@ -93,7 +93,7 @@ export const listForProfessional = query({
     ),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return [];
     const profile = await ctx.db
       .query('userProfiles')
@@ -156,7 +156,7 @@ export const listForProfessional = query({
 export const queueStats = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return null;
     const profile = await ctx.db
       .query('userProfiles')
@@ -177,7 +177,7 @@ export const queueStats = query({
 export const get = query({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return null;
     const conv = await ctx.db.get(args.id);
     if (!conv) return null;
@@ -250,7 +250,7 @@ export async function findOpenProfessionalConversation(
 export const openProfessionalByTopic = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return {};
     const byTopic: Record<string, Id<'conversations'>> = {};
     for await (const c of ctx.db
@@ -280,7 +280,7 @@ export const create = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
 
     const kind = args.kind ?? 'human-async';
@@ -355,7 +355,7 @@ async function requireProfessional(ctx: any, userId: any) {
 export const assign = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
@@ -387,7 +387,7 @@ export const assign = mutation({
 export const unassign = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
@@ -411,7 +411,7 @@ export const unassign = mutation({
 export const close = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     const conv = await ctx.db.get(args.id);
     if (!conv) throw userError('Esta conversa já não existe.');
@@ -457,7 +457,7 @@ export const close = mutation({
 export const listHistory = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return [];
     const profile = await ctx.db
       .query('userProfiles')
@@ -487,7 +487,7 @@ export const listHistory = query({
 export const markUrgent = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
@@ -515,7 +515,7 @@ export const recommendInPerson = mutation({
     extraNote: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     const senderProfile = await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
@@ -580,7 +580,7 @@ export const recommendInPerson = mutation({
 export const switchMode = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args): Promise<{ id: Id<'conversations'>; created: boolean }> => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     const conv = await ctx.db.get(args.id);
     if (!conv) throw userError('Esta conversa já não existe.');
@@ -752,7 +752,7 @@ export async function professionalCanSeeAi(
 export const aiContext = query({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return [];
     const profile = await ctx.db
       .query('userProfiles')

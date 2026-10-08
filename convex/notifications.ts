@@ -8,7 +8,7 @@ import {
 } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserId } from './lib/accounts';
 import type { Doc } from './_generated/dataModel';
 import { userError, NOT_AUTHENTICATED } from './lib/errors';
 
@@ -23,7 +23,7 @@ async function upsertPushEntry(
   ctx: MutationCtx,
   entry: Omit<PushEntry, 'addedAt'>
 ) {
-  const userId = await getAuthUserId(ctx);
+  const userId = await getActiveUserId(ctx);
   if (!userId) throw userError(NOT_AUTHENTICATED);
   const profile = await ctx.db
     .query('userProfiles')
@@ -72,7 +72,7 @@ export const webPushPublicKey = query({
 export const removePushToken = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     const profile = await ctx.db
       .query('userProfiles')

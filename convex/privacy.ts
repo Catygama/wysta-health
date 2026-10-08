@@ -2,16 +2,16 @@
 // account (delete). Only the patient's own data, derived from the session.
 import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
 import { v } from 'convex/values';
-import { getAuthUserId } from '@convex-dev/auth/server';
 import type { Id } from './_generated/dataModel';
 import { userError, NOT_AUTHENTICATED } from './lib/errors';
 import { PRIVACY_POLICY_VERSION } from './lib/privacyVersion';
+import { eraseAccount, getActiveUserId } from './lib/accounts';
 
 const MAX_CONVERSATIONS = 500;
 const MAX_MESSAGES_PER_CONVERSATION = 2000;
 
 async function patientOrThrow(ctx: QueryCtx | MutationCtx) {
-  const userId = await getAuthUserId(ctx);
+  const userId = await getActiveUserId(ctx);
   if (!userId) throw userError(NOT_AUTHENTICATED);
   const profile = await ctx.db
     .query('userProfiles')
@@ -29,7 +29,7 @@ async function patientOrThrow(ctx: QueryCtx | MutationCtx) {
 export const recordConsent = mutation({
   args: { policyVersion: v.string(), method: v.union(v.literal('registo'), v.literal('sem-conta')) },
   handler: async (ctx, { policyVersion, method }) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     if (policyVersion !== PRIVACY_POLICY_VERSION) {
       throw userError('A política de privacidade foi atualizada. Recarrega a página e volta a confirmar.');
@@ -163,92 +163,15 @@ export const exportMyData = query({
   },
 });
 
-// Erases the patient's account. Deleted: profile, conversations, all their
-// messages (internal notes included), attached files, wellbeing check-ins,
-// push tokens, sign-in accounts and sessions. Kept but anonymised: the audit
-// log (who did what, when, for accountability) loses the link to the
-// conversation and any free text; AI usage rows keep only cost metrics.
+// Erases the patient's account (lib/accounts.ts eraseAccount): profile,
+// conversations, all their messages (internal notes included), attached files,
+// wellbeing check-ins, consents, push tokens, sign-in accounts and sessions.
+// Kept but anonymised: the audit log and the AI usage cost metrics.
 export const deleteMyAccount = mutation({
   args: { confirmation: v.literal('APAGAR') },
   handler: async (ctx) => {
-    const { userId, profile } = await patientOrThrow(ctx);
-
-    const conversations = await ctx.db
-      .query('conversations')
-      .withIndex('by_patient', (q) => q.eq('patientId', userId))
-      .take(MAX_CONVERSATIONS);
-    for (const c of conversations) {
-      const messages = await ctx.db
-        .query('messages')
-        .withIndex('by_conversation', (q) => q.eq('conversationId', c._id))
-        .take(MAX_MESSAGES_PER_CONVERSATION);
-      for (const m of messages) {
-        for (const fileId of [m.imageId, m.attachmentId]) {
-          if (fileId && (await ctx.db.system.get(fileId))) await ctx.storage.delete(fileId);
-        }
-        await ctx.db.delete(m._id);
-      }
-      for (const entry of await ctx.db
-        .query('auditLog')
-        .withIndex('by_conversation', (q) => q.eq('conversationId', c._id))
-        .take(1000)) {
-        await ctx.db.patch(entry._id, { conversationId: undefined, details: 'Conta da utente apagada.' });
-      }
-      for (const inv of await ctx.db
-        .query('aiInvocations')
-        .withIndex('by_conversation', (q) => q.eq('conversationId', c._id))
-        .take(5000)) {
-        await ctx.db.patch(inv._id, { conversationId: undefined, userId: undefined });
-      }
-      await ctx.db.delete(c._id);
-    }
-
-    for (const inv of await ctx.db
-      .query('aiInvocations')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .take(5000)) {
-      await ctx.db.patch(inv._id, { userId: undefined });
-    }
-    for (const c of await ctx.db
-      .query('wellbeingCheckins')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .take(1000)) {
-      await ctx.db.delete(c._id);
-    }
-    for (const c of await ctx.db
-      .query('privacyConsents')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
-      .take(100)) {
-      await ctx.db.delete(c._id);
-    }
-    if (profile) await ctx.db.delete(profile._id);
-
-    // Sign-in data: sessions (and their refresh tokens) and accounts.
-    for (const s of await ctx.db
-      .query('authSessions')
-      .withIndex('userId', (q) => q.eq('userId', userId))
-      .take(500)) {
-      for (const t of await ctx.db
-        .query('authRefreshTokens')
-        .withIndex('sessionId', (q) => q.eq('sessionId', s._id))
-        .take(1000)) {
-        await ctx.db.delete(t._id);
-      }
-      await ctx.db.delete(s._id);
-    }
-    for (const a of await ctx.db
-      .query('authAccounts')
-      .withIndex('userIdAndProvider', (q) => q.eq('userId', userId as Id<'users'>))
-      .take(50)) {
-      for (const code of await ctx.db
-        .query('authVerificationCodes')
-        .withIndex('accountId', (q) => q.eq('accountId', a._id))
-        .take(50)) {
-        await ctx.db.delete(code._id);
-      }
-      await ctx.db.delete(a._id);
-    }
-    await ctx.db.delete(userId);
+    const { userId } = await patientOrThrow(ctx);
+    await eraseAccount(ctx, userId);
     return null;
   },
 });

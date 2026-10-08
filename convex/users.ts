@@ -1,8 +1,9 @@
-import { internalMutation, mutation, query, type MutationCtx } from './_generated/server';
+import { internalMutation, internalQuery, mutation, query, type MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import { paginationOptsValidator } from 'convex/server';
 import type { Id } from './_generated/dataModel';
 import { requireAdmin } from './lib/auth';
+import { eraseAccount, signOutEverywhere, getActiveUserId } from './lib/accounts';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { userError, NOT_AUTHENTICATED, ADMIN_ONLY } from './lib/errors';
@@ -31,7 +32,7 @@ export const ensureProfile = mutation({
     isGuest: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     const existing = await ctx.db
       .query('userProfiles')
@@ -50,7 +51,7 @@ export const ensureProfile = mutation({
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     return ctx.storage.generateUploadUrl();
   },
@@ -65,7 +66,7 @@ export const submitProfessionalVerification = mutation({
     professionalVerificationNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     if (!args.professionalLicenseNumber.trim()) {
       throw userError('Cédula obrigatória.');
@@ -124,7 +125,7 @@ export const updateProfile = mutation({
     medications: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     const profile = await ctx.db
       .query('userProfiles')
@@ -152,7 +153,7 @@ export const hasAnyAdmin = query({
 export const bootstrapAdmin = mutation({
   args: {},
   handler: async (ctx) => {
-    const callerId = await getAuthUserId(ctx);
+    const callerId = await getActiveUserId(ctx);
     if (!callerId) throw userError(NOT_AUTHENTICATED);
     const anyAdmin = await ctx.db
       .query('userProfiles')
@@ -188,7 +189,7 @@ export const setRole = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const callerId = await getAuthUserId(ctx);
+    const callerId = await getActiveUserId(ctx);
     if (!callerId) throw userError(NOT_AUTHENTICATED);
     const callerProfile = await ctx.db
       .query('userProfiles')
@@ -231,7 +232,7 @@ export const setRole = mutation({
 export const listUsers = query({
   args: {},
   handler: async (ctx) => {
-    const callerId = await getAuthUserId(ctx);
+    const callerId = await getActiveUserId(ctx);
     if (!callerId) return [];
     const callerProfile = await ctx.db
       .query('userProfiles')
@@ -399,4 +400,87 @@ export const rejectProfessional = mutation({
 export const guestProfessionalEnabled = query({
   args: {},
   handler: async () => process.env.ALLOW_GUEST_PROFESSIONAL === 'true',
+});
+
+// ── Admin: block access and delete accounts ───────────────────────────────
+
+// The account an admin acts on: never their own (another admin has to), and
+// it must exist.
+async function otherUserProfile(ctx: MutationCtx, adminId: Id<'users'>, userId: Id<'users'>) {
+  if (userId === adminId) throw userError('Não podes fazer isto à tua própria conta.');
+  const profile = await ctx.db
+    .query('userProfiles')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .unique();
+  if (!profile) throw userError('Não encontrámos o perfil deste utilizador.');
+  return profile;
+}
+
+// Blocks access: the user is signed out on every device, and while blocked
+// every query and mutation treats them as signed out. Nothing is deleted.
+export const blockUser = mutation({
+  args: { userId: v.id('users'), reason: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const { userId: adminId } = await requireAdmin(ctx);
+    const profile = await otherUserProfile(ctx, adminId, args.userId);
+    if (profile.blockedAt) return null;
+    const reason = args.reason?.trim() || undefined;
+    await ctx.db.patch(profile._id, { blockedAt: Date.now(), blockedBy: adminId, blockedReason: reason });
+    await signOutEverywhere(ctx, args.userId);
+    await ctx.db.insert('auditLog', {
+      adminId,
+      targetUserId: args.userId,
+      action: 'account-blocked',
+      details: reason ? `Acesso bloqueado: ${reason}` : 'Acesso bloqueado.',
+    });
+    return null;
+  },
+});
+
+export const unblockUser = mutation({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const { userId: adminId } = await requireAdmin(ctx);
+    const profile = await otherUserProfile(ctx, adminId, args.userId);
+    if (!profile.blockedAt) return null;
+    await ctx.db.patch(profile._id, { blockedAt: undefined, blockedBy: undefined, blockedReason: undefined });
+    await ctx.db.insert('auditLog', {
+      adminId,
+      targetUserId: args.userId,
+      action: 'account-unblocked',
+      details: 'Acesso desbloqueado.',
+    });
+    return null;
+  },
+});
+
+// Deletes the account for good (lib/accounts.ts eraseAccount): a patient's
+// conversations and data go with it; a professional's open conversations go
+// back to the queue. The audit log keeps a record without personal data.
+export const deleteUser = mutation({
+  args: { userId: v.id('users'), confirmation: v.literal('APAGAR') },
+  handler: async (ctx, args) => {
+    const { userId: adminId } = await requireAdmin(ctx);
+    const profile = await otherUserProfile(ctx, adminId, args.userId);
+    const role = profile.role;
+    await eraseAccount(ctx, args.userId);
+    await ctx.db.insert('auditLog', {
+      adminId,
+      action: 'account-deleted',
+      details: `Conta apagada pela administração (${role === 'patient' ? 'utente' : role === 'professional' ? 'profissional' : 'admin'}).`,
+    });
+    return null;
+  },
+});
+
+// For actions (no database access): whether the signed-in user isn't blocked.
+export const isActive = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    const profile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+    return !profile?.blockedAt;
+  },
 });

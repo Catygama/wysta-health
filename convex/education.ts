@@ -1,6 +1,6 @@
 import { query, mutation } from './_generated/server';
 import type { QueryCtx } from './_generated/server';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserId } from './lib/accounts';
 import { v } from 'convex/values';
 import { topicValidator } from './lib/topics';
 import { requireAdmin } from './lib/auth';
@@ -27,7 +27,7 @@ export const listByTopic = query({
 });
 
 async function isAdmin(ctx: QueryCtx): Promise<boolean> {
-  const userId = await getAuthUserId(ctx);
+  const userId = await getActiveUserId(ctx);
   if (!userId) return false;
   const profile = await ctx.db
     .query('userProfiles')

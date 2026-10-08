@@ -67,6 +67,11 @@ export default defineSchema({
     professionalVerificationRejectionReason: v.optional(v.string()),
     // Guest sessions (Anonymous provider) — for testing only
     isGuest: v.optional(v.boolean()),
+    // Blocked by an admin (users.blockUser): signed out and refused by every
+    // query and mutation until unblocked (lib/accounts.ts getActiveUserId).
+    blockedAt: v.optional(v.number()),
+    blockedBy: v.optional(v.id('users')),
+    blockedReason: v.optional(v.string()),
     // Push destinations (max 15, oldest evicted on overflow). Native entries
     // hold an Expo push token; web entries hold the subscription endpoint in
     // `token` plus its encryption keys.
@@ -277,7 +282,10 @@ export default defineSchema({
       v.literal('article-saved'),
       v.literal('article-published'),
       v.literal('article-unpublished'),
-      v.literal('triage-updated')
+      v.literal('triage-updated'),
+      v.literal('account-blocked'),
+      v.literal('account-unblocked'),
+      v.literal('account-deleted')
     ),
     details: v.string(),
   }).index('by_conversation', ['conversationId']),

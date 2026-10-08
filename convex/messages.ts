@@ -1,6 +1,6 @@
 import { mutation, query } from './_generated/server';
 import { hasProfessionalAccess } from './lib/professional';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserId } from './lib/accounts';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import { professionalCanSeeAi } from './conversations';
@@ -10,7 +10,7 @@ import { storedAttachmentError } from './lib/attachments';
 export const list = query({
   args: { conversationId: v.id('conversations') },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return [];
     const conv = await ctx.db.get(args.conversationId);
     if (!conv) return [];
@@ -89,7 +89,7 @@ export const send = mutation({
     isInternal: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw userError('Esta conversa já não existe.');
@@ -194,7 +194,7 @@ export const send = mutation({
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     return ctx.storage.generateUploadUrl();
   },

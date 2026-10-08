@@ -46,6 +46,9 @@ export default function AdminPanel() {
   const users = useQuery(api.users.listUsers);
   const me = useQuery(api.users.currentUser);
   const setRole = useMutation(api.users.setRole);
+  const blockUser = useMutation(api.users.blockUser);
+  const unblockUser = useMutation(api.users.unblockUser);
+  const deleteUser = useMutation(api.users.deleteUser);
   const [search, setSearch] = useState('');
   // The user whose card was tapped: the dialog to change their role.
   const [editing, setEditing] = useState<{
@@ -54,7 +57,27 @@ export default function AdminPanel() {
     email?: string;
     role: string;
     newRole: string;
+    blocked: boolean;
   } | null>(null);
+  // Block / unblock / delete, confirmed in its own dialog.
+  const [action, setAction] = useState<{
+    kind: 'block' | 'unblock' | 'delete';
+    userId: string;
+    name: string;
+    role: string;
+  } | null>(null);
+  const [reason, setReason] = useState('');
+  const [typed, setTyped] = useState('');
+
+  function startAction(kind: 'block' | 'unblock' | 'delete') {
+    if (!editing) return;
+    const next = { kind, userId: editing.userId, name: editing.name, role: editing.role };
+    setEditing(null);
+    // Opened once the role dialog has faded out, so the two don't overlap.
+    setTimeout(() => setAction(next), 250);
+    setReason('');
+    setTyped('');
+  }
   const { theme } = useUnistyles();
 
   if (users === undefined) {
@@ -196,6 +219,7 @@ export default function AdminPanel() {
                 email: item.user?.email,
                 role: item.role,
                 newRole: item.role,
+                blocked: !!item.blockedAt,
               })
             }
             style={({ pressed }) => [styles.userRow, pressed && styles.userRowPressed]}
@@ -205,10 +229,17 @@ export default function AdminPanel() {
                 {name}
                 {isMe ? <Text style={styles.userMe}> (tu)</Text> : null}
               </Text>
-              <View style={[styles.roleBadge, { backgroundColor: roleColor + (dark ? '29' : '20') }]}>
-                <Text style={[styles.roleBadgeText, { color: roleColor }]}>
-                  {ROLE_LABELS[item.role] ?? item.role}
-                </Text>
+              <View style={styles.badges}>
+                {item.blockedAt ? (
+                  <View testID="admin-user-blocked" style={styles.blockedBadge}>
+                    <Text style={styles.blockedBadgeText}>Bloqueada</Text>
+                  </View>
+                ) : null}
+                <View style={[styles.roleBadge, { backgroundColor: roleColor + (dark ? '29' : '20') }]}>
+                  <Text style={[styles.roleBadgeText, { color: roleColor }]}>
+                    {ROLE_LABELS[item.role] ?? item.role}
+                  </Text>
+                </View>
               </View>
             </View>
 
@@ -261,9 +292,85 @@ export default function AdminPanel() {
           );
         })}
       </View>
+
+      <View style={styles.accountActions}>
+        <Text style={styles.roleOptionsLabel}>Conta</Text>
+        <View style={styles.accountButtons}>
+          <Button
+            testID={editing?.blocked ? 'admin-unblock' : 'admin-block'}
+            kind="secondary"
+            size="sm"
+            label={editing?.blocked ? 'Desbloquear acesso' : 'Bloquear acesso'}
+            onPress={() => startAction(editing?.blocked ? 'unblock' : 'block')}
+          />
+          <Button testID="admin-delete" kind="ghost" size="sm" label="Apagar conta" onPress={() => startAction('delete')} />
+        </View>
+      </View>
+    </ConfirmDialog>
+
+    <ConfirmDialog
+      testID="account-action-dialog"
+      visible={action !== null}
+      title={
+        action?.kind === 'block'
+          ? 'Bloquear acesso?'
+          : action?.kind === 'unblock'
+            ? 'Desbloquear acesso?'
+            : 'Apagar conta?'
+      }
+      message={action ? actionMessage(action) : undefined}
+      confirmLabel={action?.kind === 'block' ? 'Bloquear' : action?.kind === 'unblock' ? 'Desbloquear' : 'Apagar'}
+      confirmDisabled={action?.kind === 'delete' && typed.trim().toUpperCase() !== 'APAGAR'}
+      onCancel={() => setAction(null)}
+      onConfirm={async () => {
+        if (!action) return;
+        const userId = action.userId as any;
+        if (action.kind === 'block') await blockUser({ userId, reason: reason.trim() || undefined });
+        else if (action.kind === 'unblock') await unblockUser({ userId });
+        else await deleteUser({ userId, confirmation: 'APAGAR' });
+        setAction(null);
+      }}
+    >
+      {action?.kind === 'block' && (
+        <TextInput
+          testID="admin-block-reason"
+          accessibilityLabel="Motivo (opcional)"
+          value={reason}
+          onChangeText={setReason}
+          placeholder="Motivo (opcional, fica no registo)"
+          placeholderTextColor={theme.colors.textTertiary as any}
+          style={styles.dialogInput}
+        />
+      )}
+      {action?.kind === 'delete' && (
+        <TextInput
+          testID="admin-delete-confirm-text"
+          accessibilityLabel="Escreve APAGAR para confirmar"
+          value={typed}
+          onChangeText={setTyped}
+          placeholder="Escreve APAGAR para confirmar"
+          placeholderTextColor={theme.colors.textTertiary as any}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          style={styles.dialogInput}
+        />
+      )}
     </ConfirmDialog>
     </>
   );
+}
+
+// What each account action does, in the confirmation dialog.
+function actionMessage(a: { kind: 'block' | 'unblock' | 'delete'; name: string; role: string }): string {
+  if (a.kind === 'block') {
+    return `${a.name} deixa de conseguir usar a Wysta e a sessão termina em todos os dispositivos. Nada é apagado: podes desbloquear depois.`;
+  }
+  if (a.kind === 'unblock') return `${a.name} volta a poder entrar na Wysta.`;
+  if (a.role === 'professional') {
+    return `Apaga para sempre a conta de ${a.name}. As conversas em curso voltam aos Pedidos; o que escreveu fica nas conversas das utentes. Não é possível desfazer.`;
+  }
+  if (a.role === 'admin') return `Apaga para sempre a conta de administração de ${a.name}. Não é possível desfazer.`;
+  return `Apaga para sempre a conta de ${a.name}, com as conversas, mensagens e ficheiros. Não é possível desfazer.`;
 }
 
 function CountCard({ label, value, testID }: { label: string; value: number; testID?: string }) {
@@ -333,6 +440,27 @@ const styles = StyleSheet.create((theme) => ({
   },
   userTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: theme.spacing.sm },
   userEmail: { fontSize: 16, fontWeight: '500', color: theme.colors.textPrimary, flex: 1 },
+  badges: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  blockedBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1.5,
+    borderColor: theme.colors.danger,
+  },
+  blockedBadgeText: { fontSize: 12, fontWeight: '600', color: theme.colors.danger },
+  accountActions: { gap: theme.spacing.xs, marginTop: theme.spacing.sm },
+  accountButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  dialogInput: {
+    minHeight: 44,
+    borderRadius: theme.radius.md,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceSunken,
+    paddingHorizontal: theme.spacing.md,
+    fontSize: 15,
+    color: theme.colors.textPrimary,
+  },
   roleBadge: { paddingVertical: 2, paddingHorizontal: theme.spacing.sm, borderRadius: theme.radius.pill },
   roleBadgeText: { fontSize: 12, fontWeight: '500' },
   userMeta: { fontSize: 12, color: theme.colors.textSecondary },

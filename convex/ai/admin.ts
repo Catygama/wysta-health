@@ -6,7 +6,7 @@
 import { v } from 'convex/values';
 import { action, mutation, query } from '../_generated/server';
 import { internal } from '../_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserIdInAction } from '../lib/accounts';
 import { requireAdmin } from '../lib/auth';
 import { runAgent } from './runAgent';
 import { maskApiKey } from './configs';
@@ -248,7 +248,7 @@ export const testPurpose = action({
     ctx,
     { purpose, vars }
   ): Promise<{ output: string; invocationId: string }> => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserIdInAction(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     const isAdmin = await ctx.runQuery(internal.ai.chatSummary.isCallerAdmin, {
       userId,

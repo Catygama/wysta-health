@@ -22,7 +22,7 @@ import {
 import { v } from 'convex/values';
 import { z } from 'zod';
 import { internal } from '../_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserIdInAction } from '../lib/accounts';
 import { runAgent } from './runAgent';
 import { SUGGEST_CLOSE_MARKER } from './defaults';
 import type { Doc, Id } from '../_generated/dataModel';
@@ -248,7 +248,7 @@ export const respondAnonymous = action({
     sent: boolean;
     answer: string;
   }> => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserIdInAction(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
 
     // Same rule-based detection as the conversations: fixed answer, no model.
@@ -360,7 +360,7 @@ export const respond = action({
     query: v.string(),
   },
   handler: async (ctx, { conversationId, query }): Promise<{ sent: boolean }> => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserIdInAction(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
     const ctxData = await ctx.runQuery(internal.ai.assistant.gatherContext, {
       conversationId,

@@ -1,6 +1,6 @@
 import { internalMutation, mutation } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserId } from './lib/accounts';
 import { TRIAGE_SEEDS, ARTICLE_SEEDS, type TriageSeed, type ArticleSeed } from './lib/seedData';
 import { alertLevelFor } from './lib/alerts';
 import { userError } from './lib/errors';
@@ -87,10 +87,10 @@ async function isAdminOrEmpty(ctx: MutationCtx) {
   // Bootstrap path: if no admin exists yet, allow first authenticated caller
   // to seed. Once an admin exists, only admins can call seedAll.
   if (!anyAdmin) {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     return userId !== null;
   }
-  const userId = await getAuthUserId(ctx);
+  const userId = await getActiveUserId(ctx);
   if (!userId) return false;
   const profile = await ctx.db
     .query('userProfiles')
