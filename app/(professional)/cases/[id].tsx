@@ -13,6 +13,7 @@ import {
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/convex/_generated/api';
 import { MessageThread } from '@/screens/MessageThread';
 import { AiContextBlock } from '@/screens/AiContextBlock';
@@ -226,7 +227,15 @@ export default function ProfessionalConversation() {
               accessibilityLabel="Fechar opções"
               onPress={() => setDrawerOpen(false)}
             />
-            <View style={styles.drawer}>{panel}</View>
+            {/* SafeAreaView measures where it sits, so the panel clears the status
+                bar and home indicator inside the modal. Inline style: Unistyles
+                styles are partly dropped on third-party components. */}
+            <SafeAreaView
+              edges={['top', 'bottom']}
+              style={{ width: '85%', maxWidth: 380, backgroundColor: theme.colors.background }}
+            >
+              {panel}
+            </SafeAreaView>
           </View>
         </Modal>
       )}
@@ -797,7 +806,6 @@ const styles = StyleSheet.create((theme) => ({
   sideColumn: { width: 340, borderLeftWidth: 1, borderLeftColor: theme.colors.divider },
   drawerWrap: { flex: 1, flexDirection: 'row' },
   drawerShade: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
-  drawer: { width: '85%', maxWidth: 380, backgroundColor: theme.colors.background },
   panel: { flex: 1, backgroundColor: theme.colors.background },
   panelFill: { flex: 1 },
   panelHeader: {
