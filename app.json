@@ -35,8 +35,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "A Wysta usa a galeria para anexar imagens (ex.: exames, receitas) às tuas conversas com profissionais de saúde.",
-          "cameraPermission": "A Wysta usa a câmara para anexar fotografias às tuas conversas com profissionais de saúde.",
+          "photosPermission": "A Wysta usa a galeria para anexar imagens (ex.: exames, receitas) \u00e0s tuas conversas com profissionais de sa\u00fade.",
+          "cameraPermission": "A Wysta usa a c\u00e2mara para anexar fotografias \u00e0s tuas conversas com profissionais de sa\u00fade.",
           "microphonePermission": false
         }
       ],
@@ -67,7 +67,9 @@
       "policy": "fingerprint"
     },
     "updates": {
-      "url": "https://u.expo.dev/852c6753-ceab-4036-b5a9-a75b89a182fd"
+      "url": "https://u.expo.dev/852c6753-ceab-4036-b5a9-a75b89a182fd",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 10000
     }
   }
 }
