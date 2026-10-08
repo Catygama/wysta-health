@@ -38,7 +38,7 @@ const topicsDark = {
 // Light theme keeps a near-white page so cards stand out; beige and dusty pink
 // are details (sunken areas, icon circles). Other values are tints/shades of
 // these three (e.g. a mid red-brown for link text, for contrast).
-const lightTheme = {
+export const lightTheme = {
   ...shared,
   name: 'light',
   colors: {
@@ -81,7 +81,7 @@ const lightTheme = {
   topic: topicsLight,
 } as const;
 
-const darkTheme = {
+export const darkTheme = {
   ...shared,
   name: 'dark',
   // Warm plum dark: deep plum-brown page, slightly lighter cards, dusty-rose

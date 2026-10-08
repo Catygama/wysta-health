@@ -24,9 +24,10 @@ export default function AuthLayoutWeb() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  // dvh: the visible height. On iPhone Safari 100vh is taller than what's
-  // shown, so the whole page could slide up under the status bar.
-  root: { flex: 1, height: '100dvh' as any, backgroundColor: theme.colors.background },
+  // The visible height: --wysta-vh (lib/webViewport) also shrinks while the
+  // iOS keyboard is open; 100dvh is the fallback. Plain 100vh is taller than
+  // what iPhone Safari shows, so the page could slide under the status bar.
+  root: { flex: 1, height: 'var(--wysta-vh, 100dvh)' as any, backgroundColor: theme.colors.background },
   page: { flexGrow: 1, alignItems: 'center' },
   pageDesktop: { paddingVertical: theme.spacing.xl },
   panel: { width: '100%' },

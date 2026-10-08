@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Appearance, type ColorSchemeName } from 'react-native';
+import { Appearance, Platform, type ColorSchemeName } from 'react-native';
 import { UnistylesRuntime } from 'react-native-unistyles';
 import {
   lightColors,
@@ -16,6 +16,8 @@ import {
 } from '@/constants/theme';
 import { prefStorage } from '@/lib/prefStorage';
 import { setWebFocusColor } from '@/lib/webFocusStyles';
+import { setWebChrome } from '@/lib/webChrome';
+import { lightTheme, darkTheme } from '@/lib/unistyles';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type EffectiveTheme = 'light' | 'dark';
@@ -88,6 +90,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     if (UnistylesRuntime.hasAdaptiveThemes) {
       UnistylesRuntime.setAdaptiveThemes(false);
+      // Unistyles on web keeps the theme name from before adaptive mode, which
+      // goes stale when the OS appearance changes. If it already equals `mode`,
+      // setTheme below is a no-op and useUnistyles() colours (icons, inline
+      // text) stay on the old theme while the CSS switches. updateTheme with
+      // the same values emits the change.
+      if (Platform.OS === 'web' && UnistylesRuntime.themeName === mode) {
+        UnistylesRuntime.updateTheme(mode, (t) => t);
+      }
     }
     UnistylesRuntime.setTheme(mode);
   }, [mode, systemScheme]);
@@ -97,6 +107,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const effectiveScheme = resolveEffective(mode, systemScheme);
   useEffect(() => {
     setWebFocusColor(effectiveScheme === 'dark' ? '#E3C7C7' : '#50000D');
+    // Web: page background and browser chrome follow the theme, so iPhone
+    // Safari doesn't show white above or below the app in dark mode.
+    setWebChrome(
+      effectiveScheme,
+      (effectiveScheme === 'dark' ? darkTheme : lightTheme).colors.background,
+    );
   }, [effectiveScheme]);
 
   const value = useMemo<ThemeContextValue>(() => {
