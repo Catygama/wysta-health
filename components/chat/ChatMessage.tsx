@@ -27,6 +27,16 @@ export type ChatMessageProps = {
   author?: string;
 };
 
+// Who wrote a message, above its bubble. Also labels the fixed messages of
+// the safety rules (screens/SafetyRuleMessage).
+export function AuthorLabel({ children, testID }: { children: string; testID?: string }) {
+  return (
+    <Text testID={testID} style={styles.authorLabel}>
+      {children}
+    </Text>
+  );
+}
+
 export function ChatMessage({
   side,
   internal = false,
@@ -59,9 +69,7 @@ export function ChatMessage({
       {internal ? (
         <Text style={styles.internalLabel}>{author ? `Nota interna · ${author}` : 'Nota interna'}</Text>
       ) : author && !isOwn ? (
-        <Text testID={testID ? `${testID}-author` : undefined} style={styles.authorLabel}>
-          {author}
-        </Text>
+        <AuthorLabel testID={testID ? `${testID}-author` : undefined}>{author}</AuthorLabel>
       ) : null}
       <View style={[styles.bubble, hasImage && styles.bubbleMedia]}>
         {hasImage ? (

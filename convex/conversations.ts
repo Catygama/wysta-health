@@ -45,7 +45,11 @@ export const listForPatient = query({
           .order('desc')
           .take(15);
         const visible = recent.filter((m) => !m.isInternal);
-        const last = visible[0];
+        // Preview: the last thing the patient, the nurse or the AI wrote; not
+        // system lines, the fixed safety messages or a reply still in progress.
+        const last = visible.find(
+          (m) => m.messageType !== 'system' && !m.metadata?.safetyRule && !(m.messageType === 'ai-response' && m.streaming)
+        );
         const lastFromPro = visible.find((m) => m.senderId !== userId);
         let responderName: string | null = null;
         if (lastFromPro && conv.kind !== 'ai-only') {
@@ -139,7 +143,10 @@ export const listForProfessional = query({
           .order('desc')
           .take(10);
         const lastText = recent.find(
-          (m) => !m.isInternal && (m.messageType === 'text' || m.messageType === 'ai-response')
+          (m) =>
+            !m.isInternal &&
+            !m.metadata?.safetyRule &&
+            (m.messageType === 'text' || m.messageType === 'ai-response')
         );
         return {
           ...c,
@@ -699,7 +706,10 @@ async function answerPendingWithAi(
     const fromPatient = m.senderId === proConv.patientId;
     // The nurse's last reply: everything before it is answered.
     if (!fromPatient && ['text', 'image', 'file'].includes(m.messageType)) break;
-    if (fromPatient && m.messageType === 'text' && m.content.trim()) pending.push(m);
+    // A message that triggered a safety rule already got the fixed message.
+    if (fromPatient && m.messageType === 'text' && m.content.trim() && !m.metadata?.triggeredSafetyRule) {
+      pending.push(m);
+    }
   }
   if (pending.length === 0) return;
   pending.reverse();

@@ -4,6 +4,7 @@ import { authTables } from '@convex-dev/auth/server';
 import { aiPurposeValidator as aiPurpose, aiProviderValidator as aiProvider } from './ai/registry';
 import { topicValidator as topic } from './lib/topics';
 import { alertLevelValidator as alertLevel } from './lib/alerts';
+import { safetyRuleIdValidator } from './lib/aiSafetyMessages';
 
 const priority = v.union(
   v.literal('low'),
@@ -180,6 +181,13 @@ export default defineSchema({
         // AI answer that suggests ending the conversation (shows a
         // "Terminar conversa" button to the patient).
         suggestClose: v.optional(v.boolean()),
+        // Fixed message of a safety rule (lib/aiSafetyMessages): a system
+        // message in a nurse conversation or an ai-response in an AI chat.
+        // Shown as an alert card, left out of list previews.
+        safetyRule: v.optional(safetyRuleIdValidator),
+        // Patient message that triggered a safety rule: already answered by
+        // the fixed message, so a switch to the AI doesn't answer it again.
+        triggeredSafetyRule: v.optional(safetyRuleIdValidator),
       })
     ),
   }).index('by_conversation', ['conversationId']),

@@ -22,4 +22,7 @@ test('urgent situations get the fixed answer with concrete contacts', async ({ p
     await page.getByTestId('anonymous-send').click();
     await expect(matches).toHaveCount(before + 1, { timeout: 15_000 });
   }
+  // Each one shown as the alert card with call buttons.
+  await expect(page.getByTestId('anonymous-messages').getByTestId('safety-rule-message')).toHaveCount(CASES.length);
+  await expect(page.getByRole('link', { name: 'Ligar para a linha SNS Grávida, 808 24 24 24' })).toBeVisible();
 });
