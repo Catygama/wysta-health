@@ -150,7 +150,7 @@ export default function ProfessionalConversation() {
           {isAssignedToOther ? 'Assumir conversa e responder' : 'Atribuir a mim e responder'}
         </Text>
       </Pressable>
-      <Text style={styles.assignHint}>Ao atribuir, passas a ser o profissional deste caso.</Text>
+      <Text style={styles.assignHint}>Ao atribuir, passas a ser o enfermeiro deste caso.</Text>
     </View>
   ) : (
     <View style={styles.quick}>

@@ -56,13 +56,13 @@ const judgeSchema = z.object({
 });
 
 const FALLBACK_MESSAGE =
-  'Não consegui responder agora. Tenta novamente daqui a pouco ou fala com um profissional.';
+  'Não consegui responder agora. Tenta novamente daqui a pouco ou fala com um enfermeiro.';
 const BLOCKED_AUTO =
-  'Esta pergunta merece resposta de um profissional. Toca em "Falar com profissional" para entrar na fila.';
+  'Esta pergunta merece resposta de um enfermeiro. Toca em "Falar com enfermeiro" para entrar na fila.';
 const BLOCKED_RESPOND =
-  'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um profissional.';
+  'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um enfermeiro.';
 const BLOCKED_ESCALATE =
-  'Esta pergunta precisa de um profissional. Encaminhei-a para a tua conversa com o profissional, que te vai responder lá.';
+  'Esta pergunta precisa de um enfermeiro. Encaminhei-a para a tua conversa com o enfermeiro, que te vai responder lá.';
 
 type StreamVars = {
   query: string;
@@ -279,7 +279,7 @@ export const respondAnonymous = action({
       ? stripSuggestClose(judged.output.finalAnswer)
           .text.replace(/\s*Para a tua situação concreta, espera pela resposta do profissional ou marca consulta presencial\.?/g, '')
           .trim()
-      : 'Esta pergunta precisa de um profissional de saúde, por isso não lhe posso responder aqui. Para acompanhamento, abre uma conversa com um profissional no Início.';
+      : 'Esta pergunta precisa de um enfermeiro, por isso não lhe posso responder aqui. Para acompanhamento, abre uma conversa com um enfermeiro no Início.';
 
     return { sent, answer };
   },

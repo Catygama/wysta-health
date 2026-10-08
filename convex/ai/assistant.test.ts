@@ -132,7 +132,7 @@ describe('assistant streaming (respondAuto)', () => {
     await t.action(internal.ai.assistant.respondAuto, { conversationId, query: 'olá' });
 
     const msg = await aiMessage(t, conversationId);
-    expect(msg?.content).toContain('Falar com profissional');
+    expect(msg?.content).toContain('Falar com enfermeiro');
     expect(msg?.content).not.toContain('rascunho perigoso');
     expect(msg?.streaming).toBe(false);
   });

@@ -75,7 +75,7 @@ export default function PatientHome() {
           icon={{ sf: 'stethoscope', ion: 'medkit-outline' }}
           iconFill={theme.colors.butter}
           title="Enfermeiro/a"
-          description="Responde a umas perguntas e um profissional responde-te em até 24h"
+          description="Responde a umas perguntas e um enfermeiro responde-te em até 24h"
           onPress={() => setPickerMode('professional')}
         />
         <PathCard
@@ -83,7 +83,7 @@ export default function PatientHome() {
           icon={{ sf: 'sparkles', ion: 'sparkles-outline' }}
           iconFill={theme.topic.intimate.fill}
           title="Assistente IA"
-          description="Responde a umas perguntas e recebe resposta imediata. Podes pedir um profissional a qualquer momento"
+          description="Responde a umas perguntas e recebe resposta imediata. Podes pedir um enfermeiro a qualquer momento"
           onPress={() => setPickerMode('ai')}
         />
         <AnonymousAiButton />
@@ -123,7 +123,7 @@ function TopicPickerSheet({
         <View style={styles.sheet}>
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>
-              {mode === 'ai' ? 'Falar com a assistente IA' : 'Falar com um profissional'}
+              {mode === 'ai' ? 'Falar com a assistente IA' : 'Falar com enfermeiro'}
             </Text>
             <Pressable
               testID="topic-picker-close"
@@ -138,7 +138,7 @@ function TopicPickerSheet({
           <Text style={styles.sheetNote}>
             {mode === 'ai'
               ? 'Escolhe o tema. Depois de umas perguntas, a assistente responde-te na hora.'
-              : 'Escolhe o tema. Depois de umas perguntas, um profissional responde-te em até 24h.'}
+              : 'Escolhe o tema. Depois de umas perguntas, um enfermeiro responde-te em até 24h.'}
           </Text>
           <View style={[styles.topicList, twoColumns && styles.topicGrid]}>
             {/* The five topics, then the catch-all "general" as "Outro assunto". */}

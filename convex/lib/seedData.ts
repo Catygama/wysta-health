@@ -136,7 +136,7 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
       },
       mediumRisk: {
         criteria: ["main-concern == 'Efeitos secundários'"],
-        guidance: 'Pode ser necessário ajustar o método com um profissional.',
+        guidance: 'Pode ser necessário ajustar o método com um enfermeiro.',
       },
       highRisk: {
         criteria: ["main-concern == 'Contraceção de emergência'", 'unprotected'],
@@ -254,7 +254,7 @@ export const TRIAGE_SEEDS: TriageSeed[] = [
       },
       mediumRisk: {
         criteria: [],
-        guidance: 'Monitoriza os sintomas e acompanha com o profissional.',
+        guidance: 'Monitoriza os sintomas e acompanha com o enfermeiro.',
       },
       highRisk: {
         criteria: ['bleeding', 'abdominal-pain', 'reduced-movement', 'preeclampsia-signs', 'fluid-loss'],
@@ -320,7 +320,7 @@ Pontos-chave:
 - Dor leve a moderada pode ser controlada com calor local e analgésicos comuns.
 - Alterações súbitas (atraso significativo, sangramento entre ciclos, dor incapacitante) podem justificar avaliação.
 
-Se houver impacto significativo no teu dia-a-dia, fala com um profissional de saúde.`,
+Se houver impacto significativo no teu dia-a-dia, fala com um enfermeiro.`,
     whenToSeekHelp: `Procura ajuda se:
 - A dor for intensa, persistente ou te impedir de fazer as tuas atividades.
 - Tiveres sangramento muito abundante (trocas de penso a cada hora).
@@ -411,8 +411,8 @@ Pontos-chave:
 - Desejo espontâneo e desejo responsivo (que surge com o estímulo) são ambos normais.
 - Variações temporárias são comuns; o que importa é se te causam mal-estar.
 
-Se a falta de desejo te incomoda de forma persistente, vale a pena conversar com o par e, se quiseres, com um profissional.`,
-    whenToSeekHelp: `Considera falar com um profissional se:
+Se a falta de desejo te incomoda de forma persistente, vale a pena conversar com o par e, se quiseres, com um enfermeiro.`,
+    whenToSeekHelp: `Considera falar com um enfermeiro se:
 - A falta de desejo dura há meses e te causa sofrimento.
 - Surgiu de forma súbita depois de começares uma medicação.
 - Vem acompanhada de dor, tristeza persistente ou problemas na relação.`,
@@ -507,7 +507,7 @@ Pontos-chave:
 - No pós-parto, o cansaço, as hormonas e a recuperação afetam o desejo. Dá tempo ao teu corpo.
 - Na menopausa, a secura vaginal é comum; lubrificantes e hidratantes vaginais ajudam.
 - O desejo pode passar de espontâneo a responsivo, o que é normal e não um problema.
-- Há opções clínicas (incluindo hormonais locais) que um profissional pode avaliar.
+- Há opções clínicas (incluindo hormonais locais) que um enfermeiro pode avaliar.
 
 Estas fases não são o fim da tua vida sexual. São um novo capítulo.`,
     whenToSeekHelp: `Procura ajuda se:

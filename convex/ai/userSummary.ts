@@ -22,7 +22,7 @@ export const generate = action({
       patientId,
     });
     if (!access.allowed) {
-      throw userError('Só os profissionais podem gerar o perfil clínico.');
+      throw userError('Só os enfermeiros podem gerar o perfil clínico.');
     }
 
     const result = await runAgent(ctx, {

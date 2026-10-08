@@ -59,7 +59,7 @@ describe('C1: export my data', () => {
     expect(conv.respostasDaTriagem).toEqual({ unprotected: 'yes' });
     expect(conv.nivelDeAlerta).toBe('time-sensitive');
     expect(conv.mensagens.map((m: any) => [m.autor, m.texto])).toEqual([
-      ['eu', 'Olá'], ['eu', 'Foto'], ['profissional de saúde', 'Resposta'],
+      ['eu', 'Olá'], ['eu', 'Foto'], ['enfermeiro', 'Resposta'],
     ]);
     expect(conv.mensagens[1].anexo?.ligacao).toMatch(/^https:/);
     expect(data.registosDeBemEstar).toHaveLength(1);

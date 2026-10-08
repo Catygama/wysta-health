@@ -69,7 +69,7 @@ export default function ProfessionalProfile() {
           <Text style={styles.privacyTitle}>Confidencialidade</Text>
           <Text style={styles.privacyText}>
             Os dados das utentes são confidenciais. As notas internas só são visíveis a
-            profissionais.
+            enfermeiros.
           </Text>
         </View>
       </View>

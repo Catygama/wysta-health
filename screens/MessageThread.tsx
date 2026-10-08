@@ -231,7 +231,7 @@ export function MessageThread({
             <View testID="thread-next-step" style={styles.nextStep}>
               <Text style={styles.nextStepTitle}>Agora, conta-nos o que se passa</Text>
               <Text style={styles.nextStepText}>
-                Escreve a tua dúvida em baixo. Um profissional responde normalmente em 24h.
+                Escreve a tua dúvida em baixo. Um enfermeiro responde normalmente em 24h.
               </Text>
             </View>
           ) : null
@@ -252,10 +252,10 @@ export function MessageThread({
             />
             <Text style={styles.emptyText}>
               {scope === 'internal'
-                ? 'Sem notas internas. As notas só são visíveis a profissionais.'
+                ? 'Sem notas internas. As notas só são visíveis a enfermeiros.'
                 : isProfessional
                   ? 'Sem mensagens nesta conversa.'
-                  : 'Escreve a primeira mensagem para o profissional.'}
+                  : 'Escreve a primeira mensagem para o enfermeiro.'}
             </Text>
           </View>
         }
@@ -520,8 +520,8 @@ function TriageMessage({
           copies the triage over, and professionals can open the AI chat. */}
       <Text style={styles.triageBody}>
         {aiOnly
-          ? 'Respostas guardadas para a assistente IA. O profissional de saúde também tem acesso.'
-          : 'Respostas guardadas para o profissional de saúde.'}
+          ? 'Respostas guardadas para a assistente IA. O enfermeiro também tem acesso.'
+          : 'Respostas guardadas para o enfermeiro.'}
       </Text>
     </View>
   );

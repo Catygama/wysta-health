@@ -87,7 +87,7 @@ export const exportMyData = query({
       conversationsOut.push({
         tema: c.topic,
         titulo: c.title,
-        tipo: c.kind === 'ai-only' ? 'assistente IA' : 'profissional de saúde',
+        tipo: c.kind === 'ai-only' ? 'assistente IA' : 'enfermeiro',
         estado: c.status,
         criadaEm: new Date(c._creationTime).toISOString(),
         respostasDaTriagem: triage?.responses ?? null,
@@ -104,7 +104,7 @@ export const exportMyData = query({
                     ? 'sistema'
                     : m.senderId === userId
                       ? 'eu'
-                      : 'profissional de saúde',
+                      : 'enfermeiro',
               texto: m.content,
               anexo: m.imageId || m.attachmentId
                 ? {

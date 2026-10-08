@@ -22,7 +22,7 @@ export const generate = action({
       userId,
     });
     if (!access.allowed) {
-      throw userError('Só o profissional atribuído pode gerar o sumário desta conversa.');
+      throw userError('Só o enfermeiro atribuído pode gerar o sumário desta conversa.');
     }
 
     const text = renderConversation(access.messages);

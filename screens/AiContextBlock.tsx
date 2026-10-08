@@ -32,7 +32,7 @@ function AiChat({ chat }: { chat: Chat }) {
   const count = chat.messages.length;
   const lead =
     chat.relation === 'before'
-      ? 'Antes de pedir um profissional, a utente falou com a assistente IA'
+      ? 'Antes de pedir um enfermeiro, a utente falou com a assistente IA'
       : 'Enquanto esperava, a utente falou com a assistente IA';
 
   return (

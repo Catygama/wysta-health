@@ -378,8 +378,8 @@ export const assign = mutation({
       professionalId: userId,
       action: 'assigned',
       details: wasAssignedToOther
-        ? 'Conversa reatribuída ao profissional (take-over)'
-        : 'Conversa atribuída ao profissional',
+        ? 'Conversa reatribuída ao enfermeiro (take-over)'
+        : 'Conversa atribuída ao enfermeiro',
     });
   },
 });
@@ -425,7 +425,7 @@ export const close = mutation({
       senderId: userId,
       content: byPatient
         ? 'Conversa terminada pela utente.'
-        : 'Conversa encerrada pelo profissional de saúde.',
+        : 'Conversa encerrada pelo enfermeiro.',
       messageType: 'system',
     });
     // auditLog rows are attributed to a professional; a patient closing a
@@ -540,7 +540,7 @@ export const recommendInPerson = mutation({
     const senderName = senderProfile?.displayName?.trim();
     await ctx.scheduler.runAfter(0, internal.notifications.sendToUser, {
       userId: conv.patientId,
-      title: senderName ? `Nova mensagem de ${senderName}` : 'Nova mensagem de um profissional',
+      title: senderName ? `Nova mensagem de ${senderName}` : 'Nova mensagem de um enfermeiro',
       data: { conversationId: args.id },
     });
 
@@ -615,7 +615,7 @@ export const switchMode = mutation({
     const newId = await ctx.db.insert('conversations', {
       patientId: userId,
       topic: conv.topic,
-      title: toAi ? 'Conversa com AI' : 'Conversa com profissional',
+      title: toAi ? 'Conversa com AI' : 'Conversa com enfermeiro',
       priority: conv.priority,
       status: toAi ? 'active' : 'waiting',
       lastMessageAt: now,
@@ -647,8 +647,8 @@ export const switchMode = mutation({
       conversationId: newId,
       senderId: userId,
       content: toAi
-        ? 'Conversa com a assistente AI. A assistente tem acesso à tua conversa com o profissional.'
-        : 'Pediste acompanhamento por um profissional. O profissional terá acesso à tua conversa com a assistente AI.',
+        ? 'Conversa com a assistente AI. A assistente tem acesso à tua conversa com o enfermeiro.'
+        : 'Pediste acompanhamento por um enfermeiro. O enfermeiro terá acesso à tua conversa com a assistente AI.',
       messageType: 'system',
     });
     return { id: newId, created: true };
@@ -674,7 +674,7 @@ export const escalateAiConversation = internalMutation({
     await ctx.db.insert('messages', {
       conversationId: pro._id,
       senderId: pro.patientId,
-      content: 'A tua pergunta à assistente IA foi encaminhada para o profissional.',
+      content: 'A tua pergunta à assistente IA foi encaminhada para o enfermeiro.',
       messageType: 'system',
     });
   },
@@ -715,7 +715,7 @@ export const flagSafetyRule = internalMutation({
       await ctx.db.insert('messages', {
         conversationId: linkedId,
         senderId: linked.patientId,
-        content: 'A tua mensagem à assistente IA indica uma situação urgente e foi encaminhada para o profissional.',
+        content: 'A tua mensagem à assistente IA indica uma situação urgente e foi encaminhada para o enfermeiro.',
         messageType: 'system',
       });
       await ctx.db.insert('auditLog', {

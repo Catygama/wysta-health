@@ -85,7 +85,7 @@ export const submitProfessionalVerification = mutation({
 
     // An admin account would lose its role (and possibly the last admin).
     if (existing?.role === 'admin') {
-      throw userError('Uma conta de administrador não pode pedir verificação de profissional.');
+      throw userError('Uma conta de administrador não pode pedir verificação de enfermeiro.');
     }
 
     // An admin confirms the licence (Ordem dos Enfermeiros) before the account
@@ -311,7 +311,7 @@ async function reviewProfessional(
     .withIndex('by_user', (q) => q.eq('userId', targetUserId))
     .unique();
   if (!profile || profile.role !== 'professional') {
-    throw userError('Este utilizador não tem um pedido de verificação de profissional.');
+    throw userError('Este utilizador não tem um pedido de verificação de enfermeiro.');
   }
   if (profile.professionalVerificationStatus !== 'pending') {
     throw userError('Este pedido já foi analisado.');
@@ -467,7 +467,7 @@ export const deleteUser = mutation({
     await ctx.db.insert('auditLog', {
       adminId,
       action: 'account-deleted',
-      details: `Conta apagada pela administração (${role === 'patient' ? 'utente' : role === 'professional' ? 'profissional' : 'admin'}).`,
+      details: `Conta apagada pela administração (${role === 'patient' ? 'utente' : role === 'professional' ? 'enfermeiro' : 'admin'}).`,
     });
     return null;
   },

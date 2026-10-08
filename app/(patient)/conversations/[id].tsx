@@ -128,7 +128,7 @@ function SwitchButton({
   const { theme } = useUnistyles();
   // Narrow phones: short label, so the topic title keeps its room.
   const compact = useWindowDimensions().width < COMPACT_HEADER_WIDTH;
-  const label = toAi ? 'Conversar com IA' : 'Falar com profissional';
+  const label = toAi ? 'Conversar com IA' : 'Falar com enfermeiro';
   return (
     <Pressable
       testID={toAi ? 'conversation-switch-to-ai' : 'conversation-switch-to-professional'}
@@ -148,7 +148,7 @@ function SwitchButton({
           color={theme.colors.onInk}
         />
       )}
-      <Text style={styles.ctaText}>{compact ? (toAi ? 'IA' : 'Profissional') : label}</Text>
+      <Text style={styles.ctaText}>{compact ? (toAi ? 'IA' : 'Enfermeiro') : label}</Text>
     </Pressable>
   );
 }
@@ -191,7 +191,7 @@ function AiOnlyBanner() {
       <View style={styles.body}>
         <Text style={styles.title}>Conversa com a assistente AI</Text>
         <Text style={styles.sub}>
-          Cada mensagem tua recebe resposta automática. Um profissional de saúde pode ou não
+          Cada mensagem tua recebe resposta automática. Um enfermeiro pode ou não
           ver esta conversa.
         </Text>
       </View>
@@ -205,7 +205,7 @@ function WaitingBanner() {
     <View testID="waiting-professional-banner" style={[styles.banner, styles.waitingBanner]}>
       <Icon name={{ sf: 'clock', ion: 'time-outline' }} size={18} color={theme.colors.inkText} />
       <View style={styles.body}>
-        <Text style={styles.title}>A aguardar resposta do profissional</Text>
+        <Text style={styles.title}>A aguardar resposta do enfermeiro</Text>
         <Text style={styles.sub}>Vais receber uma notificação quando responder.</Text>
       </View>
     </View>

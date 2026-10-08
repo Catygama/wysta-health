@@ -11,7 +11,7 @@ import { fonts } from '@/lib/fonts';
 
 const ROLE_LABELS: Record<string, string> = {
   patient: 'Utente',
-  professional: 'Profissional',
+  professional: 'Enfermeiro',
   admin: 'Admin',
 };
 
@@ -32,7 +32,7 @@ type Role = 'patient' | 'professional' | 'admin';
 
 const GUEST_LABELS: Record<string, string> = {
   patient: 'Utente convidada',
-  professional: 'Profissional convidado',
+  professional: 'Enfermeiro convidado',
   admin: 'Convidado',
 };
 
@@ -124,7 +124,7 @@ export default function AdminPanel() {
 
           <View style={styles.countRow}>
             <CountCard testID="admin-count-patient" label="Utentes" value={counts.patient ?? 0} />
-            <CountCard testID="admin-count-professional" label="Profissionais" value={counts.professional ?? 0} />
+            <CountCard testID="admin-count-professional" label="Enfermeiros" value={counts.professional ?? 0} />
             <CountCard testID="admin-count-admin" label="Admins" value={counts.admin ?? 0} />
           </View>
 
@@ -135,7 +135,7 @@ export default function AdminPanel() {
                 <Pressable testID="admin-verifications-link" style={styles.linkCard}>
                   <View style={styles.linkBody}>
                     <Text style={styles.cardTitle}>Verificações</Text>
-                    <Text style={styles.cardSub}>Aprovar ou recusar pedidos de profissionais.</Text>
+                    <Text style={styles.cardSub}>Aprovar ou recusar pedidos de enfermeiros.</Text>
                   </View>
                   <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={16} color={theme.colors.textTertiary} />
                 </Pressable>

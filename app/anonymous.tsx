@@ -138,7 +138,7 @@ export default function AnonymousChat() {
           ListHeaderComponent={
             <View style={styles.notice}>
               <Text style={styles.noticeText}>
-                Esta conversa não fica guardada nem é partilhada com um profissional. Quando
+                Esta conversa não fica guardada nem é partilhada com um enfermeiro. Quando
                 saíres, é apagada. As respostas são apenas informativas; em caso de urgência
                 liga 112 ou SNS 24 (808 24 24 24).
               </Text>

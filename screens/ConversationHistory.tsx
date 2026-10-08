@@ -55,7 +55,7 @@ export function ConversationHistory({ detailPath }: { detailPath: string }) {
                 {topic?.label ?? item.topic}
               </Text>
               <Text style={styles.meta}>
-                {item.isAiOnly ? 'Assistente AI' : 'Profissional'} · terminada{' '}
+                {item.isAiOnly ? 'Assistente AI' : 'Enfermeiro'} · terminada{' '}
                 {relativeTime(item.lastMessageAt)}
               </Text>
             </View>

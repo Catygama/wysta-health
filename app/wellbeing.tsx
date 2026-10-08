@@ -173,7 +173,7 @@ export default function Wellbeing() {
             </View>
           ))}
           <Text style={styles.note}>
-            Dor persistente merece avaliação de um profissional — vamos encaminhar-te.
+            Dor persistente merece avaliação de um enfermeiro — vamos encaminhar-te.
           </Text>
           <Button
             testID="wellbeing-pain-continue"
