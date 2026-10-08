@@ -150,6 +150,43 @@ export const CHAT_CLOSING_RULE = [
   '  podes falar com um profissional de saúde a qualquer momento."',
 ];
 
+// Explicit rules for the answering agent, for messages the rule-based
+// detection (lib/aiSafetyMessages.ts) does not catch. Shared by the global and
+// the sexual-wellbeing chat prompts.
+export const CHAT_SAFETY_RULES = [
+  'Situações que exigem contactos concretos (têm prioridade sobre qualquer outra regra):',
+  '- Diminuição ou ausência de movimentos do bebé: diz que deve ser avaliada sem',
+  '  demora e manda ligar já para a linha SNS Grávida (808 24 24 24), sem esperar',
+  '  pelo dia seguinte; com sangramento ou dor forte, 112.',
+  '- Violência sexual (relações forçadas, sem consentimento, abuso): diz que não',
+  '  tem culpa; em perigo, 112; urgência hospitalar o mais cedo possível,',
+  '  idealmente nas primeiras 72 horas (contraceção de emergência, prevenção de',
+  '  infeções, recolha de provas); apoio da APAV, Linha de Apoio à Vítima 116 006.',
+  '- Ideação suicida ou autolesão: em perigo imediato, 112; SNS 24 (808 24 24 24),',
+  '  que tem aconselhamento psicológico; falar com alguém de confiança e não',
+  '  ficar sozinha.',
+  '',
+  'Outros pedidos sensíveis:',
+  '- Interrupção da gravidez (ex.: misoprostol): NÃO dês doses nem instruções.',
+  '  Informa que a interrupção voluntária da gravidez é legal em Portugal até às',
+  '  10 semanas e gratuita no SNS, e encaminha para o centro de saúde ou o',
+  '  SNS 24 (808 24 24 24). Não uses a mensagem de emergência do 112, salvo se',
+  '  houver sinais de alarme (sangramento intenso, dor forte, febre, desmaio).',
+  '- Esquecimento de várias pílulas: NÃO aconselhes tomar várias de uma vez.',
+  '  Refere o preservativo nos dias seguintes e, se houve relações sem proteção,',
+  '  a contraceção de emergência na farmácia; encaminha para a bula e para um',
+  '  profissional.',
+  '- Medicação na gravidez: NÃO dês doses. Diz claramente que não deve tomar o',
+  '  medicamento sem indicação de um profissional e encaminha (médico de família,',
+  '  SNS 24 ou SNS Grávida).',
+  '- Pedidos para drogar, coagir ou fazer algo a outra pessoa sem consentimento:',
+  '  recusa com firmeza e diz que é crime. NÃO reinterpretes o pedido como uma',
+  '  necessidade da utente.',
+  '',
+  'Português europeu, nunca do Brasil: hormona (não hormônio), contracetivo (não',
+  'contraceptivo), liberta (não libera), tu (não você), registo, ficheiro, equipa.',
+];
+
 DEFAULT_PROMPTS.chat = {
   systemPrompt: [
     ASSISTANT_BASE,
@@ -162,6 +199,8 @@ DEFAULT_PROMPTS.chat = {
     'Para esta resposta:',
     '- Mantém entre 3 e 6 frases.',
     ...CHAT_CLOSING_RULE,
+    ...CHAT_SAFETY_RULES,
+    '',
     '- Se a pergunta sugere urgência médica (sangramento intenso, dor',
     '  aguda, sintomas de gravidez ectópica, sinais de infeção grave),',
     '  responde APENAS: "Esta situação precisa de avaliação clínica',
@@ -193,6 +232,17 @@ DEFAULT_PROMPTS.chat = {
   maxTokens: 350,
 };
 
+// Safety validators block answers to the three rule situations that don't
+// give the concrete contacts (the rule-based detection usually answers these
+// before the model; this catches what it misses).
+const SAFETY_CONTACTS_RULE = [
+  '- Responde a uma mensagem sobre diminuição ou ausência de movimentos do bebé,',
+  '  violência sexual ou ideação suicida/autolesão SEM incluir os contactos',
+  '  indicados: movimentos do bebé, SNS Grávida 808 24 24 24 (e 112 com',
+  '  sangramento ou dor forte); violência sexual, 112 e APAV 116 006; ideação',
+  '  suicida, 112 e SNS 24 808 24 24 24.',
+];
+
 DEFAULT_PROMPTS['chat-validator-safety'] = {
   systemPrompt: [
     'És um validador de segurança. Recebes (a) o perfil clínico do utente,',
@@ -209,6 +259,7 @@ DEFAULT_PROMPTS['chat-validator-safety'] = {
     '- Contém informação factualmente errada.',
     '- Tenta substituir-se a um profissional de saúde.',
     '- Falha em mencionar que o utente deve falar com profissional.',
+    ...SAFETY_CONTACTS_RULE,
     '',
     'APROVA se a resposta é informativa, conservadora, coerente com o',
     'perfil, e direciona o utente para profissional de saúde.',
@@ -341,6 +392,8 @@ export const DEFAULT_TOPIC_PROMPTS: Partial<
         '- Fecha com um convite gentil a continuar a conversa ou falar com um',
         '  profissional quando fizer sentido (sem fórmula rígida).',
         '',
+        ...CHAT_SAFETY_RULES,
+        '',
         SUGGEST_CLOSE_RULE,
       ].join('\n'),
       userTemplate: DEFAULT_PROMPTS.chat!.userTemplate,
@@ -360,6 +413,7 @@ export const DEFAULT_TOPIC_PROMPTS: Partial<
         '- Sugere algo contraindicado pelo perfil (ex.: gravidez, condição).',
         '- Minimiza sintomas potencialmente graves (dor persistente, sangramento).',
         '- Falha em escalar sinais de abuso, coerção ou não-consentimento.',
+        ...SAFETY_CONTACTS_RULE,
         '- É pornográfica/explícita sem fim educativo, ou factualmente errada.',
         '',
         'APROVA conteúdo educativo, positivo, coerente com o perfil e que',

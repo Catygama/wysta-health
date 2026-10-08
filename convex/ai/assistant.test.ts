@@ -9,7 +9,7 @@ import { callLlmText, callLlmObject } from './llm';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { convexTest } from 'convex-test';
 import schema from '../schema';
-import { internal } from '../_generated/api';
+import { api, internal } from '../_generated/api';
 import { stripSuggestClose } from './assistant';
 import type { Id } from '../_generated/dataModel';
 
@@ -322,5 +322,71 @@ describe('suggest close marker', () => {
     const msg = await aiMessage(t, conversationId);
     expect(msg?.content).not.toContain('SUGERIR');
     expect(msg?.metadata?.suggestClose).toBe(true);
+  });
+});
+
+describe('rule-based safety detection before the model', () => {
+  beforeEach(() => {
+    vi.mocked(callLlmText).mockReset();
+    vi.mocked(callLlmObject).mockReset();
+  });
+
+  it('answers with the fixed message, never calls the model, and escalates', async () => {
+    const t = convexTest(schema, modules);
+    const { userId, conversationId } = await seedChatChain(t);
+    const proConvId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('conversations', {
+        patientId: userId,
+        topic: 'pregnancy',
+        status: 'waiting',
+        priority: 'low',
+        title: 'pro',
+        lastMessageAt: 0,
+        kind: 'human-async',
+      });
+      await ctx.db.patch(conversationId, { counterpartConversationId: id });
+      return id;
+    });
+
+    await t.action(internal.ai.assistant.respondAuto, {
+      conversationId,
+      query: 'Estou grávida e deixei de sentir o bebé mexer desde ontem.',
+    });
+
+    expect(vi.mocked(callLlmText)).not.toHaveBeenCalled();
+    expect(vi.mocked(callLlmObject)).not.toHaveBeenCalled();
+    const msg = await aiMessage(t, conversationId);
+    expect(msg?.content).toContain('SNS Grávida (808 24 24 24)');
+    expect(msg?.streaming).toBe(false);
+    const [ai, pro, invocations, system] = await t.run(async (ctx) => [
+      await ctx.db.get(conversationId),
+      await ctx.db.get(proConvId),
+      await ctx.db.query('aiInvocations').collect(),
+      await ctx.db
+        .query('messages')
+        .withIndex('by_conversation', (q) => q.eq('conversationId', proConvId))
+        .collect(),
+    ]);
+    expect(ai).toMatchObject({ priority: 'urgent', alertLevel: 'urgent' });
+    expect(pro).toMatchObject({ priority: 'urgent', alertLevel: 'urgent' });
+    expect((system as any[]).some((m) => m.messageType === 'system')).toBe(true);
+    expect(invocations).toEqual([]);
+  });
+
+  it('suicidal ideation is an emergency; the anonymous question also skips the model', async () => {
+    const t = convexTest(schema, modules);
+    const { userId, conversationId } = await seedChatChain(t);
+    await t.action(internal.ai.assistant.respondAuto, {
+      conversationId,
+      query: 'Já não aguento mais, estou a pensar acabar com a minha vida.',
+    });
+    expect((await t.run((ctx) => ctx.db.get(conversationId)))?.alertLevel).toBe('emergency');
+    expect((await aiMessage(t, conversationId))?.content).toContain('liga 112');
+
+    const anon = await t
+      .withIdentity({ subject: `${userId}|s` })
+      .action(api.ai.assistant.respondAnonymous, { query: 'Ele obrigou-me a ter relações.' });
+    expect(anon.answer).toContain('APAV, 116 006');
+    expect(vi.mocked(callLlmText)).not.toHaveBeenCalled();
   });
 });

@@ -28,6 +28,7 @@ import { SUGGEST_CLOSE_MARKER } from './defaults';
 import type { Doc, Id } from '../_generated/dataModel';
 import { findOpenProfessionalConversation } from '../conversations';
 import { userError, NOT_AUTHENTICATED } from '../lib/errors';
+import { detectSafetyRule } from '../lib/aiSafetyMessages';
 import type { TopicId } from '../lib/topics';
 
 // Removes the suggest-close marker from planner output — also a partial
@@ -150,6 +151,22 @@ async function streamAndValidate(
     internal.ai.assistant.createAssistantPlaceholder,
     { conversationId: args.conversationId, patientId: args.patientId }
   );
+  // Rule-based detection first (lib/aiSafetyMessages): baby movements, sexual
+  // violence and suicidal ideation get a fixed answer with concrete contacts,
+  // without calling the model, and the conversation is escalated.
+  const rule = detectSafetyRule(args.baseVars.query);
+  if (rule) {
+    await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
+      messageId,
+      content: rule.message,
+    });
+    await ctx.runMutation(internal.conversations.flagSafetyRule, {
+      conversationId: args.conversationId,
+      alertLevel: rule.alertLevel,
+      label: rule.label,
+    });
+    return { sent: true, blocked: false };
+  }
   try {
     // The placeholder stays empty ("A preparar a resposta…" in the app) until
     // the validators and the judge decide.
@@ -233,6 +250,10 @@ export const respondAnonymous = action({
   }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
+
+    // Same rule-based detection as the conversations: fixed answer, no model.
+    const rule = detectSafetyRule(query);
+    if (rule) return { sent: true, answer: rule.message };
 
     const profile = await ctx.runQuery(internal.ai.assistant.gatherProfileOnly, {
       userId,

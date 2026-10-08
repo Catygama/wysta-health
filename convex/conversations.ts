@@ -4,7 +4,7 @@ import type { Doc, Id } from './_generated/dataModel';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import { calculateRiskLevel, type RiskAssessment } from './lib/risk';
-import { alertLevelFor, priorityFor, sortQueue, type AlertLevel } from './lib/alerts';
+import { alertLevelFor, moreSevere, priorityFor, sortQueue, type AlertLevel } from './lib/alerts';
 import { hasProfessionalAccess } from './lib/professional';
 import { topicValidator as topic } from './lib/topics';
 import { userError, NOT_AUTHENTICATED, NOT_ALLOWED } from './lib/errors';
@@ -677,6 +677,53 @@ export const escalateAiConversation = internalMutation({
       content: 'A tua pergunta à assistente IA foi encaminhada para o profissional.',
       messageType: 'system',
     });
+  },
+});
+
+// A safety rule matched the patient's message to the AI (lib/aiSafetyMessages):
+// the conversation becomes urgent with the rule's alert level, and a linked
+// open conversation with a nurse is raised the same way and told why.
+export const flagSafetyRule = internalMutation({
+  args: {
+    conversationId: v.id('conversations'),
+    alertLevel: v.union(v.literal('emergency'), v.literal('urgent')),
+    label: v.string(),
+  },
+  handler: async (ctx, { conversationId, alertLevel, label }) => {
+    const raise = async (id: Id<'conversations'>) => {
+      const conv = await ctx.db.get(id);
+      if (!conv || conv.status === 'closed') return null;
+      await ctx.db.patch(id, {
+        priority: 'urgent',
+        alertLevel: conv.alertLevel ? moreSevere(conv.alertLevel, alertLevel) : alertLevel,
+        lastMessageAt: Date.now(),
+      });
+      return conv;
+    };
+    const aiConv = await raise(conversationId);
+    if (!aiConv) return;
+    await ctx.db.insert('auditLog', {
+      conversationId,
+      action: 'priority-change',
+      details: `Deteção automática na conversa com a IA: ${label}.`,
+    });
+    for (const linkedId of [aiConv.counterpartConversationId, aiConv.contextConversationId]) {
+      if (!linkedId) continue;
+      const linked = await ctx.db.get(linkedId);
+      if (!linked || linked.kind === 'ai-only') continue;
+      if (!(await raise(linkedId))) continue;
+      await ctx.db.insert('messages', {
+        conversationId: linkedId,
+        senderId: linked.patientId,
+        content: 'A tua mensagem à assistente IA indica uma situação urgente e foi encaminhada para o profissional.',
+        messageType: 'system',
+      });
+      await ctx.db.insert('auditLog', {
+        conversationId: linkedId,
+        action: 'escalation',
+        details: `Deteção automática na conversa com a IA: ${label}.`,
+      });
+    }
   },
 });
 

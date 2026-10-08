@@ -2,14 +2,19 @@
 // (ai/evaluation:runCase) and writes docs/testing/ia-avaliacao.md, scored with
 // the rubric in docs/testing/ia-rubrica.md (written before the run).
 // Each question costs four LLM calls on the target deployment.
-// Run: bun scripts/ai-eval.ts [--prod | --deployment-name <name>]
+// Run: bun scripts/ai-eval.ts [--robustez] [--prod | --deployment-name <name>]
+// --robustez runs the 6 robustness questions instead (docs/testing/ia-robustez.md).
 import { execFileSync } from 'node:child_process';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { AI_CASES, expectedLabel, isCorrect, refusesAndRefers } from '@/tests/ai/cases';
+import { ROBUSTNESS_CASES } from '@/tests/ai/robustness';
 import { summarize, type AiCaseResult } from '@/tests/ai/metrics';
 import type { EvaluationRun } from '@/convex/ai/evaluation';
 
-const deploymentArgs = process.argv.slice(2);
+const robustness = process.argv.includes('--robustez');
+const deploymentArgs = process.argv.slice(2).filter((a) => a !== '--robustez');
+const CASES = robustness ? ROBUSTNESS_CASES : AI_CASES;
+const OUT = robustness ? 'docs/testing/ia-robustez.md' : 'docs/testing/ia-avaliacao.md';
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 const usd = (n: number) => `$${n.toFixed(4)}`;
 const cell = (s: string) => s.replace(/\|/g, '\\|').replace(/\s+/g, ' ');
@@ -17,7 +22,7 @@ const cell = (s: string) => s.replace(/\|/g, '\\|').replace(/\s+/g, ' ');
 const results: AiCaseResult[] = [];
 const rows: string[] = [];
 const texts: string[] = [];
-for (const c of AI_CASES) {
+for (const c of CASES) {
   const args = JSON.stringify({ query: c.query, ...(c.topic ? { topic: c.topic } : {}) });
   const out = execFileSync('bunx', ['convex', 'run', ...deploymentArgs, 'ai/evaluation:runCase', args], {
     encoding: 'utf8',
@@ -26,6 +31,7 @@ for (const c of AI_CASES) {
   results.push({ ...c, sent: run.sent, answer: run.answer, latencyMs: run.latencyMs, costUsd: run.costUsd });
   const ok = isCorrect(c, run.sent, run.answer);
   const risky = c.category !== 'normal';
+  const judge = run.safety === 'regra' ? 'regra' : run.sent ? 'send' : 'block';
   const auto = !risky
     ? run.sent
       ? 'Correto (publicada)'
@@ -37,10 +43,10 @@ for (const c of AI_CASES) {
         : 'Falso negativo (publicada sem recusa)';
   console.log(`${c.id} ${run.sent ? 'publicada' : 'bloqueada'} ${run.latencyMs}ms ${ok ? 'ok' : 'ERRO'}`);
   rows.push(
-    `| ${c.id} | ${c.category} | ${cell(c.query)} | ${run.safety} | ${run.clinical} | ${run.sent ? 'send' : 'block'} | ${(run.latencyMs / 1000).toFixed(1)} s | ${usd(run.costUsd)} | ${auto} | ${risky ? ' ' : 'não se aplica'} |`
+    `| ${c.id} | ${c.category} | ${cell(c.query)} | ${run.safety} | ${run.clinical} | ${judge} | ${(run.latencyMs / 1000).toFixed(1)} s | ${usd(run.costUsd)} | ${auto} | ${risky ? ' ' : 'não se aplica'} |`
   );
   texts.push(
-    `### ${c.id} (${c.category})\n\n**Pergunta:** ${c.query}\n\n**Decisões:** segurança \`${run.safety}\`, clínico \`${run.clinical}\`, juiz \`${run.sent ? 'send' : 'block'}\`. ${run.sent ? 'A utente vê a resposta abaixo.' : 'Bloqueada: a utente vê a mensagem fixa de encaminhamento; abaixo o rascunho que não foi publicado.'}\n\n${run.answer
+    `### ${c.id} (${c.category})\n\n**Pergunta:** ${c.query}\n\n**Decisões:** segurança \`${run.safety}\`, clínico \`${run.clinical}\`, juiz \`${judge}\`. ${run.safety === 'regra' ? 'Resposta fixa da deteção por regras (sem chamar o modelo).' : run.sent ? 'A utente vê a resposta abaixo.' : 'Bloqueada: a utente vê a mensagem fixa de encaminhamento; abaixo o rascunho que não foi publicado.'}\n\n${run.answer
       .split('\n')
       .map((l) => `> ${l}`)
       .join('\n')}\n`
@@ -49,10 +55,10 @@ for (const c of AI_CASES) {
 
 const s = summarize(results);
 const date = new Date().toISOString().slice(0, 10);
-const md = `# Avaliação da assistente de IA
+const md = `# ${robustness ? 'Robustez da assistente de IA (6 perguntas)' : 'Avaliação da assistente de IA (corrida 2)'}
 
 Gerado por \`bun scripts/ai-eval.ts\` em ${date}. Rubrica: [ia-rubrica.md](ia-rubrica.md), escrita antes da corrida.
-Cada pergunta passa pela mesma cadeia que as utentes usam (rascunho, validador de segurança e validador clínico em paralelo, juiz), fora de qualquer conversa.
+Cada pergunta passa pelo mesmo caminho que as mensagens das utentes: primeiro a deteção por regras (\`convex/lib/aiSafetyMessages.ts\`; se dispara, resposta fixa sem modelo, decisões "regra"), senão a cadeia (rascunho, validador de segurança e validador clínico em paralelo, juiz), fora de qualquer conversa.${robustness ? ' Conjunto de robustez: outras formulações das três situações da deteção por regras, reportado à parte das 30 perguntas originais.' : ''}
 
 A classificação automática segue a regra da rubrica. **Nas perguntas perigosas e urgentes, o resultado final é o da coluna "Revisão manual".**
 
@@ -82,5 +88,5 @@ ${texts.join('\n')}
 `;
 
 mkdirSync('docs/testing', { recursive: true });
-writeFileSync('docs/testing/ia-avaliacao.md', md);
-console.log(`${pct(s.accuracy)} correct, FP ${pct(s.falsePositiveRate)}, FN ${pct(s.falseNegativeRate)} → docs/testing/ia-avaliacao.md`);
+writeFileSync(OUT, md);
+console.log(`${pct(s.accuracy)} correct, FP ${pct(s.falsePositiveRate)}, FN ${pct(s.falseNegativeRate)} → ${OUT}`);
