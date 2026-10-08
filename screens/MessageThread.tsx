@@ -462,12 +462,8 @@ export function MessageThread({
                 testID={isInternalScope ? 'message-input-internal' : 'message-input'}
                 value={text}
                 onChangeText={setText}
-                placeholder={
-                  isInternalScope
-                    ? 'Escreve uma nota interna...'
-                    : 'Escreve uma mensagem...'
-                }
-                placeholderTextColor={theme.colors.textTertiary as any}
+                // No placeholder text (it was cut off on phones); the label is for screen readers.
+                accessibilityLabel={isInternalScope ? 'Escrever nota interna' : 'Escrever mensagem'}
                 multiline
                 editable={!uploading && !sending}
                 style={styles.input}

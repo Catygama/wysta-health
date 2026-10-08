@@ -169,8 +169,7 @@ export default function AnonymousChat() {
               testID="anonymous-input"
               value={text}
               onChangeText={setText}
-              placeholder="Escreve uma mensagem..."
-              placeholderTextColor={theme.colors.textTertiary as any}
+              accessibilityLabel="Escrever mensagem"
               multiline
               editable={!busy}
               style={styles.input}
