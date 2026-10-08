@@ -6,7 +6,7 @@ vi.mock('./llm', () => ({
   callLlmStream: vi.fn(),
 }));
 import { callLlmText, callLlmObject } from './llm';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { convexTest } from 'convex-test';
 import schema from '../schema';
 import { api, internal } from '../_generated/api';
@@ -388,5 +388,187 @@ describe('rule-based safety detection before the model', () => {
       .action(api.ai.assistant.respondAnonymous, { query: 'Ele obrigou-me a ter relações.' });
     expect(anon.answer).toContain('Linha de Apoio à Vítima (116 006)');
     expect(vi.mocked(callLlmText)).not.toHaveBeenCalled();
+  });
+});
+
+describe('switching to the AI answers what the nurse has not answered yet', () => {
+  beforeEach(() => {
+    vi.mocked(callLlmText).mockReset();
+    vi.mocked(callLlmObject).mockReset();
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const approve = () => {
+    vi.mocked(callLlmText).mockResolvedValue({ output: 'Resposta da IA', inputTokens: 1, outputTokens: 1 });
+    vi.mocked(callLlmObject).mockImplementation(async (a: any) =>
+      a.schema.shape.action
+        ? ({ output: { action: 'send', finalAnswer: 'Resposta da IA' }, inputTokens: 1, outputTokens: 1 } as any)
+        : ({ output: { decision: 'approve', reason: 'ok' }, inputTokens: 1, outputTokens: 1 } as any)
+    );
+  };
+
+  // A conversation with a nurse (on another topic than seedChatChain's AI chat),
+  // with the given messages in order.
+  async function seedProConversation(
+    t: ReturnType<typeof convexTest>,
+    messages: Array<{ from: 'patient' | 'nurse'; content: string; type?: 'text' | 'system'; internal?: boolean }>
+  ) {
+    const { userId } = await seedChatChain(t);
+    const ids = await t.run(async (ctx) => {
+      const nurseId = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
+      await ctx.db.insert('userProfiles', { userId, role: 'patient' });
+      const proConvId = await ctx.db.insert('conversations', {
+        patientId: userId,
+        professionalId: nurseId,
+        topic: 'contraception',
+        status: 'active',
+        priority: 'medium',
+        title: 'pro',
+        lastMessageAt: 123,
+        kind: 'human-async',
+      });
+      for (const m of messages) {
+        await ctx.db.insert('messages', {
+          conversationId: proConvId,
+          senderId: m.from === 'patient' ? userId : nurseId,
+          content: m.content,
+          messageType: m.type ?? 'text',
+          isInternal: m.internal || undefined,
+        });
+      }
+      return { nurseId, proConvId };
+    });
+    return { userId, ...ids, patient: t.withIdentity({ subject: `${userId}|s` }) };
+  }
+
+  async function switchAndDrain(t: ReturnType<typeof convexTest>, patient: any, id: Id<'conversations'>) {
+    const res = await patient.mutation(api.conversations.switchMode, { id });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    return res as { id: Id<'conversations'>; created: boolean };
+  }
+
+  async function aiResponses(t: ReturnType<typeof convexTest>, conversationId: Id<'conversations'>) {
+    return t.run(async (ctx) =>
+      (
+        (await (ctx.db as any)
+          .query('messages')
+          .withIndex('by_conversation', (q: any) => q.eq('conversationId', conversationId))
+          .collect()) as any[]
+      ).filter((m) => m.messageType === 'ai-response')
+    );
+  }
+
+  it('answers the pending messages through the agent chain, without touching the nurse conversation', async () => {
+    const t = convexTest(schema, modules);
+    const { patient, proConvId } = await seedProConversation(t, [
+      { from: 'patient', content: 'Olá' },
+      { from: 'nurse', content: 'Olá, diz-me.' },
+      { from: 'patient', content: 'Esqueci-me da pílula ontem.' },
+      { from: 'nurse', content: 'Nota para a equipa', internal: true },
+      { from: 'patient', content: 'Preciso de contraceção de emergência?' },
+    ]);
+    approve();
+    const before = await t.run((ctx) => ctx.db.get(proConvId));
+
+    const { id: aiId } = await switchAndDrain(t, patient, proConvId);
+
+    const answers = await aiResponses(t, aiId);
+    expect(answers).toHaveLength(1);
+    expect(answers[0]).toMatchObject({ content: 'Resposta da IA', streaming: false });
+    // The question is the unanswered messages, not what the nurse already answered.
+    const draftPrompt = vi.mocked(callLlmText).mock.calls[0][0].userPrompt;
+    expect(draftPrompt).toBe('Esqueci-me da pílula ontem.\nPreciso de contraceção de emergência?');
+    const after = await t.run((ctx) => ctx.db.get(proConvId));
+    for (const field of ['status', 'priority', 'lastMessageAt', 'professionalId', 'alertLevel'] as const) {
+      expect(after?.[field]).toEqual(before?.[field]);
+    }
+  });
+
+  it('does not answer when the nurse has already replied to everything', async () => {
+    const t = convexTest(schema, modules);
+    const { patient, proConvId } = await seedProConversation(t, [
+      { from: 'patient', content: 'Esqueci-me da pílula ontem.' },
+      { from: 'nurse', content: 'Toma-a assim que te lembrares.' },
+    ]);
+    approve();
+
+    const { id: aiId } = await switchAndDrain(t, patient, proConvId);
+
+    expect(await aiResponses(t, aiId)).toEqual([]);
+    expect(vi.mocked(callLlmText)).not.toHaveBeenCalled();
+  });
+
+  it('switching back and forth answers the same question once; a new one is answered on the next switch', async () => {
+    const t = convexTest(schema, modules);
+    const { patient, proConvId, userId } = await seedProConversation(t, [
+      { from: 'patient', content: 'Esqueci-me da pílula ontem.' },
+    ]);
+    approve();
+
+    const { id: aiId } = await switchAndDrain(t, patient, proConvId);
+    await switchAndDrain(t, patient, aiId);
+    const again = await switchAndDrain(t, patient, proConvId);
+    expect(again.id).toBe(aiId);
+    expect(await aiResponses(t, aiId)).toHaveLength(1);
+
+    await t.run((ctx) =>
+      ctx.db.insert('messages', {
+        conversationId: proConvId,
+        senderId: userId,
+        content: 'E se tiver relações hoje?',
+        messageType: 'text',
+      })
+    );
+    await switchAndDrain(t, patient, proConvId);
+    expect(await aiResponses(t, aiId)).toHaveLength(2);
+    const calls = vi.mocked(callLlmText).mock.calls;
+    expect(calls[calls.length - 1][0].userPrompt).toBe('E se tiver relações hoje?');
+  });
+
+  it('a pending message that matches a safety rule gets the fixed message, without the model', async () => {
+    const t = convexTest(schema, modules);
+    const { patient, proConvId } = await seedProConversation(t, [
+      { from: 'patient', content: 'Acho que puseram alguma coisa na minha bebida.' },
+    ]);
+    approve();
+
+    const { id: aiId } = await switchAndDrain(t, patient, proConvId);
+
+    const answers = await aiResponses(t, aiId);
+    expect(answers).toHaveLength(1);
+    expect(answers[0].content).toContain('Linha de Apoio à Vítima (116 006)');
+    expect(vi.mocked(callLlmText)).not.toHaveBeenCalled();
+    expect(vi.mocked(callLlmObject)).not.toHaveBeenCalled();
+  });
+
+  it('a blocked answer points to the nurse conversation without forwarding the question again', async () => {
+    const t = convexTest(schema, modules);
+    const { patient, proConvId } = await seedProConversation(t, [
+      { from: 'patient', content: 'Posso tomar a pílula com amoxicilina?' },
+    ]);
+    vi.mocked(callLlmText).mockResolvedValue({ output: 'rascunho', inputTokens: 1, outputTokens: 1 });
+    vi.mocked(callLlmObject).mockImplementation(async (a: any) =>
+      a.schema.shape.action
+        ? ({ output: { action: 'block', finalAnswer: 'x' }, inputTokens: 1, outputTokens: 1 } as any)
+        : ({ output: { decision: 'block', reason: 'clinical' }, inputTokens: 1, outputTokens: 1 } as any)
+    );
+
+    const { id: aiId } = await switchAndDrain(t, patient, proConvId);
+
+    expect((await aiResponses(t, aiId))[0].content).toBe(
+      'Esta pergunta precisa de um enfermeiro. Já está na tua conversa com o enfermeiro, que te vai responder lá.'
+    );
+    const [pro, proMessages] = await t.run(async (ctx) => [
+      await ctx.db.get(proConvId),
+      await ctx.db
+        .query('messages')
+        .withIndex('by_conversation', (q) => q.eq('conversationId', proConvId))
+        .collect(),
+    ]);
+    expect(pro).toMatchObject({ priority: 'medium', status: 'active', lastMessageAt: 123 });
+    expect((proMessages as any[]).some((m) => m.messageType === 'system')).toBe(false);
   });
 });
