@@ -558,6 +558,7 @@ function SummaryPanel({
         {error && <Text style={styles.error}>{error}</Text>}
         <Pressable
           testID="generate-ai-summary-button"
+          accessibilityRole="button"
           disabled={genDisabled}
           onPress={onGenerate}
           style={[styles.genBtn, genDisabled ? styles.genBtnOff : styles.genBtnOn]}
@@ -633,6 +634,7 @@ function ClinicalProfile({
           {error && <Text style={styles.error}>{error}</Text>}
           <Pressable
             testID="generate-user-summary-button"
+            accessibilityRole="button"
             disabled={busy}
             onPress={onGenerate}
             style={[styles.profileBtn, busy && styles.dim]}
@@ -720,7 +722,7 @@ function RecommendInPersonSheet({
             <Text style={styles.switchLabel}>Encerrar a conversa após enviar</Text>
           </View>
           {error && <Text style={styles.error}>{error}</Text>}
-          <Pressable testID="redirect-submit" disabled={busy} onPress={submit} style={[styles.sheetCta, busy && styles.dim]}>
+          <Pressable testID="redirect-submit" accessibilityRole="button" disabled={busy} onPress={submit} style={[styles.sheetCta, busy && styles.dim]}>
             {busy && <ActivityIndicator color={theme.colors.onInk} size="small" />}
             <Text style={styles.sheetCtaText}>{busy ? 'A enviar...' : 'Enviar mensagem'}</Text>
           </Pressable>

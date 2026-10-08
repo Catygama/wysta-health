@@ -125,6 +125,7 @@ export default function Profile() {
         {!editing && (
           <Pressable
             testID="profile-edit-button"
+            accessibilityRole="button"
             // Load the saved profile into the form when editing starts.
             onPress={() => {
               resetForm();
@@ -165,7 +166,7 @@ export default function Profile() {
           </Card>
 
           <Card title="Faixa etária">
-            <View style={styles.pillRow}>
+            <View style={styles.pillRow} accessibilityRole="radiogroup" aria-label="Faixa etária">
               {AGE_RANGES.map((age) => (
                 <SelectPill
                   key={age}
@@ -403,7 +404,13 @@ function Row({ label, value, selectable }: { label: string; value: string; selec
 type SelectPillProps = { label: string; active: boolean; onPress: () => void; testID?: string };
 function SelectPill({ label, active, onPress, testID }: SelectPillProps) {
   return (
-    <Pressable testID={testID} onPress={onPress} style={[styles.selPill, active ? styles.selOn : styles.selOffSunken]}>
+    <Pressable
+      testID={testID}
+      onPress={onPress}
+      style={[styles.selPill, active ? styles.selOn : styles.selOffSunken]}
+      accessibilityRole="radio"
+      aria-checked={active}
+    >
       <Text style={[styles.selPillText, active ? styles.selTextOn : styles.selTextOff]}>{label}</Text>
     </Pressable>
   );
@@ -435,6 +442,8 @@ function TagEditor({ value, onChangeText, tags, onAdd, onRemove, placeholder }: 
         <Pressable
           onPress={onAdd}
           disabled={!value.trim()}
+          accessibilityRole="button"
+          accessibilityLabel="Adicionar"
           style={[styles.tagAdd, value.trim() ? styles.tagAddOn : styles.tagAddOff]}
         >
           <Text style={styles.tagAddText}>＋</Text>
@@ -443,7 +452,13 @@ function TagEditor({ value, onChangeText, tags, onAdd, onRemove, placeholder }: 
       {tags.length > 0 && (
         <View style={styles.tagWrap}>
           {tags.map((tag) => (
-            <Pressable key={tag} onPress={() => onRemove(tag)} style={styles.tagChip}>
+            <Pressable
+              key={tag}
+              onPress={() => onRemove(tag)}
+              style={styles.tagChip}
+              accessibilityRole="button"
+              accessibilityLabel={`Remover ${tag}`}
+            >
               <Text style={styles.tagChipText}>{tag}</Text>
               <Icon name={{ sf: 'xmark', ion: 'close' }} size={10} color={theme.colors.inkText} />
             </Pressable>

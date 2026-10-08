@@ -184,7 +184,12 @@ function NavPill({
   const { theme } = useUnistyles();
   styles.useVariants({ active });
   return (
-    <Pressable onPress={onPress} style={[styles.navPill, !active && styles.navPillIdle]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.navPill, !active && styles.navPillIdle]}
+      accessibilityRole="link"
+      accessibilityLabel={label}
+    >
       {icon && (
         <Icon name={icon} size={14} color={active ? theme.colors.onInk : theme.colors.textSecondary} />
       )}

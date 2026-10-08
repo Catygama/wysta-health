@@ -215,7 +215,12 @@ function WaitingBanner() {
 function ErrorBanner({ text, onDismiss }: { text: string; onDismiss: () => void }) {
   const { theme } = useUnistyles();
   return (
-    <Pressable style={[styles.banner, styles.errorBanner]} onPress={onDismiss}>
+    <Pressable
+      style={[styles.banner, styles.errorBanner]}
+      onPress={onDismiss}
+      accessibilityRole="button"
+      accessibilityHint="Fecha o aviso"
+    >
       <Icon
         name={{ sf: 'exclamationmark.triangle', ion: 'warning-outline' }}
         size={16}

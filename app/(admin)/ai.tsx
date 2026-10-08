@@ -99,6 +99,7 @@ export default function AdminAi() {
           />
           <Pressable
             testID="admin-ai-cap-save"
+            accessibilityRole="button"
             disabled={capDisabled}
             onPress={saveCap}
             style={[styles.btn, capDisabled ? styles.btnOff : styles.btnOn]}
@@ -266,6 +267,7 @@ function DiagramNode({
   return (
     <Pressable
       testID={`admin-ai-node-${purpose}`}
+      accessibilityRole="button"
       onPress={() => onSelect(purpose)}
       style={styles.node}
     >
@@ -310,6 +312,8 @@ function PurposeCard({
     <View style={styles.card}>
       <Pressable
         testID={`admin-ai-purpose-${row.purpose}`}
+        accessibilityRole="button"
+        aria-expanded={open}
         onPress={onToggle}
         style={styles.purposeHeader}
       >
@@ -396,13 +400,15 @@ function ConfigEditor({
       <Text style={styles.blockTitle}>Modelo & key</Text>
 
       <Text style={styles.fieldLabel}>Fornecedor</Text>
-      <View style={styles.chipRow}>
+      <View style={styles.chipRow} accessibilityRole="radiogroup" aria-label="Fornecedor">
         {providers.map((p) => {
           const active = p === provider;
           const isWired = wired.includes(p);
           return (
             <Pressable
               key={p}
+              accessibilityRole="radio"
+              aria-checked={active}
               onPress={() => setProvider(p as any)}
               style={[styles.chip, active && styles.chipActive]}
             >
@@ -445,7 +451,7 @@ function ConfigEditor({
 
       <View style={styles.keyHeaderRow}>
         <Text style={styles.fieldLabel}>Chave de API</Text>
-        <Pressable onPress={() => setReveal((r) => !r)}>
+        <Pressable onPress={() => setReveal((r) => !r)} accessibilityRole="button">
           <Text style={styles.link}>{reveal ? 'Esconder' : 'Mostrar'}</Text>
         </Pressable>
       </View>
@@ -470,6 +476,7 @@ function ConfigEditor({
 
       <Pressable
         testID={`admin-ai-save-config-${row.purpose}`}
+        accessibilityRole="button"
         disabled={saving}
         onPress={save}
         style={[styles.btnBlock, saving ? styles.btnOff : styles.btnOn]}
@@ -587,8 +594,10 @@ function PromptEditor({
     <View style={styles.block}>
       <Text style={styles.blockTitle}>Instruções (prompt)</Text>
 
-      <View style={styles.chipRow}>
+      <View style={styles.chipRow} accessibilityRole="radiogroup" aria-label="Âmbito do prompt">
         <Pressable
+          accessibilityRole="radio"
+          aria-checked={scope === 'default'}
           onPress={() => selectScope('default')}
           style={[styles.chip, scope === 'default' && styles.chipActive]}
         >
@@ -602,6 +611,8 @@ function PromptEditor({
           return (
             <Pressable
               key={tp}
+              accessibilityRole="radio"
+              aria-checked={active}
               onPress={() => selectScope(tp as TopicId)}
               style={[styles.chip, active && styles.chipActive]}
             >
@@ -678,6 +689,7 @@ function PromptEditor({
       <View style={styles.inputRow}>
         <Pressable
           testID={`admin-ai-save-prompt-${row.purpose}`}
+          accessibilityRole="button"
           disabled={saving}
           onPress={save}
           style={[styles.btnFlex, saving ? styles.btnOff : styles.btnOn]}
@@ -687,6 +699,7 @@ function PromptEditor({
         </Pressable>
         {hasDefault && (
           <Pressable
+            accessibilityRole="button"
             disabled={resetting}
             onPress={reset}
             style={[styles.btnFlex, styles.btnGhost]}
@@ -750,6 +763,7 @@ function TestRunner({ row }: { row: PurposeRow }) {
       ))}
       <Pressable
         testID={`admin-ai-test-${row.purpose}`}
+        accessibilityRole="button"
         disabled={running}
         onPress={run}
         style={[styles.btnBlock, running ? styles.btnOff : styles.btnOn]}
