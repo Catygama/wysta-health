@@ -221,7 +221,10 @@ export function TriageEditor() {
                     </Text>
                     {q.alert ? (
                       <View style={styles.alertRow}>
-                        <AlertLevelBadge level={q.alert.level} />
+                        {/* Wrapped: the badge pins itself to the top (alignSelf), the row centres it. */}
+                        <View>
+                          <AlertLevelBadge level={q.alert.level} />
+                        </View>
                         <Text style={[styles.qMeta, styles.alertWhen]}>
                           {q.type === 'yes-no'
                             ? 'se "Sim"'
