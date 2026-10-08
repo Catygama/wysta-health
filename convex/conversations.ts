@@ -741,6 +741,24 @@ export const escalateAiConversation = internalMutation({
 // A safety rule matched the patient's message to the AI (lib/aiSafetyMessages):
 // the conversation becomes urgent with the rule's alert level, and a linked
 // open conversation with a nurse is raised the same way and told why.
+// Makes an open conversation urgent with the rule's alert level (never lowers
+// a more severe one), which puts it at the top of the nurse's queue. Returns
+// the conversation as it was, or null if it is gone or closed.
+export async function raiseForSafetyRule(
+  ctx: MutationCtx,
+  id: Id<'conversations'>,
+  alertLevel: 'emergency' | 'urgent'
+) {
+  const conv = await ctx.db.get(id);
+  if (!conv || conv.status === 'closed') return null;
+  await ctx.db.patch(id, {
+    priority: 'urgent',
+    alertLevel: conv.alertLevel ? moreSevere(conv.alertLevel, alertLevel) : alertLevel,
+    lastMessageAt: Date.now(),
+  });
+  return conv;
+}
+
 export const flagSafetyRule = internalMutation({
   args: {
     conversationId: v.id('conversations'),
@@ -748,16 +766,7 @@ export const flagSafetyRule = internalMutation({
     label: v.string(),
   },
   handler: async (ctx, { conversationId, alertLevel, label }) => {
-    const raise = async (id: Id<'conversations'>) => {
-      const conv = await ctx.db.get(id);
-      if (!conv || conv.status === 'closed') return null;
-      await ctx.db.patch(id, {
-        priority: 'urgent',
-        alertLevel: conv.alertLevel ? moreSevere(conv.alertLevel, alertLevel) : alertLevel,
-        lastMessageAt: Date.now(),
-      });
-      return conv;
-    };
+    const raise = (id: Id<'conversations'>) => raiseForSafetyRule(ctx, id, alertLevel);
     const aiConv = await raise(conversationId);
     if (!aiConv) return;
     await ctx.db.insert('auditLog', {
