@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Browser chrome (Safari status bar / toolbar tint, Android address bar)
+         in the page background. lib/webChrome keeps it in sync when the user
+         picks a theme other than the system one. -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#FBF7F4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#2C2125" media="(prefers-color-scheme: dark)" />
+    <title>%WEB_TITLE%</title>
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        /* --wysta-vh: visible height, set by lib/webViewport (shrinks while
+           the iOS keyboard is open). */
+        height: var(--wysta-vh, 100%);
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+      /* Page background behind the app, before JS runs and wherever the app
+         doesn't paint (iOS safe areas, overscroll). Same values as
+         background in lib/unistyles.ts. */
+      html,
+      body {
+        background-color: #FBF7F4;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background-color: #2C2125;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>
+      Precisas de ativar o JavaScript para usar a Wysta.
+    </noscript>
+    <div id="root"></div>
+  </body>
+</html>

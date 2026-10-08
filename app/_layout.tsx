@@ -10,6 +10,7 @@ import { ThemeProvider } from '@/lib/theme';
 import { useBrandFonts } from '@/lib/fonts';
 import { E2EBridge } from '@/components/E2EBridge';
 import '@/lib/webFocusStyles';
+import '@/lib/webViewport';
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!);
 

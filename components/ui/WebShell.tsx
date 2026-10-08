@@ -242,9 +242,10 @@ const styles = StyleSheet.create((theme) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    // dvh: the visible height. On iPhone Safari 100vh is taller than what's
-    // shown, so the whole page could slide up under the status bar.
-    minHeight: '100dvh' as any,
+    // The visible height: --wysta-vh (lib/webViewport) also shrinks while the
+    // iOS keyboard is open; 100dvh is the fallback. Plain 100vh is taller than
+    // what iPhone Safari shows, so the page could slide under the status bar.
+    minHeight: 'var(--wysta-vh, 100dvh)' as any,
   },
   header: { backgroundColor: theme.colors.background },
   headerInner: {
@@ -291,7 +292,10 @@ const styles = StyleSheet.create((theme) => ({
   },
   bottomNav: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.surface,
+    // Page background, not surface: on iPhone Safari the strip under the nav
+    // (behind the floating toolbar) shows the page background, and a white
+    // nav above it read as a gap.
+    backgroundColor: theme.colors.background,
     borderTopWidth: 1,
     borderTopColor: theme.colors.divider,
     paddingBottom: 4,
