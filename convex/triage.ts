@@ -3,6 +3,7 @@ import { v } from 'convex/values';
 import { topicValidator as topic } from './lib/topics';
 import { alertLevelValidator } from './lib/alerts';
 import { requireAdmin } from './lib/auth';
+import { userError } from './lib/errors';
 
 export const getByTopic = query({
   args: { topic },
@@ -43,7 +44,7 @@ function answersOf(q: Question): string[] | null {
 
 // Checks the editor's questions before saving; throws a message the admin can act on.
 export function validateQuestions(questions: Question[]): Question[] {
-  if (questions.length === 0) throw new Error('A triagem precisa de pelo menos uma pergunta.');
+  if (questions.length === 0) throw userError('A triagem precisa de pelo menos uma pergunta.');
   const seen = new Map<string, Question>();
   return questions.map((raw, i) => {
     const n = i + 1;
@@ -52,46 +53,46 @@ export function validateQuestions(questions: Question[]): Question[] {
       question: raw.question.trim(),
       options: raw.options?.map((o) => o.trim()).filter(Boolean),
     };
-    if (!q.id.trim()) throw new Error(`Pergunta ${n}: falta o identificador.`);
-    if (seen.has(q.id)) throw new Error(`Pergunta ${n}: identificador repetido.`);
-    if (!q.question) throw new Error(`Pergunta ${n}: escreve o texto da pergunta.`);
+    if (!q.id.trim()) throw userError(`Pergunta ${n}: falta o identificador.`);
+    if (seen.has(q.id)) throw userError(`Pergunta ${n}: identificador repetido.`);
+    if (!q.question) throw userError(`Pergunta ${n}: escreve o texto da pergunta.`);
 
     if (q.type === 'yes-no' || q.type === 'text') q.options = undefined;
     if (q.type === 'multiple-choice') {
-      if (!q.options || q.options.length < 2) throw new Error(`Pergunta ${n}: precisa de pelo menos duas opções.`);
-      if (new Set(q.options).size !== q.options.length) throw new Error(`Pergunta ${n}: há opções repetidas.`);
+      if (!q.options || q.options.length < 2) throw userError(`Pergunta ${n}: precisa de pelo menos duas opções.`);
+      if (new Set(q.options).size !== q.options.length) throw userError(`Pergunta ${n}: há opções repetidas.`);
     }
     if (q.type === 'scale') {
       const nums = (q.options ?? []).map(Number);
       if (nums.length < 2 || nums.some((x) => !Number.isInteger(x))) {
-        throw new Error(`Pergunta ${n}: a escala precisa de um mínimo e um máximo.`);
+        throw userError(`Pergunta ${n}: a escala precisa de um mínimo e um máximo.`);
       }
     }
 
     if (q.alert) {
-      if (q.type === 'text') throw new Error(`Pergunta ${n}: uma resposta de texto livre não pode dar alerta.`);
+      if (q.type === 'text') throw userError(`Pergunta ${n}: uma resposta de texto livre não pode dar alerta.`);
       if (q.type === 'yes-no') q.alert = { level: q.alert.level };
       if (q.type === 'scale') {
         const nums = (q.options ?? []).map(Number);
         const min = q.alert.minScale;
         if (min === undefined || min < Math.min(...nums) || min > Math.max(...nums)) {
-          throw new Error(`Pergunta ${n}: indica a partir de que valor da escala há alerta.`);
+          throw userError(`Pergunta ${n}: indica a partir de que valor da escala há alerta.`);
         }
         q.alert = { level: q.alert.level, minScale: min };
       }
       if (q.type === 'multiple-choice') {
         const equals = (q.alert.equals ?? []).filter((e) => q.options!.includes(e));
-        if (equals.length === 0) throw new Error(`Pergunta ${n}: escolhe que resposta dá alerta.`);
+        if (equals.length === 0) throw userError(`Pergunta ${n}: escolhe que resposta dá alerta.`);
         q.alert = { level: q.alert.level, equals };
       }
     }
 
     if (q.showIf) {
       const parent = seen.get(q.showIf.questionId);
-      if (!parent) throw new Error(`Pergunta ${n}: só pode depender de uma pergunta anterior.`);
+      if (!parent) throw userError(`Pergunta ${n}: só pode depender de uma pergunta anterior.`);
       const allowed = answersOf(parent);
       const equals = q.showIf.equals.filter((e) => !allowed || allowed.includes(e));
-      if (equals.length === 0) throw new Error(`Pergunta ${n}: escolhe a resposta que a faz aparecer.`);
+      if (equals.length === 0) throw userError(`Pergunta ${n}: escolhe a resposta que a faz aparecer.`);
       q.showIf = { questionId: parent.id, equals };
     }
 

@@ -66,7 +66,7 @@ describe('a new account cannot give itself professional or admin access', () => 
     expect(await newcomer.query(api.conversations.listForProfessional, {})).toEqual([]);
     expect(await newcomer.query(api.conversations.get, { id: convId })).toBeNull();
     // ...and it can't approve itself.
-    await expect(newcomer.mutation(api.users.approveProfessional, { userId: newId })).rejects.toThrow('Admin only');
+    await expect(newcomer.mutation(api.users.approveProfessional, { userId: newId })).rejects.toThrow('Só a administração pode fazer isto.');
   });
 
   it('setRole needs an admin, so a new account cannot promote itself', async () => {
@@ -74,7 +74,7 @@ describe('a new account cannot give itself professional or admin access', () => 
     await newcomer.mutation(api.users.ensureProfile, {});
     for (const role of ['professional', 'admin'] as const) {
       await expect(newcomer.mutation(api.users.setRole, { targetUserId: newId, role })).rejects.toThrow(
-        'Unauthorized',
+        'Só a administração pode fazer isto.',
       );
     }
     expect((await profileOf(t, newId))?.role).toBe('patient');

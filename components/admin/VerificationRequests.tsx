@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/Icon';
 import { fonts } from '@/lib/fonts';
+import { errorText } from '@/lib/errorText';
 
 type Request = NonNullable<ReturnType<typeof useQuery<typeof api.users.listPendingVerifications>>>[number];
 type Pending = { kind: 'approve' | 'reject'; request: Request; reason?: string };
@@ -39,7 +40,7 @@ export function VerificationRequests() {
       setRejecting(null);
       setReason('');
     } catch (e: any) {
-      setError(e?.message ?? 'Não foi possível concluir a ação.');
+      setError(errorText(e, 'Não foi possível concluir a ação.'));
     } finally {
       setPending(null);
     }

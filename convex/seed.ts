@@ -3,6 +3,7 @@ import type { MutationCtx } from './_generated/server';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { TRIAGE_SEEDS, ARTICLE_SEEDS, type TriageSeed, type ArticleSeed } from './lib/seedData';
 import { alertLevelFor } from './lib/alerts';
+import { userError } from './lib/errors';
 
 async function upsertTriage(ctx: MutationCtx, seed: TriageSeed) {
   const existing = await ctx.db
@@ -102,7 +103,7 @@ export const seedAll = mutation({
   args: {},
   handler: async (ctx) => {
     if (!(await isAdminOrEmpty(ctx))) {
-      throw new Error('Apenas administradores podem executar seed.');
+      throw userError('Apenas administradores podem executar seed.');
     }
     const triageResults = await Promise.all(TRIAGE_SEEDS.map((t) => upsertTriage(ctx, t)));
     const articleResults = await Promise.all(ARTICLE_SEEDS.map((a) => upsertArticle(ctx, a)));

@@ -5,6 +5,7 @@ import type { Id } from './_generated/dataModel';
 import { requireAdmin } from './lib/auth';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
+import { userError, NOT_AUTHENTICATED, ADMIN_ONLY } from './lib/errors';
 
 export const currentUser = query({
   args: {},
@@ -31,7 +32,7 @@ export const ensureProfile = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const existing = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
@@ -50,7 +51,7 @@ export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     return ctx.storage.generateUploadUrl();
   },
 });
@@ -65,15 +66,15 @@ export const submitProfessionalVerification = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     if (!args.professionalLicenseNumber.trim()) {
-      throw new Error('Cédula obrigatória.');
+      throw userError('Cédula obrigatória.');
     }
     if (!args.professionalSpecialty.trim()) {
-      throw new Error('Especialidade obrigatória.');
+      throw userError('Especialidade obrigatória.');
     }
     if (args.professionalVerificationDocuments.length === 0) {
-      throw new Error('Pelo menos um documento é obrigatório.');
+      throw userError('Pelo menos um documento é obrigatório.');
     }
 
     const existing = await ctx.db
@@ -83,7 +84,7 @@ export const submitProfessionalVerification = mutation({
 
     // An admin account would lose its role (and possibly the last admin).
     if (existing?.role === 'admin') {
-      throw new Error('Uma conta de administrador não pode pedir verificação de profissional.');
+      throw userError('Uma conta de administrador não pode pedir verificação de profissional.');
     }
 
     // An admin confirms the licence (Ordem dos Enfermeiros) before the account
@@ -124,12 +125,12 @@ export const updateProfile = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const profile = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    if (!profile) throw new Error('Profile not found');
+    if (!profile) throw userError('Não encontrámos o teu perfil.');
     await ctx.db.patch(profile._id, args);
   },
 });
@@ -152,13 +153,13 @@ export const bootstrapAdmin = mutation({
   args: {},
   handler: async (ctx) => {
     const callerId = await getAuthUserId(ctx);
-    if (!callerId) throw new Error('Not authenticated');
+    if (!callerId) throw userError(NOT_AUTHENTICATED);
     const anyAdmin = await ctx.db
       .query('userProfiles')
       .filter((q) => q.eq(q.field('role'), 'admin'))
       .first();
     if (anyAdmin) {
-      throw new Error('Já existe um administrador.');
+      throw userError('Já existe um administrador.');
     }
     let profile = await ctx.db
       .query('userProfiles')
@@ -188,17 +189,17 @@ export const setRole = mutation({
   },
   handler: async (ctx, args) => {
     const callerId = await getAuthUserId(ctx);
-    if (!callerId) throw new Error('Not authenticated');
+    if (!callerId) throw userError(NOT_AUTHENTICATED);
     const callerProfile = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', callerId))
       .unique();
-    if (callerProfile?.role !== 'admin') throw new Error('Unauthorized');
+    if (callerProfile?.role !== 'admin') throw userError(ADMIN_ONLY);
     const targetProfile = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.targetUserId))
       .unique();
-    if (!targetProfile) throw new Error('Target user profile not found');
+    if (!targetProfile) throw userError('Não encontrámos o perfil deste utilizador.');
     // Never leave the deployment without an admin: that would reopen
     // bootstrapAdmin to any signed-in account.
     if (targetProfile.role === 'admin' && args.role !== 'admin') {
@@ -208,7 +209,7 @@ export const setRole = mutation({
           q.and(q.eq(q.field('role'), 'admin'), q.neq(q.field('_id'), targetProfile._id))
         )
         .first();
-      if (!otherAdmin) throw new Error('Não é possível remover o último administrador.');
+      if (!otherAdmin) throw userError('Não é possível remover o último administrador.');
     }
     // Promoting someone to professional is itself an admin decision, so the
     // account is approved at the same time.
@@ -307,10 +308,10 @@ async function reviewProfessional(
     .withIndex('by_user', (q) => q.eq('userId', targetUserId))
     .unique();
   if (!profile || profile.role !== 'professional') {
-    throw new Error('Este utilizador não tem um pedido de verificação de profissional.');
+    throw userError('Este utilizador não tem um pedido de verificação de profissional.');
   }
   if (profile.professionalVerificationStatus !== 'pending') {
-    throw new Error('Este pedido já foi analisado.');
+    throw userError('Este pedido já foi analisado.');
   }
   const trimmed = reason?.trim() || undefined;
   await ctx.db.patch(profile._id, {

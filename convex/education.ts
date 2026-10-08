@@ -5,6 +5,7 @@ import { v } from 'convex/values';
 import { topicValidator } from './lib/topics';
 import { requireAdmin } from './lib/auth';
 import { readingTimeFor } from './lib/readingTime';
+import { userError } from './lib/errors';
 
 export const listByTopic = query({
   args: {
@@ -85,9 +86,9 @@ export const save = mutation({
     const summary = args.summary.trim();
     const content = args.content.trim();
     const whenToSeekHelp = args.whenToSeekHelp?.trim() || undefined;
-    if (!title) throw new Error('O artigo precisa de um título.');
+    if (!title) throw userError('O artigo precisa de um título.');
     if (args.publish && (!summary || !content)) {
-      throw new Error('Para publicar, preenche o resumo e o texto.');
+      throw userError('Para publicar, preenche o resumo e o texto.');
     }
 
     const data = {
@@ -105,7 +106,7 @@ export const save = mutation({
     let wasPublished = false;
     if (id) {
       const existing = await ctx.db.get(id);
-      if (!existing) throw new Error('Artigo não encontrado.');
+      if (!existing) throw userError('Artigo não encontrado.');
       wasPublished = existing.isPublished;
       // First admin edit of a built-in article: remember its original title.
       const seedKey = existing.seedKey ?? (existing.updatedAt ? undefined : existing.title);
@@ -134,10 +135,10 @@ export const setPublished = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAdmin(ctx);
     const article = await ctx.db.get(args.id);
-    if (!article) throw new Error('Artigo não encontrado.');
+    if (!article) throw userError('Artigo não encontrado.');
     if (article.isPublished === args.isPublished) return null;
     if (args.isPublished && (!article.summary.trim() || !article.content.trim())) {
-      throw new Error('Para publicar, preenche o resumo e o texto.');
+      throw userError('Para publicar, preenche o resumo e o texto.');
     }
     await ctx.db.patch(args.id, { isPublished: args.isPublished, updatedAt: Date.now() });
     await ctx.db.insert('auditLog', {

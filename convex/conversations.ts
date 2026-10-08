@@ -7,6 +7,7 @@ import { calculateRiskLevel, type RiskAssessment } from './lib/risk';
 import { alertLevelFor, priorityFor, sortQueue, type AlertLevel } from './lib/alerts';
 import { hasProfessionalAccess } from './lib/professional';
 import { topicValidator as topic } from './lib/topics';
+import { userError, NOT_AUTHENTICATED, NOT_ALLOWED } from './lib/errors';
 
 const status = v.union(
   v.literal('waiting'),
@@ -280,7 +281,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
 
     const kind = args.kind ?? 'human-async';
     if (kind === 'human-async') {
@@ -346,7 +347,7 @@ async function requireProfessional(ctx: any, userId: any) {
     .unique();
   // Admins, and professionals an admin has approved (lib/professional.ts).
   if (!hasProfessionalAccess(profile)) {
-    throw new Error('Unauthorized');
+    throw userError(NOT_ALLOWED);
   }
   return profile;
 }
@@ -355,17 +356,17 @@ export const assign = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
-    if (!conv) throw new Error('Conversation not found');
+    if (!conv) throw userError('Esta conversa já não existe.');
     if (conv.status === 'closed') {
-      throw new Error('Conversa fechada não pode ser reatribuída');
+      throw userError('Esta conversa está encerrada e não pode ser atribuída.');
     }
     if (conv.professionalId === userId) return; // already mine, no-op
     // Chats with the AI are read-only context for professionals.
     if (conv.kind === 'ai-only') {
-      throw new Error('As conversas com a assistente IA não podem ser atribuídas.');
+      throw userError('As conversas com a assistente IA não podem ser atribuídas.');
     }
     const wasAssignedToOther = !!conv.professionalId;
     await ctx.db.patch(args.id, {
@@ -387,11 +388,11 @@ export const unassign = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
-    if (!conv) throw new Error('Conversation not found');
-    if (conv.professionalId !== userId) throw new Error('Não atribuído a si');
+    if (!conv) throw userError('Esta conversa já não existe.');
+    if (conv.professionalId !== userId) throw userError('Esta conversa não está atribuída a ti.');
     await ctx.db.patch(args.id, {
       professionalId: undefined,
       status: 'waiting',
@@ -411,9 +412,9 @@ export const close = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const conv = await ctx.db.get(args.id);
-    if (!conv) throw new Error('Conversation not found');
+    if (!conv) throw userError('Esta conversa já não existe.');
     const byPatient = conv.patientId === userId;
     if (!byPatient) await requireProfessional(ctx, userId);
     if (conv.status === 'closed') return;
@@ -487,12 +488,12 @@ export const markUrgent = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
-    if (!conv) throw new Error('Conversation not found');
+    if (!conv) throw userError('Esta conversa já não existe.');
     if (conv.status === 'closed') {
-      throw new Error('Conversa fechada — reabrir para alterar prioridade');
+      throw userError('Esta conversa está encerrada. Não é possível alterar a prioridade.');
     }
     if (conv.priority === 'urgent') return;
     await ctx.db.patch(args.id, { priority: 'urgent' });
@@ -515,11 +516,11 @@ export const recommendInPerson = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const senderProfile = await requireProfessional(ctx, userId);
     const conv = await ctx.db.get(args.id);
-    if (!conv) throw new Error('Conversation not found');
-    if (conv.status === 'closed') throw new Error('Conversa já fechada');
+    if (!conv) throw userError('Esta conversa já não existe.');
+    if (conv.status === 'closed') throw userError('Esta conversa já está encerrada.');
 
     const baseMsg =
       'Pelo que descreves, recomendamos que procures consulta presencial nos teus cuidados primários ou liga ao SNS 24 (808 24 24 24). Se for uma situação urgente, liga 112.';
@@ -580,11 +581,11 @@ export const switchMode = mutation({
   args: { id: v.id('conversations') },
   handler: async (ctx, args): Promise<{ id: Id<'conversations'>; created: boolean }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const conv = await ctx.db.get(args.id);
-    if (!conv) throw new Error('Conversation not found');
-    if (conv.patientId !== userId) throw new Error('Unauthorized');
-    if (conv.status === 'closed') throw new Error('Conversa fechada');
+    if (!conv) throw userError('Esta conversa já não existe.');
+    if (conv.patientId !== userId) throw userError(NOT_ALLOWED);
+    if (conv.status === 'closed') throw userError('Esta conversa está encerrada.');
 
     const targetKind = conv.kind === 'ai-only' ? 'human-async' : 'ai-only';
     if (conv.counterpartConversationId) {

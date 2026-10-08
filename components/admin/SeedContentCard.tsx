@@ -5,6 +5,7 @@ import { StyleSheet } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { fonts } from '@/lib/fonts';
+import { errorText } from '@/lib/errorText';
 
 // Adds the built-in triages and articles that are missing and refreshes the
 // ones nobody edited. Whatever an admin edited in Conteúdos is kept.
@@ -24,7 +25,7 @@ export function SeedContentCard() {
           `Níveis de alerta atribuídos a ${r.alertLevelsBackfilled} conversas.`
       );
     } catch (e: any) {
-      setResult(e?.message ?? 'Erro ao atualizar os conteúdos.');
+      setResult(errorText(e, 'Não foi possível atualizar os conteúdos.'));
     } finally {
       setSeeding(false);
     }

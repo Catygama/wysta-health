@@ -99,7 +99,7 @@ describe('switchMode', () => {
   it("rejects another user's conversation", async () => {
     const { pro, proConvId } = await setup();
     await expect(pro.mutation(api.conversations.switchMode, { id: proConvId })).rejects.toThrow(
-      'Unauthorized'
+      'Não tens acesso a esta conversa.'
     );
   });
 });
@@ -236,7 +236,7 @@ describe('ending conversations', () => {
     });
     const other = t.withIdentity({ subject: `${otherId}|s3` });
     await expect(other.mutation(api.conversations.close, { id: proConvId })).rejects.toThrow(
-      'Unauthorized'
+      'Não tens acesso a esta conversa.'
     );
   });
 

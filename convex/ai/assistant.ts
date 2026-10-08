@@ -27,6 +27,7 @@ import { runAgent } from './runAgent';
 import { SUGGEST_CLOSE_MARKER } from './defaults';
 import type { Doc, Id } from '../_generated/dataModel';
 import { findOpenProfessionalConversation } from '../conversations';
+import { userError, NOT_AUTHENTICATED } from '../lib/errors';
 
 // Removes the suggest-close marker from planner output — also a partial
 // marker still arriving at the end of a stream — so the patient never sees it.
@@ -212,7 +213,7 @@ export const respondAnonymous = action({
     answer: string;
   }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
 
     const profile = await ctx.runQuery(internal.ai.assistant.gatherProfileOnly, {
       userId,
@@ -358,13 +359,13 @@ export const respond = action({
   },
   handler: async (ctx, { conversationId, query }): Promise<{ sent: boolean }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const ctxData = await ctx.runQuery(internal.ai.assistant.gatherContext, {
       conversationId,
       userId,
     });
     if (!ctxData.allowed) {
-      throw new Error('Only the patient on this conversation can ask the AI');
+      throw userError('Só a utente desta conversa pode falar com a assistente.');
     }
     return streamAndValidate(ctx, {
       conversationId,

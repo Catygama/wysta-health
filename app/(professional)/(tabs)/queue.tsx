@@ -13,9 +13,12 @@ import { priorityColors } from '@/constants/conversation';
 
 type Priority = 'urgent' | 'high' | 'medium' | 'low';
 type PriorityFilter = Priority | 'all';
-type Sort = 'oldest' | 'newest';
+// 'priority' keeps the server's order: alert level and risk first, then the
+// oldest within the same level. Sorting by date is an explicit choice.
+type Sort = 'priority' | 'oldest' | 'newest';
 
 const SORT_LABELS: Record<Sort, string> = {
+  priority: 'Por prioridade',
   oldest: 'Mais antigo',
   newest: 'Mais recente',
 };
@@ -29,7 +32,7 @@ const PRIORITY_LABELS: Record<PriorityFilter, string> = {
 };
 
 export default function Requests() {
-  const [sort, setSort] = useState<Sort>('oldest');
+  const [sort, setSort] = useState<Sort>('priority');
   const [priority, setPriority] = useState<PriorityFilter>('all');
   const { theme } = useUnistyles();
 
@@ -38,10 +41,12 @@ export default function Requests() {
     priority: priority === 'all' ? undefined : priority,
   });
 
-  // Urgency is handled by the priority filter; here the order is by time only.
-  const sorted = [...(requests ?? [])].sort((a, b) =>
-    sort === 'oldest' ? a._creationTime - b._creationTime : b._creationTime - a._creationTime
-  );
+  const sorted =
+    sort === 'priority'
+      ? (requests ?? [])
+      : [...(requests ?? [])].sort((a, b) =>
+          sort === 'oldest' ? a._creationTime - b._creationTime : b._creationTime - a._creationTime
+        );
 
   // From the theme so the dots stay legible in dark mode.
   const colors = priorityColors(theme.name);

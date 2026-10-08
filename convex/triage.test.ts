@@ -52,10 +52,10 @@ const QUESTIONS = [
 describe('triage admin', () => {
   it('only admins can read or save the questions', async () => {
     const { patient } = await setup();
-    await expect(patient.query(api.triage.adminGet, { topic: 'pregnancy' })).rejects.toThrow('Admin only');
+    await expect(patient.query(api.triage.adminGet, { topic: 'pregnancy' })).rejects.toThrow('Só a administração pode fazer isto.');
     await expect(
       patient.mutation(api.triage.saveQuestions, { topic: 'pregnancy', questions: QUESTIONS })
-    ).rejects.toThrow('Admin only');
+    ).rejects.toThrow('Só a administração pode fazer isto.');
   });
 
   it('saves the questions; new triages use them for the alert level', async () => {

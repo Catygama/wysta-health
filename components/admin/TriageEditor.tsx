@@ -14,6 +14,7 @@ import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { fonts } from '@/lib/fonts';
+import { errorText } from '@/lib/errorText';
 
 type QuestionType = 'yes-no' | 'multiple-choice' | 'scale' | 'text';
 type Question = {
@@ -150,8 +151,7 @@ export function TriageEditor() {
       setOpen(null);
       setMessage({ kind: 'ok', text: 'Triagem guardada. As novas triagens já usam estas perguntas.' });
     } catch (e: any) {
-      const raw = String(e?.message ?? '');
-      setMessage({ kind: 'error', text: raw.match(/Uncaught Error: (.*?)(\n|\s+at |$)/)?.[1] ?? 'Não foi possível guardar.' });
+      setMessage({ kind: 'error', text: errorText(e, 'Não foi possível guardar.') });
     } finally {
       setSaving(false);
     }

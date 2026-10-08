@@ -27,6 +27,7 @@ import {
 import { useTabBar } from '@/contexts/TabBarContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { AlertLevel } from '@/convex/lib/alerts';
+import { errorText } from '@/lib/errorText';
 
 // What the options panel shows: the menu, or one of the views it opens.
 type PanelView = 'menu' | 'internal' | 'summary' | 'triage';
@@ -527,7 +528,7 @@ function SummaryPanel({
     try {
       await generate({ conversationId: conversationId as any });
     } catch (e: any) {
-      setError(e?.message ?? 'Falha ao gerar sumário');
+      setError(errorText(e, 'Não foi possível gerar o sumário.'));
     } finally {
       setBusy(false);
     }
@@ -591,7 +592,7 @@ function ClinicalProfile({
     try {
       await generate({ patientId });
     } catch (e: any) {
-      setError(e?.message ?? 'Falha');
+      setError(errorText(e, 'Não foi possível concluir. Tenta de novo.'));
     } finally {
       setBusy(false);
     }
@@ -674,7 +675,7 @@ function RecommendInPersonSheet({
       setExtraNote('');
       onClose();
     } catch (e: any) {
-      setError(e?.message ?? 'Falha');
+      setError(errorText(e, 'Não foi possível concluir. Tenta de novo.'));
     } finally {
       setBusy(false);
     }

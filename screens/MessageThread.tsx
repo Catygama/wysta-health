@@ -29,6 +29,7 @@ import {
   type PickedImage,
   type PickedFile,
 } from '@/lib/upload';
+import { errorText } from '@/lib/errorText';
 
 function formatBytes(bytes?: number): string | null {
   if (!bytes || bytes <= 0) return null;
@@ -134,7 +135,7 @@ export function MessageThread({
         setPendingDocument(null);
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Não foi possível abrir a galeria.');
+      setError(errorText(e, 'Não foi possível abrir a galeria.'));
     }
   }
 
@@ -147,7 +148,7 @@ export function MessageThread({
         setPendingImage(null);
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Não foi possível abrir o seletor de ficheiros.');
+      setError(errorText(e, 'Não foi possível abrir o seletor de ficheiros.'));
     }
   }
 
@@ -196,7 +197,7 @@ export function MessageThread({
       setPendingDocument(null);
       listRef.current?.scrollToEnd();
     } catch (e: any) {
-      setError(e?.message ?? 'Erro a enviar mensagem.');
+      setError(errorText(e, 'Não foi possível enviar a mensagem. Tenta de novo.'));
     } finally {
       setUploading(false);
       setSending(false);

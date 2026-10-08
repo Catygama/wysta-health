@@ -12,6 +12,7 @@ import { api } from '@/convex/_generated/api';
 import { guestAuthEnabled } from '@/lib/env';
 import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
+import { errorText } from '@/lib/errorText';
 
 export default function ProfessionalLogin() {
   const { signIn } = useAuthActions();
@@ -44,8 +45,7 @@ export default function ProfessionalLogin() {
     try {
       await signIn('anonymous-professional');
     } catch (e: any) {
-      const message = e?.message ?? String(e);
-      setError(`Guest professional falhou: ${message}`);
+      setError(errorText(e, 'Não foi possível entrar em modo de demonstração. Tenta de novo.'));
     } finally {
       setGuestLoading(false);
     }

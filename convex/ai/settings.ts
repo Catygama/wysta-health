@@ -5,6 +5,7 @@
 import { internalQuery, mutation, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { requireAdmin } from '../lib/auth';
+import { userError } from '../lib/errors';
 
 export const DEFAULT_DAILY_COST_CAP_USD = 1.0;
 
@@ -25,7 +26,7 @@ export const updateDailyCostCap = mutation({
   handler: async (ctx, { dailyCostCapUsd, notes }) => {
     const { userId } = await requireAdmin(ctx);
     if (dailyCostCapUsd <= 0 || dailyCostCapUsd > 100) {
-      throw new Error('Cap must be between 0 and 100 USD');
+      throw userError('O limite tem de estar entre 0 e 100 USD.');
     }
     return ctx.db.insert('aiSettings', {
       dailyCostCapUsd,

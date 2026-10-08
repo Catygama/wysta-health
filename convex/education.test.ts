@@ -31,9 +31,9 @@ const ARTICLE = {
 describe('education admin', () => {
   it('only admins can list, save or publish', async () => {
     const { patient } = await setup();
-    await expect(patient.query(api.education.adminList, {})).rejects.toThrow('Admin only');
+    await expect(patient.query(api.education.adminList, {})).rejects.toThrow('Só a administração pode fazer isto.');
     await expect(patient.mutation(api.education.save, { ...ARTICLE, publish: true })).rejects.toThrow(
-      'Admin only'
+      'Só a administração pode fazer isto.'
     );
   });
 

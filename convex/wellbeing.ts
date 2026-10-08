@@ -4,10 +4,11 @@
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { getAuthUserId } from '@convex-dev/auth/server';
+import { userError, NOT_AUTHENTICATED } from './lib/errors';
 
 function assertScore(n: number, min: number, max: number, label: string) {
   if (!Number.isFinite(n) || n < min || n > max) {
-    throw new Error(`${label} deve estar entre ${min} e ${max}.`);
+    throw userError(`${label} deve estar entre ${min} e ${max}.`);
   }
 }
 
@@ -21,7 +22,7 @@ export const submitCheckin = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     assertScore(args.desire, 1, 5, 'Desejo');
     assertScore(args.satisfaction, 1, 5, 'Satisfação');
     assertScore(args.pain, 0, 5, 'Dor');

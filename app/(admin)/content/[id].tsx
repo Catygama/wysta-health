@@ -14,6 +14,7 @@ import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { ArticleView } from '@/screens/ArticleScreen';
 import { TOPICS } from '@/constants/topics';
 import { fonts } from '@/lib/fonts';
+import { errorText } from '@/lib/errorText';
 
 type Draft = {
   title: string;
@@ -303,12 +304,9 @@ export default function AdminArticleEditor() {
   );
 }
 
-// Convex wraps thrown errors ("[CONVEX M(...)] Uncaught Error: <msg> at ...");
-// show only our message.
-function cleanError(e: any): string {
-  const raw = String(e?.message ?? '');
-  const m = raw.match(/Uncaught Error: (.*?)(\n|\s+at |$)/);
-  return m?.[1] ?? 'Não foi possível guardar o artigo.';
+// The server's message for the person (ConvexError), else a generic one.
+function cleanError(e: unknown): string {
+  return errorText(e, 'Não foi possível guardar o artigo.');
 }
 
 const styles = StyleSheet.create((theme) => ({

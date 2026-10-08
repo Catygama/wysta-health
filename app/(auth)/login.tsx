@@ -12,6 +12,7 @@ import { strings } from '@/constants/strings';
 import { guestAuthEnabled } from '@/lib/env';
 import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
+import { errorText } from '@/lib/errorText';
 
 export default function Login() {
   const { signIn } = useAuthActions();
@@ -41,8 +42,7 @@ export default function Login() {
     try {
       await signIn('anonymous');
     } catch (e: any) {
-      const message = e?.message ?? String(e);
-      setError(`Guest falhou: ${message}`);
+      setError(errorText(e, 'Não foi possível entrar sem conta. Tenta de novo.'));
     } finally {
       setGuestLoading(false);
     }

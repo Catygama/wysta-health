@@ -13,6 +13,7 @@ import { fonts } from '@/lib/fonts';
 import { pickImage, uploadImage, type PickedImage } from '@/lib/upload';
 import { guestAuthEnabled } from '@/lib/env';
 import { withAuthRetry } from '@/lib/authRetry';
+import { errorText } from '@/lib/errorText';
 
 const SPECIALTIES = [
   'Medicina Geral e Familiar',
@@ -68,7 +69,7 @@ export default function ProfessionalSignup() {
         );
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Erro a anexar documento.');
+      setError(errorText(e, 'Não foi possível anexar o documento.'));
       if (target === 'license') setLicenseDoc(null);
     }
   }
@@ -112,7 +113,7 @@ export default function ProfessionalSignup() {
         })
       );
     } catch (e: any) {
-      setError(e?.message ?? strings.errors.generic);
+      setError(errorText(e, strings.errors.generic));
     } finally {
       setLoading(false);
     }
@@ -124,8 +125,7 @@ export default function ProfessionalSignup() {
     try {
       await signIn('anonymous-professional');
     } catch (e: any) {
-      const message = e?.message ?? String(e);
-      setError(`Guest professional falhou: ${message}`);
+      setError(errorText(e, 'Não foi possível entrar em modo de demonstração. Tenta de novo.'));
     } finally {
       setGuestLoading(false);
     }

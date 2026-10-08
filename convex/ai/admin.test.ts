@@ -110,7 +110,7 @@ describe('ai.admin.saveConfig', () => {
         provider: 'openai',
         modelId: 'gpt-4o-mini',
       })
-    ).rejects.toThrow(/key/i);
+    ).rejects.toThrow(/chave anterior/i);
   });
 
   it('rejects non-admin', async () => {

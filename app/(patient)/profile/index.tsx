@@ -353,7 +353,7 @@ function BootstrapAdminCard() {
     try {
       await bootstrap();
     } catch (e: any) {
-      setError(e?.message ?? 'Falhou.');
+      setError(errorText(e, 'Não foi possível concluir. Tenta de novo.'));
     } finally {
       setLoading(false);
     }

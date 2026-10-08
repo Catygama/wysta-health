@@ -9,6 +9,7 @@ import { MessageThread } from '@/screens/MessageThread';
 import { useTabBar } from '@/contexts/TabBarContext';
 import { TOPICS } from '@/constants/topics';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { errorText } from '@/lib/errorText';
 
 export default function PatientConversation() {
   const { id, waiting } = useLocalSearchParams<{ id: string; waiting?: string }>();
@@ -49,7 +50,7 @@ export default function PatientConversation() {
         params: isAiOnly && !target.created ? { id: target.id, waiting: '1' } : { id: target.id },
       });
     } catch (e: any) {
-      setSwitchError(e?.message ?? 'Não foi possível mudar de conversa.');
+      setSwitchError(errorText(e, 'Não foi possível mudar de conversa.'));
     } finally {
       setSwitching(false);
     }

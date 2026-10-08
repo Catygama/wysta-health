@@ -10,6 +10,7 @@ import type { MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import type { Doc } from './_generated/dataModel';
+import { userError, NOT_AUTHENTICATED } from './lib/errors';
 
 const MAX_TOKENS_PER_USER = 15;
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
@@ -23,12 +24,12 @@ async function upsertPushEntry(
   entry: Omit<PushEntry, 'addedAt'>
 ) {
   const userId = await getAuthUserId(ctx);
-  if (!userId) throw new Error('Not authenticated');
+  if (!userId) throw userError(NOT_AUTHENTICATED);
   const profile = await ctx.db
     .query('userProfiles')
     .withIndex('by_user', (q) => q.eq('userId', userId))
     .unique();
-  if (!profile) throw new Error('Profile not found');
+  if (!profile) throw userError('Não encontrámos o teu perfil.');
 
   const existing = profile.pushTokens ?? [];
   const withoutDupe = existing.filter((t) => t.token !== entry.token);
@@ -53,7 +54,7 @@ export const registerWebPushSubscription = mutation({
   },
   handler: async (ctx, args) => {
     if (!args.endpoint.startsWith('https://')) {
-      throw new Error('Invalid push endpoint');
+      throw userError('Não foi possível ativar as notificações neste navegador.');
     }
     await upsertPushEntry(ctx, {
       token: args.endpoint,
@@ -72,7 +73,7 @@ export const removePushToken = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const profile = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))

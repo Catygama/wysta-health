@@ -60,7 +60,7 @@ describe('wellbeing check-ins', () => {
       t.mutation(api.wellbeing.submitCheckin, {
         desire: 3, satisfaction: 3, pain: 0, distress: 1,
       })
-    ).rejects.toThrow(/authenticated/i);
+    ).rejects.toThrow(/sessão terminou/i);
   });
 
   it('conversations.create stores wellbeingGoal + ai-only kind', async () => {

@@ -60,7 +60,7 @@ describe('C1: export my data', () => {
     expect(conv.mensagens.map((m: any) => [m.autor, m.texto])).toEqual([
       ['eu', 'Olá'], ['eu', 'Foto'], ['profissional de saúde', 'Resposta'],
     ]);
-    expect(conv.mensagens[1].anexo.ligacao).toMatch(/^https:/);
+    expect(conv.mensagens[1].anexo?.ligacao).toMatch(/^https:/);
     expect(data.registosDeBemEstar).toHaveLength(1);
     const text = JSON.stringify(data);
     expect(text).not.toContain('Nota interna');
@@ -99,7 +99,7 @@ describe('C2: delete my account', () => {
     expect(state.checkins).toEqual([]);
     expect(state.audit).toHaveLength(1);
     expect(state.audit[0]).toMatchObject({ action: 'redirect-recommended', details: 'Conta da utente apagada.' });
-    expect(state.audit[0].conversationId).toBeUndefined();
+    expect(state.audit[0]?.conversationId).toBeUndefined();
     expect([state.sessions, state.tokens, state.accounts]).toEqual([[], [], []]);
     expect(state.other?.patientId).toBe(otherId);
   });
