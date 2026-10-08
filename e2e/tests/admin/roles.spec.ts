@@ -21,5 +21,5 @@ test('Admin can promote a patient to professional', async ({ page }, testInfo) =
   await page.getByTestId('role-change-dialog-confirm').click();
 
   // After promotion the row re-renders with the new role pill text.
-  await expect(row.getByText('Profissional')).toBeVisible({ timeout: 10_000 });
+  await expect(row.getByText('Enfermeiro')).toBeVisible({ timeout: 10_000 });
 });
