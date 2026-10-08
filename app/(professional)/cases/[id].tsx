@@ -347,11 +347,6 @@ function OptionsPanel(p: OptionsPanelProps) {
             scope="internal"
             canSend={p.isMine}
             closed={p.isClosed}
-            header={
-              <Text testID="internal-notes-export-notice" style={styles.assignHint}>
-                As notas internas podem ser consultadas pela utente se pedir uma cópia dos seus dados.
-              </Text>
-            }
           />
         </View>
       </View>
