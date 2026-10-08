@@ -359,7 +359,7 @@ function DocSlot({ label, doc, required, onPress, onRemove }: DocSlotProps) {
       {doc.uploading ? (
         <ActivityIndicator color={theme.colors.inkText} size="small" />
       ) : (
-        <Pressable onPress={onRemove} hitSlop={8}>
+        <Pressable onPress={onRemove} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Remover ${doc.picked.fileName ?? "documento"}`}>
           <Icon name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }} size={22} color={theme.colors.textTertiary} />
         </Pressable>
       )}

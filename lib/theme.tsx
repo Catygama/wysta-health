@@ -15,6 +15,7 @@ import {
   type Colors,
 } from '@/constants/theme';
 import { prefStorage } from '@/lib/prefStorage';
+import { setWebFocusColor } from '@/lib/webFocusStyles';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type EffectiveTheme = 'light' | 'dark';
@@ -90,6 +91,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     UnistylesRuntime.setTheme(mode);
   }, [mode, systemScheme]);
+
+  // Web focus ring follows the theme: ink #50000D on light, dusty rose #E3C7C7
+  // on dark (the inkText colours in lib/unistyles.ts).
+  const effectiveScheme = resolveEffective(mode, systemScheme);
+  useEffect(() => {
+    setWebFocusColor(effectiveScheme === 'dark' ? '#E3C7C7' : '#50000D');
+  }, [effectiveScheme]);
 
   const value = useMemo<ThemeContextValue>(() => {
     const effective = resolveEffective(mode, systemScheme);

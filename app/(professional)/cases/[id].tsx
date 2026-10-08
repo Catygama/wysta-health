@@ -644,7 +644,7 @@ function SheetHeader({ title, onClose, closeTestID }: { title: string; onClose: 
   return (
     <View style={styles.sheetHeader}>
       <Text style={styles.sheetTitle}>{title}</Text>
-      <Pressable testID={closeTestID} onPress={onClose} hitSlop={8}>
+      <Pressable testID={closeTestID} onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Fechar">
         <Icon name={{ sf: 'xmark', ion: 'close' } as IconName} size={22} color={theme.colors.textSecondary} />
       </Pressable>
     </View>
