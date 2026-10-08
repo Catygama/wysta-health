@@ -20,7 +20,8 @@ export type SafetyRule = {
   patterns: RegExp[];
   /** If any of these also matches, the rule does not trigger (known false positives). */
   exceptions?: RegExp[];
-  /** Fixed answer to the patient. */
+  /** Fixed answer to the patient. Plain text: the chat does not render
+   *  markdown, so contacts are separated by blank lines, not bold. */
   message: string;
 };
 
@@ -75,6 +76,24 @@ export const SAFETY_RULES: SafetyRule[] = [
       /\babus(aram|ou) (de mim|sexualmente)\b|\babuso sexual\b|\babusada sexualmente\b/,
       // "sem o meu consentimento", "não consenti"
       /\bsem o meu consentimento\b|\bnao consenti\b|\bsem eu querer\b.{0,30}\b(relacoes|sexo)\b/,
+      // Facilitated by drugs or alcohol. Memory loss alone does NOT trigger
+      // ("bebi e não me lembro se tomei a pílula"): it needs a spiked drink,
+      // waking up undressed or at a stranger's, being taken advantage of, or
+      // something done to her while unconscious.
+      // "puseram alguma coisa na minha bebida", "drogaram-me"
+      /\b(puseram|meteram|deitaram|colocaram)\b.{0,30}\bna (minha )?bebida\b|\b(me )?drogaram(-me)?\b|\bfui drogada\b|\bbatizaram a (minha )?bebida\b/,
+      // "acordei em casa de um desconhecido", "acordei sem roupa"
+      /\bacordei\b.{0,40}\b(em casa de|na cama de|ao lado de)\b.{0,25}\b(desconhecid[oa]s?|estranh[oa]s?|alguem que nao conheco|um homem que nao conheco)\b/,
+      /\bacordei\b.{0,30}\b(nua|sem roupa|despida|sem a roupa|sem cuecas)\b/,
+      // "aproveitou-se de mim", "aproveitaram-se de mim"
+      /\baproveit(ou|aram)-se de mim\b|\bse aproveit(ou|aram) de mim\b/,
+      // "não sei o que me fizeram", "o que ele me fez"
+      /\bnao sei o que (me )?(fizeram|fez)\b|\bnao sei o que ele me fez\b/,
+      // something done while unconscious / asleep / drunk
+      /\b(fizeram|fez|teve relacoes|tiveram relacoes|abusou|abusaram|tocou|tocaram)\b.{0,40}\b(enquanto|quando) (eu )?(estava|dormia)\b.{0,15}\b(inconsciente|desmaiada|a dormir|bebeda|bebada|drogada)\b/,
+      // "aconteceu uma coisa sem eu querer" with a party/drink/waking/sex
+      // context, and not about the pill or a condom.
+      /^(?!.*\b(pilula|pilulas|preservativo|preservativos|contracetivo)\b)(?=.*\baconteceu (uma coisa|algo|alguma coisa)\b.{0,25}\bsem (eu )?querer\b)(?=.*\b(festa|bebi|bebida|alcool|acordei|lembr\w*|relacoes|sexo)\b)/,
     ],
     exceptions: [
       // "fui forçada a mudar de pílula / a tomar…"
@@ -83,7 +102,13 @@ export const SAFETY_RULES: SafetyRule[] = [
       /\bviolacao d[aeo]s? ((minha|meus|minhas|tua|teus|sua|seus|nossa|nossos) )?(privacidade|dados|regras|sigilo|confidencialidade|direitos de autor)\b/,
     ],
     message:
-      'Lamento muito o que te aconteceu. Não tens culpa. Se estiveres em perigo, liga 112. É importante ires a uma urgência hospitalar o mais cedo possível, idealmente nas primeiras 72 horas: podem dar-te contraceção de emergência e medicação para prevenir infeções, e recolher provas se decidires apresentar queixa, mesmo que ainda não tenhas decidido. Para apoio, podes ligar para a Linha de Apoio à Vítima da APAV, 116 006.',
+      [
+        'Não estás sozinha. Podes pedir ajuda a qualquer momento:',
+        '112: se estiveres em perigo ou precisares de ajuda imediata.',
+        'Urgência hospitalar: o mais cedo possível, idealmente nas primeiras 72 horas. Podem dar-te contraceção de emergência e medicação para prevenir infeções, fazer análises (diz se achas que te puseram alguma coisa na bebida) e recolher provas, se decidires apresentar queixa.',
+        'SNS 24 (808 24 24 24): orientação de saúde e aconselhamento psicológico.',
+        'APAV, Linha de Apoio à Vítima (116 006): apoio emocional, jurídico e social, gratuito e confidencial.',
+      ].join('\n\n'),
   },
   {
     id: 'suicide',

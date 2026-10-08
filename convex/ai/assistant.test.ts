@@ -386,7 +386,7 @@ describe('rule-based safety detection before the model', () => {
     const anon = await t
       .withIdentity({ subject: `${userId}|s` })
       .action(api.ai.assistant.respondAnonymous, { query: 'Ele obrigou-me a ter relações.' });
-    expect(anon.answer).toContain('APAV, 116 006');
+    expect(anon.answer).toContain('Linha de Apoio à Vítima (116 006)');
     expect(vi.mocked(callLlmText)).not.toHaveBeenCalled();
   });
 });

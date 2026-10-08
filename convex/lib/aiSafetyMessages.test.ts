@@ -31,6 +31,16 @@ describe('rule-based safety detection', () => {
       'Abusaram de mim na festa',
       'Tivemos relações sem o meu consentimento',
       'Fui forçada a tomar a pílula e depois violaram-me',
+      // facilitated by drugs or alcohol
+      'Na festa de ontem aconteceu uma coisa sem eu querer e acordei sem me lembrar de nada.',
+      'Puseram alguma coisa na minha bebida',
+      'acho que me drogaram ontem',
+      'Acordei em casa de um desconhecido',
+      'acordei sem roupa no sofá de um amigo',
+      'Ele aproveitou-se de mim',
+      'não sei o que me fizeram',
+      'Abusaram de mim enquanto eu estava inconsciente',
+      'ele teve relações comigo quando eu estava bêbada',
     ]) {
       expect(id(text), text).toBe('sexual-violence');
     }
@@ -64,6 +74,16 @@ describe('rule-based safety detection', () => {
       'Há violação da minha privacidade se o enfermeiro vir as conversas?',
       'Quero aproveitar mais a minha vida sexual',
       'Quantos dias dura normalmente um ciclo menstrual?',
+      // alcohol + contraception or plain hangovers: never the violence answer
+      'Bebi muito na festa e não me lembro se tomei a pílula',
+      'Não me lembro se usámos preservativo, devo tomar a pílula do dia seguinte?',
+      'Acordei com uma ressaca enorme, a pílula faz efeito se vomitei?',
+      'Não me lembro de nada da festa, é normal uma ressaca tão grande?',
+      'Aconteceu uma coisa sem eu querer na festa: tomei duas pílulas seguidas',
+      'Tomei a pílula duas vezes sem querer depois de beber',
+      'Acordei sem a pílula na mala e já passaram 12 horas',
+      'A bebida da festa caiu-me mal, posso ter vomitado a pílula?',
+      'Acordei em casa de uma amiga e esqueci-me da pílula',
     ]) {
       expect(id(text), text).toBeNull();
     }
@@ -72,7 +92,7 @@ describe('rule-based safety detection', () => {
   it('every rule has a fixed message with a concrete contact', () => {
     const contacts: Record<string, RegExp> = {
       'baby-movement': /SNS Grávida \(808 24 24 24\).*112/,
-      'sexual-violence': /112.*APAV, 116 006/,
+      'sexual-violence': /^Não estás sozinha.*\n\n112: .*\n\nUrgência hospitalar: .*72 horas.*\n\nSNS 24 \(808 24 24 24\): .*\n\nAPAV, Linha de Apoio à Vítima \(116 006\): /,
       suicide: /112.*SNS 24 \(808 24 24 24\)/,
     };
     for (const rule of SAFETY_RULES) {
