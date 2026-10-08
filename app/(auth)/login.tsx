@@ -24,12 +24,15 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [guestConsent, setGuestConsent] = useState(false);
+  // Age and privacy consent, above "Entrar": needed to sign in and to enter
+  // without an account.
+  const [consented, setConsented] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState('');
 
   async function handleLogin() {
     setError('');
+    if (!consented) return;
     setLoading(true);
     try {
       await signIn('password', { email, password, flow: 'signIn' });
@@ -42,7 +45,7 @@ export default function Login() {
 
   async function handleGuest() {
     setError('');
-    if (!guestConsent) return;
+    if (!consented) return;
     setGuestLoading(true);
     try {
       // Set before signing in: the session can become active before signIn() resolves.
@@ -98,19 +101,19 @@ export default function Login() {
             {error}
           </Text>
         ) : null}
+        <ConsentCheckbox testID="auth-consent-checkbox" checked={consented} onChange={setConsented} />
         <Button
           testID="auth-login-button"
           label={strings.auth.login}
           onPress={handleLogin}
           loading={loading}
+          disabled={!consented}
         />
       </View>
 
       {guestAuthEnabled && (
         <View style={styles.guest}>
           <Divider label="ou" />
-          {/* Entering without an account also needs the age and privacy consent. */}
-          <ConsentCheckbox testID="auth-guest-consent-checkbox" checked={guestConsent} onChange={setGuestConsent} />
           <Button
             testID="auth-guest-button"
             strongBorder
@@ -118,7 +121,7 @@ export default function Login() {
             variant="secondary"
             onPress={handleGuest}
             loading={guestLoading}
-            disabled={!guestConsent}
+            disabled={!consented}
           />
         </View>
       )}
