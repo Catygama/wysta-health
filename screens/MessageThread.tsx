@@ -266,7 +266,9 @@ export function MessageThread({
             item.messageType === 'triage-response' &&
             item.metadata?.triageData
           ) {
-            return <TriageMessage data={item.metadata.triageData} aiOnly={aiOnly} />;
+            return (
+              <TriageMessage data={item.metadata.triageData} aiOnly={aiOnly} forProfessional={isProfessional} />
+            );
           }
           if (item.metadata?.safetyRule && !item.streaming) {
             return <SafetyRuleMessage ruleId={item.metadata.safetyRule} content={item.content} />;
@@ -502,9 +504,12 @@ export function MessageThread({
 function TriageMessage({
   data,
   aiOnly,
+  forProfessional,
 }: {
   data: { topic: string; responses: Record<string, unknown>; riskLevel: string };
   aiOnly: boolean;
+  /** The nurse sees where to read the answers instead. */
+  forProfessional?: boolean;
 }) {
   const { theme } = useUnistyles();
   return (
@@ -520,7 +525,9 @@ function TriageMessage({
       {/* In AI chats the answers also reach a professional: switching to one
           copies the triage over, and professionals can open the AI chat. */}
       <Text style={styles.triageBody}>
-        {aiOnly
+        {forProfessional
+          ? 'A utente respondeu à triagem. Consulta as respostas no painel lateral.'
+          : aiOnly
           ? 'Respostas guardadas para a assistente IA. O enfermeiro também tem acesso.'
           : 'Respostas guardadas para o enfermeiro.'}
       </Text>
