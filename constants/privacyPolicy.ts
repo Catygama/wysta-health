@@ -38,6 +38,7 @@ export const PRIVACY_POLICY: { title: string; body: string[] }[] = [
     body: [
       'Equipa de enfermagem: só enfermeiros com a cédula profissional verificada pela administração veem as conversas e os dados de saúde.',
       'Administração: gere as contas, a verificação dos enfermeiros e a configuração da assistente. Não tem acesso às conversas nem aos dados de saúde.',
+      'A administração pode bloquear o acesso a uma conta ou apagá-la, por exemplo em caso de uso indevido da plataforma. Quando uma conta é apagada, os dados são eliminados como descrito em «Durante quanto tempo». Estas ações ficam registadas no registo de auditoria.',
       'Fornecedor de IA: a OpenAI, nos Estados Unidos. Para gerar as respostas da assistente e os resumos para a equipa de enfermagem, partes das tuas conversas são enviadas à OpenAI. Antes do envio, retiramos o teu nome e o teu email. Isto é uma transferência de dados para fora da União Europeia.',
       'A pergunta anónima não fica guardada: quando sais, é apagada. As mensagens passam pela OpenAI para gerar a resposta.',
     ],
