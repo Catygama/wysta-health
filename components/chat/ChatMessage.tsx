@@ -75,6 +75,7 @@ export function ChatMessage({
           <Pressable
             onPress={() => Linking.openURL(attachmentUrl as string)}
             style={({ pressed }) => [styles.fileRow, pressed && styles.pressed]}
+            accessibilityRole="link"
             accessibilityLabel={`Abrir ${fileLabel ?? 'ficheiro'}`}
           >
             <View style={styles.fileIcon}>

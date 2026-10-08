@@ -86,7 +86,7 @@ function Header({
   return (
     <View style={styles.header}>
       <View style={[styles.headerInner, { maxWidth }]}>
-        <Pressable onPress={() => router.push(brandHref as any)} style={styles.brand} accessibilityLabel="Wysta">
+        <Pressable onPress={() => router.push(brandHref as any)} style={styles.brand} accessibilityRole="link" accessibilityLabel="Wysta">
           <Brand />
         </Pressable>
 
@@ -108,6 +108,7 @@ function Header({
             onPress={() => setMode(NEXT_MODE[mode])}
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
+            accessibilityRole="button"
             accessibilityLabel={MODE_LABEL[mode]}
           >
             <Icon name={MODE_ICON[mode]} size={18} color={theme.colors.textSecondary} />
@@ -116,6 +117,7 @@ function Header({
             onPress={() => signOut()}
             hitSlop={8}
             style={({ pressed }) => [styles.signOut, pressed && styles.dim]}
+            accessibilityRole="button"
             accessibilityLabel="Terminar sessão"
           >
             <Icon
@@ -135,7 +137,7 @@ function MobileBrandBar({ brandHref }: { brandHref: string }) {
   const router = useRouter();
   return (
     <View style={styles.mobileBar}>
-      <Pressable onPress={() => router.push(brandHref as any)} style={styles.brand} accessibilityLabel="Wysta">
+      <Pressable onPress={() => router.push(brandHref as any)} style={styles.brand} accessibilityRole="link" accessibilityLabel="Wysta">
         <Brand />
       </Pressable>
     </View>
@@ -156,6 +158,7 @@ function BottomNav({ items }: { items: NavItem[] }) {
             key={item.href}
             onPress={() => router.push(item.href as any)}
             style={styles.bottomTab}
+            accessibilityRole="link"
             accessibilityLabel={item.label}
           >
             {item.icon && <Icon name={item.icon} size={22} color={color} />}

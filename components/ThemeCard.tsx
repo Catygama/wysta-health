@@ -34,7 +34,7 @@ export function ThemeCard() {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Tema</Text>
-      <View style={styles.row}>
+      <View style={styles.row} accessibilityRole="radiogroup" aria-label="Tema">
         {THEME_OPTIONS.map((opt) => {
           const active = mode === opt.value;
           const color = active ? theme.colors.onInk : theme.colors.textPrimary;
@@ -42,8 +42,9 @@ export function ThemeCard() {
             <Pressable
               key={opt.value}
               testID={`theme-mode-${opt.value}`}
-              accessibilityRole="button"
+              accessibilityRole="radio"
               accessibilityState={{ selected: active }}
+              aria-checked={active}
               onPress={() => setMode(opt.value)}
               style={({ pressed }) => [styles.option, active ? styles.on : styles.off, pressed && styles.pressed]}
             >

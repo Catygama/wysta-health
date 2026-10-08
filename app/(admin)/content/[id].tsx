@@ -167,6 +167,7 @@ export default function AdminArticleEditor() {
             testID={`content-mode-${m}`}
             accessibilityRole="tab"
             accessibilityState={{ selected: mode === m }}
+            aria-selected={mode === m}
             onPress={() => setMode(m)}
             style={[styles.segmentItem, mode === m && styles.segmentItemOn]}
           >

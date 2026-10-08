@@ -272,15 +272,16 @@ export default function Triage() {
         </Text>
 
         {current.type === 'yes-no' && (
-          <View style={styles.yesNoRow}>
+          <View style={styles.yesNoRow} accessibilityRole="radiogroup" aria-label={current.question}>
             {(['yes', 'no'] as const).map((opt) => {
               const selected = answers[current.id] === opt;
               return (
                 <Pressable
                   key={opt}
                   testID={`triage-option-${opt}`}
-                  accessibilityRole="button"
+                  accessibilityRole="radio"
                   accessibilityState={{ selected }}
+                  aria-checked={selected}
                   onPress={() => handleAnswer(opt)}
                   style={[styles.yesNo, selected ? styles.optOn : styles.optOff]}
                 >
@@ -294,15 +295,16 @@ export default function Triage() {
         )}
 
         {current.type === 'multiple-choice' && current.options && (
-          <View style={styles.optionList}>
+          <View style={styles.optionList} accessibilityRole="radiogroup" aria-label={current.question}>
             {current.options.map((opt, idx) => {
               const selected = answers[current.id] === opt;
               return (
                 <Pressable
                   key={opt}
                   testID={`triage-option-${idx}`}
-                  accessibilityRole="button"
+                  accessibilityRole="radio"
                   accessibilityState={{ selected }}
+                  aria-checked={selected}
                   onPress={() => handleAnswer(opt)}
                   style={[styles.option, selected ? styles.optOn : styles.optOff]}
                 >
@@ -317,7 +319,7 @@ export default function Triage() {
 
         {current.type === 'scale' && current.options && (
           <View style={styles.scaleWrap}>
-            <View style={styles.scaleRow}>
+            <View style={styles.scaleRow} accessibilityRole="radiogroup" aria-label={current.question}>
               {current.options.map((opt) => {
                 const value = Number(opt);
                 const selected = answers[current.id] === value;
@@ -325,9 +327,10 @@ export default function Triage() {
                   <Pressable
                     key={opt}
                     testID={`triage-scale-${opt}`}
-                    accessibilityRole="button"
+                    accessibilityRole="radio"
                     accessibilityLabel={`${opt} de ${current.options!.length}`}
                     accessibilityState={{ selected }}
+                    aria-checked={selected}
                     onPress={() => handleAnswer(value)}
                     style={[styles.scaleCell, selected ? styles.optOn : styles.optOff]}
                   >

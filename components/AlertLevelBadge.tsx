@@ -21,6 +21,7 @@ export function AlertLevelBadge({ level, testID }: { level: AlertLevel; testID?:
     <View
       testID={testID}
       accessible
+      accessibilityRole="image"
       accessibilityLabel={`Nível de triagem: ${ALERT_LABELS[level]}`}
       style={styles.badge}
     >

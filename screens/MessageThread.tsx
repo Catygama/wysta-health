@@ -418,6 +418,7 @@ export function MessageThread({
                 <>
                   <Pressable
                     testID="message-attach-image"
+                    accessibilityRole="button"
                     onPress={handlePickImage}
                     disabled={uploading || sending}
                     style={({ pressed }) => [
@@ -435,6 +436,7 @@ export function MessageThread({
                   </Pressable>
                   <Pressable
                     testID="message-attach-document"
+                    accessibilityRole="button"
                     onPress={handlePickDocument}
                     disabled={uploading || sending}
                     style={({ pressed }) => [
@@ -472,6 +474,7 @@ export function MessageThread({
               />
               <Pressable
                 testID={isInternalScope ? 'message-send-internal' : 'message-send'}
+                accessibilityRole="button"
                 onPress={handleSend}
                 disabled={!canSubmit}
                 style={[styles.sendBtn, canSubmit ? styles.sendBtnActive : styles.sendBtnIdle]}
@@ -560,7 +563,6 @@ export function AiResponseMessage({
           testID="ai-response-preparing"
           style={styles.aiPreparing}
           accessibilityLiveRegion="polite"
-          accessibilityLabel="A preparar a resposta"
         >
           <ActivityIndicator size="small" color={styles.aiLabel.color} />
           <Text style={styles.aiCursor}>A preparar a resposta…</Text>
