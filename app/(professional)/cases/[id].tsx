@@ -9,6 +9,7 @@ import {
   TextInput,
   Switch,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useAction } from 'convex/react';
@@ -30,6 +31,7 @@ import { useTabBar } from '@/contexts/TabBarContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { AlertLevel } from '@/convex/lib/alerts';
 import { errorText } from '@/lib/errorText';
+import { headerItems } from '@/hooks/useHeaderOptions';
 
 // What the options panel shows: the menu, or one of the views it opens.
 type PanelView = 'menu' | 'internal' | 'summary' | 'triage';
@@ -183,9 +185,10 @@ export default function ProfessionalConversation() {
               </Text>
             </View>
           ),
-          headerRight: wide
-            ? undefined
-            : () => (
+          ...headerItems({
+            right: wide
+              ? undefined
+              : () => (
                 <Pressable
                   testID="case-options-open"
                   accessibilityRole="button"
@@ -201,6 +204,7 @@ export default function ProfessionalConversation() {
                   />
                 </Pressable>
               ),
+          }),
         }}
       />
 
@@ -753,7 +757,24 @@ const styles = StyleSheet.create((theme) => ({
   main: { flex: 1 },
   headerName: { fontFamily: fonts.displayBold, fontSize: 17, color: theme.colors.textPrimary },
   headerSub: { fontSize: 12, color: theme.colors.textSecondary },
-  headerBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.xs },
+  headerBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.xs,
+    // iOS: the system glass behind header items is hidden (headerItems), so
+    // the button carries its own themed circle.
+    ...(Platform.OS === 'ios'
+      ? {
+          marginRight: 0,
+          borderRadius: 22,
+          backgroundColor: theme.colors.surface,
+          borderWidth: 1,
+          borderColor: theme.colors.divider,
+        }
+      : {}),
+  },
   dim: { opacity: 0.7 },
   threadHeader: { gap: theme.spacing.sm, marginBottom: theme.spacing.xs },
   // Above the composer

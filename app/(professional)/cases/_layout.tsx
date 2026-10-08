@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useStackHeaderOptions } from '@/hooks/useHeaderOptions';
+import { headerItems, useStackHeaderOptions } from '@/hooks/useHeaderOptions';
 import { HeaderBack } from '@/components/ui/HeaderBack';
 
 export default function ConversationsLayout() {
@@ -11,7 +11,7 @@ export default function ConversationsLayout() {
           title: 'Conversa',
           // Always our own back button: opened from the Fila or Conversas (other
           // stacks) the stack shows none. Goes back, else to the Fila.
-          headerLeft: () => <HeaderBack fallback="/(professional)/queue" />,
+          ...headerItems({ left: () => <HeaderBack fallback="/(professional)/queue" /> }),
         }}
       />
     </Stack>

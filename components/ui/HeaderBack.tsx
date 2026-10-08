@@ -1,4 +1,4 @@
-import { Pressable } from 'react-native';
+import { Platform, Pressable } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Icon } from '@/components/ui/Icon';
@@ -32,7 +32,22 @@ export function HeaderBack({ fallback, to, home }: { fallback?: Href; to?: Href;
   );
 }
 
-const styles = StyleSheet.create(() => ({
-  button: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 },
+const styles = StyleSheet.create((theme) => ({
+  button: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 44,
+    // iOS: the system glass behind header items is hidden (headerItems in
+    // hooks/useHeaderOptions), so the button carries its own themed circle.
+    ...(Platform.OS === 'ios'
+      ? {
+          borderRadius: 22,
+          backgroundColor: theme.colors.surface,
+          borderWidth: 1,
+          borderColor: theme.colors.divider,
+        }
+      : {}),
+  },
   pressed: { opacity: 0.6 },
 }));

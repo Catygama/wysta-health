@@ -10,6 +10,7 @@ import { useTabBar } from '@/contexts/TabBarContext';
 import { TOPICS } from '@/constants/topics';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { errorText } from '@/lib/errorText';
+import { headerItems } from '@/hooks/useHeaderOptions';
 
 export default function PatientConversation() {
   const { id, waiting } = useLocalSearchParams<{ id: string; waiting?: string }>();
@@ -62,15 +63,17 @@ export default function PatientConversation() {
         options={{
           title: topic?.label ?? 'Conversa',
           ...WEB_HEADER_FIT,
-          headerRight:
-            conversation && !closed
-              ? () => (
-                  <View style={styles.headerActions}>
-                    <SwitchButton toAi={!isAiOnly} busy={switching} onPress={onSwitch} />
-                    <EndButton onPress={() => setConfirmEnd(true)} />
-                  </View>
-                )
-              : undefined,
+          ...headerItems({
+            right:
+              conversation && !closed
+                ? () => (
+                    <View style={styles.headerActions}>
+                      <SwitchButton toAi={!isAiOnly} busy={switching} onPress={onSwitch} />
+                      <EndButton onPress={() => setConfirmEnd(true)} />
+                    </View>
+                  )
+                : undefined,
+          }),
         }}
       />
       {isAiOnly && !closed && <AiOnlyBanner />}
@@ -276,6 +279,18 @@ const styles = StyleSheet.create((theme) => ({
     marginRight: theme.spacing.sm,
     // Keeps the buttons off long titles like "Bem-estar sexual".
     marginLeft: theme.spacing.md,
+    // iOS: the system glass behind header items is hidden (headerItems), so
+    // the group sits on its own themed pill.
+    ...(Platform.OS === 'ios'
+      ? {
+          marginRight: 0,
+          padding: 4,
+          borderRadius: theme.radius.pill,
+          backgroundColor: theme.colors.surface,
+          borderWidth: 1,
+          borderColor: theme.colors.divider,
+        }
+      : {}),
   },
   endBtn: {
     paddingHorizontal: theme.spacing.sm,

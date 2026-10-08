@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useStackHeaderOptions } from '@/hooks/useHeaderOptions';
+import { headerItems, useStackHeaderOptions } from '@/hooks/useHeaderOptions';
 import { HeaderBack } from '@/components/ui/HeaderBack';
 
 // Keeps the list beneath a conversation opened straight from triage (via
@@ -17,7 +17,7 @@ export default function ConversationsLayout() {
           title: 'Conversa',
           // Always our own back button: on web the stack's default one doesn't
           // show when the chat is opened from Home or straight after triage.
-          headerLeft: () => <HeaderBack to="/(patient)/conversations" />,
+          ...headerItems({ left: () => <HeaderBack to="/(patient)/conversations" /> }),
         }}
       />
     </Stack>
