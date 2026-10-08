@@ -30,6 +30,7 @@ import type * as auth from "../auth.js";
 import type * as conversations from "../conversations.js";
 import type * as education from "../education.js";
 import type * as http from "../http.js";
+import type * as lib_accounts from "../lib/accounts.js";
 import type * as lib_aiSafetyMessages from "../lib/aiSafetyMessages.js";
 import type * as lib_alerts from "../lib/alerts.js";
 import type * as lib_attachments from "../lib/attachments.js";
@@ -82,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   conversations: typeof conversations;
   education: typeof education;
   http: typeof http;
+  "lib/accounts": typeof lib_accounts;
   "lib/aiSafetyMessages": typeof lib_aiSafetyMessages;
   "lib/alerts": typeof lib_alerts;
   "lib/attachments": typeof lib_attachments;
