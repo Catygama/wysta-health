@@ -537,7 +537,8 @@ function SystemMessage({ content }: { content: string }) {
 }
 
 // Signature appended to AI answers until it was dropped; hidden on old messages.
-const OLD_AI_SIGNATURE = /\s*— Assistente (?:AI|IA)\. Esta resposta é informativa, não substitui consulta clínica\.?\s*$/;
+// AI answers once ended with a fixed signature; it is no longer shown.
+export const OLD_AI_SIGNATURE = /\s*— Assistente (?:AI|IA)\. Esta resposta é informativa, não substitui consulta clínica\.?\s*$/;
 
 // AI answer bubble. Also used by the anonymous chat (app/anonymous.tsx).
 export function AiResponseMessage({

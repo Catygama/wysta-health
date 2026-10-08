@@ -4,6 +4,8 @@ import { useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
+import { BoldText } from '@/components/ui/BoldText';
+import { OLD_AI_SIGNATURE } from '@/screens/MessageThread';
 
 // Professional side: the patient's chats with the AI assistant linked to this
 // case, shown collapsed at the top of the chat. Read-only; the backend only
@@ -65,7 +67,11 @@ function AiChat({ chat }: { chat: Chat }) {
           {chat.messages.map((m) => (
             <View key={m._id} style={[styles.bubble, m.fromPatient ? styles.patient : styles.ai]}>
               <Text style={styles.who}>{m.fromPatient ? 'Utente' : 'Assistente IA'}</Text>
-              <Text style={styles.text}>{m.content}</Text>
+              {m.fromPatient ? (
+                <Text style={styles.text}>{m.content}</Text>
+              ) : (
+                <BoldText style={styles.text}>{m.content.replace(OLD_AI_SIGNATURE, '')}</BoldText>
+              )}
             </View>
           ))}
         </View>

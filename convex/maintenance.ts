@@ -130,7 +130,8 @@ export const useIaWording = internalMutation({
     const page = await ctx.db.query('messages').paginate({ numItems: 500, cursor: cursor ?? null });
     let messages = 0;
     for (const m of page.page) {
-      if (m.messageType !== 'system') continue;
+      // System lines and the assistant's own answers (users' messages stay as written).
+      if (m.messageType !== 'system' && m.messageType !== 'ai-response') continue;
       const content = toIa(m.content);
       if (content === m.content) continue;
       await ctx.db.patch(m._id, { content });
