@@ -73,14 +73,9 @@ export const send = mutation({
   args: {
     conversationId: v.id('conversations'),
     content: v.string(),
+    // System and triage messages are written server-side only.
     messageType: v.optional(
-      v.union(
-        v.literal('text'),
-        v.literal('image'),
-        v.literal('file'),
-        v.literal('system'),
-        v.literal('triage-response')
-      )
+      v.union(v.literal('text'), v.literal('image'), v.literal('file'))
     ),
     imageId: v.optional(v.id('_storage')),
     attachmentId: v.optional(v.id('_storage')),
