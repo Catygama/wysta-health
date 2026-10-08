@@ -13,7 +13,7 @@ import {
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/convex/_generated/api';
 import { MessageThread } from '@/screens/MessageThread';
 import { AiContextBlock } from '@/screens/AiContextBlock';
@@ -220,23 +220,27 @@ export default function ProfessionalConversation() {
 
       {!wide && (
         <Modal visible={drawerOpen} transparent animationType="fade" onRequestClose={() => setDrawerOpen(false)}>
-          <View style={styles.drawerWrap}>
-            <Pressable
-              style={styles.drawerShade}
-              accessibilityRole="button"
-              accessibilityLabel="Fechar opções"
-              onPress={() => setDrawerOpen(false)}
-            />
-            {/* SafeAreaView measures where it sits, so the panel clears the status
-                bar and home indicator inside the modal. Inline style: Unistyles
-                styles are partly dropped on third-party components. */}
-            <SafeAreaView
-              edges={['top', 'bottom']}
-              style={{ width: '85%', maxWidth: 380, backgroundColor: theme.colors.background }}
-            >
-              {panel}
-            </SafeAreaView>
-          </View>
+          {/* A modal is its own native window on iOS: it needs its own provider
+              for SafeAreaView to know the status bar and home indicator. */}
+          <SafeAreaProvider>
+            <View style={styles.drawerWrap}>
+              <Pressable
+                style={styles.drawerShade}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar opções"
+                onPress={() => setDrawerOpen(false)}
+              />
+              {/* SafeAreaView measures where it sits, so the panel clears the status
+                  bar and home indicator inside the modal. Inline style: Unistyles
+                  styles are partly dropped on third-party components. */}
+              <SafeAreaView
+                edges={['top', 'bottom']}
+                style={{ width: '85%', maxWidth: 380, backgroundColor: theme.colors.background }}
+              >
+                {panel}
+              </SafeAreaView>
+            </View>
+          </SafeAreaProvider>
         </Modal>
       )}
 
