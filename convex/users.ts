@@ -195,6 +195,8 @@ export const setRole = mutation({
       .withIndex('by_user', (q) => q.eq('userId', callerId))
       .unique();
     if (callerProfile?.role !== 'admin') throw userError(ADMIN_ONLY);
+    // Another admin has to change it: an admin can't demote or lock themselves out.
+    if (args.targetUserId === callerId) throw userError('Não podes alterar o teu próprio role.');
     const targetProfile = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.targetUserId))

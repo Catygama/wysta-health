@@ -44,6 +44,7 @@ function nameOf(u: { displayName?: string; role: string; user?: { email?: string
 
 export default function AdminPanel() {
   const users = useQuery(api.users.listUsers);
+  const me = useQuery(api.users.currentUser);
   const setRole = useMutation(api.users.setRole);
   const [search, setSearch] = useState('');
   // The user whose card was tapped: the dialog to change their role.
@@ -173,6 +174,8 @@ export default function AdminPanel() {
         const dark = theme.name === 'dark';
         const roleColor = (dark ? ROLE_COLORS_DARK : ROLE_COLORS)[item.role] ?? theme.colors.textSecondary;
         const name = nameOf(item);
+        // Your own role is changed by another admin, not here.
+        const isMe = item.userId === me?._id;
         const meta = [name !== item.user?.email ? item.user?.email : null, item.ageRange, item.location]
           .filter(Boolean)
           .join(' • ');
@@ -180,7 +183,12 @@ export default function AdminPanel() {
           <Pressable
             testID={`admin-user-row-${item.user?.email ?? item.userId}`}
             accessibilityRole="button"
-            accessibilityLabel={`${name}, ${ROLE_LABELS[item.role] ?? item.role}. Alterar role`}
+            accessibilityLabel={
+              isMe
+                ? `${name} (tu), ${ROLE_LABELS[item.role] ?? item.role}`
+                : `${name}, ${ROLE_LABELS[item.role] ?? item.role}. Alterar role`
+            }
+            disabled={isMe}
             onPress={() =>
               setEditing({
                 userId: item.userId,
@@ -195,6 +203,7 @@ export default function AdminPanel() {
             <View style={styles.userTop}>
               <Text style={styles.userEmail} numberOfLines={1}>
                 {name}
+                {isMe ? <Text style={styles.userMe}> (tu)</Text> : null}
               </Text>
               <View style={[styles.roleBadge, { backgroundColor: roleColor + (dark ? '29' : '20') }]}>
                 <Text style={[styles.roleBadgeText, { color: roleColor }]}>
@@ -328,6 +337,7 @@ const styles = StyleSheet.create((theme) => ({
   roleBadgeText: { fontSize: 12, fontWeight: '500' },
   userMeta: { fontSize: 12, color: theme.colors.textSecondary },
   userRowPressed: { opacity: 0.7 },
+  userMe: { fontWeight: '400', color: theme.colors.textSecondary },
   roleOptions: { gap: theme.spacing.xs },
   roleOptionsLabel: { fontSize: 14, fontWeight: '500', color: theme.colors.textSecondary },
   roleOption: {

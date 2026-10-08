@@ -94,15 +94,16 @@ describe('a new account cannot give itself professional or admin access', () => 
     await expect(as(patientId).mutation(api.users.bootstrapAdmin, {})).rejects.toThrow('Já existe um administrador.');
   });
 
-  it('the last admin cannot be removed, which would reopen bootstrapAdmin', async () => {
+  it('an admin cannot change their own role; another admin can', async () => {
     const { t, as, adminId, patientId } = await setup();
     const admin = as(adminId!);
     await expect(admin.mutation(api.users.setRole, { targetUserId: adminId!, role: 'patient' })).rejects.toThrow(
-      'Não é possível remover o último administrador.',
+      'Não podes alterar o teu próprio role.',
     );
-    // With a second admin, demoting one is fine.
+    expect((await profileOf(t, adminId!))?.role).toBe('admin');
+    // A second admin can demote the first one.
     await admin.mutation(api.users.setRole, { targetUserId: patientId, role: 'admin' });
-    await admin.mutation(api.users.setRole, { targetUserId: adminId!, role: 'patient' });
+    await as(patientId).mutation(api.users.setRole, { targetUserId: adminId!, role: 'patient' });
     expect((await profileOf(t, adminId!))?.role).toBe('patient');
   });
 
