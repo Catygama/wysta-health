@@ -71,9 +71,13 @@ test.describe('Accessibility (axe, WCAG 2.1 AA)', () => {
     await audit(page, 'education');
   });
 
-  test('professional: queue and case', async ({ page }) => {
+  test('professional: queue and case', async ({ page }, testInfo) => {
+    // Own patient: shared test patients would get an open conversation that
+    // makes other specs skip the triage.
+    const email = `a11y-case-${testInfo.project.name}-${Date.now()}@e2e.local`;
+    await seedUser({ email, password: 'e2e-test-pw', role: 'patient', profile: { displayName: 'A11y' } });
     const { conversationId } = await seedConversation({
-      patientEmail: TEST_USERS.patientA.email,
+      patientEmail: email,
       professionalEmail: TEST_USERS.professionalA.email,
       topic: 'pregnancy',
       title: 'A11y caso',
@@ -83,7 +87,7 @@ test.describe('Accessibility (axe, WCAG 2.1 AA)', () => {
     // One request per priority, so every chip colour is checked.
     for (const priority of ['urgent', 'high', 'medium', 'low'] as const) {
       await seedConversation({
-        patientEmail: TEST_USERS.patientB.email,
+        patientEmail: email,
         topic: 'general',
         title: `A11y fila ${priority}`,
         priority,

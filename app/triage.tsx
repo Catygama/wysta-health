@@ -13,7 +13,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { TriageAlert } from '@/screens/TriageAlert';
+import { UrgencyAlert } from '@/screens/UrgencyAlert';
 import { resolveAlert, type ResolvedAlert } from '@/constants/triageAlerts';
 import { isAlertAnswer, moreSevere, showsAlert, type AlertLevel, type QuestionAlert } from '@/convex/lib/alerts';
 import { TOPICS, type TopicId } from '@/constants/topics';
@@ -263,7 +263,25 @@ export default function Triage() {
         </View>
       </View>
 
-      {activeAlert && <TriageAlert alert={activeAlert} onDismiss={dismissAlert} />}
+      {activeAlert && (
+        // Same design as the original urgency alert; the level sets the title,
+        // the message and the numbers to call (constants/triageAlerts.ts).
+        <UrgencyAlert
+          testIDPrefix="triage-alert"
+          title={activeAlert.label}
+          message={activeAlert.message}
+          calls={
+            activeAlert.level === 'emergency'
+              ? ['112']
+              : activeAlert.level === 'urgent'
+                ? ['sns24', '112']
+                : []
+          }
+          snsAccessibilityLabel={activeAlert.call?.a11yLabel}
+          dismissLabel={activeAlert.level === 'time-sensitive' ? 'Continuar' : undefined}
+          onDismiss={dismissAlert}
+        />
+      )}
 
       <View style={styles.card}>
         <Text style={styles.question}>
