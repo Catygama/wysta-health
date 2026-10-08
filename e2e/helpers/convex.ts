@@ -77,3 +77,11 @@ export async function listMessages(conversationId: string) {
     conversationId: conversationId as any,
   });
 }
+
+export async function listConsents(email: string) {
+  return convexClient.query(api.testing.listConsents, { email });
+}
+
+export async function latestConsent() {
+  return convexClient.query(api.testing.latestConsent, {});
+}

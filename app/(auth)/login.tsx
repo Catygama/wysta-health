@@ -13,14 +13,18 @@ import { guestAuthEnabled } from '@/lib/env';
 import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
 import { errorText } from '@/lib/errorText';
+import { ConsentCheckbox } from '@/components/ConsentCheckbox';
+import { useConsentAfterSignIn } from '@/hooks/useConsentAfterSignIn';
 
 export default function Login() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
+  const consent = useConsentAfterSignIn();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [guestConsent, setGuestConsent] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -38,8 +42,11 @@ export default function Login() {
 
   async function handleGuest() {
     setError('');
+    if (!guestConsent) return;
     setGuestLoading(true);
     try {
+      // Set before signing in: the session can become active before signIn() resolves.
+      consent.markPending('sem-conta');
       await signIn('anonymous');
     } catch (e: any) {
       setError(errorText(e, 'Não foi possível entrar sem conta. Tenta de novo.'));
@@ -51,7 +58,7 @@ export default function Login() {
 
   // Navigate once the session is actually active: redirecting right after
   // signIn() resolves races the auth state and bounces back to login.
-  if (isAuthenticated) return <Redirect href="/" />;
+  if (isAuthenticated && consent.ready) return <Redirect href="/" />;
   return (
     <ScrollView
       style={styles.screen}
@@ -102,6 +109,8 @@ export default function Login() {
       {guestAuthEnabled && (
         <View style={styles.guest}>
           <Divider label="ou" />
+          {/* Entering without an account also needs the age and privacy consent. */}
+          <ConsentCheckbox testID="auth-guest-consent-checkbox" checked={guestConsent} onChange={setGuestConsent} />
           <Button
             testID="auth-guest-button"
             strongBorder
@@ -109,6 +118,7 @@ export default function Login() {
             variant="secondary"
             onPress={handleGuest}
             loading={guestLoading}
+            disabled={!guestConsent}
           />
         </View>
       )}

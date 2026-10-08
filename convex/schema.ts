@@ -234,6 +234,15 @@ export default defineSchema({
     .index('by_topic', ['topic'])
     .index('by_published', ['isPublished']),
 
+  // Demonstrable consent (GDPR art. 7(1)): when and which version of the
+  // privacy policy each person accepted, and how they entered.
+  privacyConsents: defineTable({
+    userId: v.id('users'),
+    policyVersion: v.string(),
+    acceptedAt: v.number(),
+    method: v.union(v.literal('registo'), v.literal('sem-conta')),
+  }).index('by_user', ['userId']),
+
   wellbeingCheckins: defineTable({
     userId: v.id('users'),
     desire: v.number(), // 1–5

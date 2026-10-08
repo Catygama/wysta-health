@@ -5,6 +5,7 @@ import { v } from 'convex/values';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import type { Id } from './_generated/dataModel';
 import { userError, NOT_AUTHENTICATED } from './lib/errors';
+import { PRIVACY_POLICY_VERSION } from './lib/privacyVersion';
 
 const MAX_CONVERSATIONS = 500;
 const MAX_MESSAGES_PER_CONVERSATION = 2000;
@@ -21,6 +22,22 @@ async function patientOrThrow(ctx: QueryCtx | MutationCtx) {
   }
   return { userId, profile };
 }
+
+// Records that the signed-in person accepted the current privacy policy, at
+// sign-up or when entering without an account. The version must be the one
+// the app is showing (a stale app is asked to reload).
+export const recordConsent = mutation({
+  args: { policyVersion: v.string(), method: v.union(v.literal('registo'), v.literal('sem-conta')) },
+  handler: async (ctx, { policyVersion, method }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
+    if (policyVersion !== PRIVACY_POLICY_VERSION) {
+      throw userError('A política de privacidade foi atualizada. Recarrega a página e volta a confirmar.');
+    }
+    await ctx.db.insert('privacyConsents', { userId, policyVersion, acceptedAt: Date.now(), method });
+    return null;
+  },
+});
 
 // Everything about the patient, as plain JSON (GDPR art. 15). What she sees in
 // the app, plus, in a separate section, the internal notes written by the
@@ -103,8 +120,17 @@ export const exportMyData = query({
       .query('wellbeingCheckins')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .take(1000);
+    const consents = await ctx.db
+      .query('privacyConsents')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .take(100);
     return {
       exportadoEm: new Date().toISOString(),
+      consentimentos: consents.map((c) => ({
+        versaoDaPolitica: c.policyVersion,
+        aceiteEm: new Date(c.acceptedAt).toISOString(),
+        forma: c.method === 'registo' ? 'registo' : 'entrada sem conta',
+      })),
       conta: { email: user?.email ?? null, criadaEm: user ? new Date(user._creationTime).toISOString() : null },
       perfil: profile
         ? {
@@ -187,6 +213,12 @@ export const deleteMyAccount = mutation({
       .query('wellbeingCheckins')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .take(1000)) {
+      await ctx.db.delete(c._id);
+    }
+    for (const c of await ctx.db
+      .query('privacyConsents')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .take(100)) {
       await ctx.db.delete(c._id);
     }
     if (profile) await ctx.db.delete(profile._id);

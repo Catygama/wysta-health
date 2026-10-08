@@ -4,6 +4,7 @@ import { convexTest } from 'convex-test';
 import schema from './schema';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
+import { PRIVACY_POLICY_VERSION } from './lib/privacyVersion';
 
 const modules = import.meta.glob('./**/*.ts');
 
@@ -112,5 +113,29 @@ describe('C2: delete my account', () => {
   it('needs the explicit confirmation word', async () => {
     const { patient } = await setup();
     await expect(patient.mutation(api.privacy.deleteMyAccount, { confirmation: 'sim' } as any)).rejects.toThrow();
+  });
+});
+
+describe('2.3: demonstrable consent', () => {
+  it('records the accepted version and date, exports it and erases it with the account', async () => {
+    const { t, patient, patientId } = await setup();
+    await expect(
+      patient.mutation(api.privacy.recordConsent, { policyVersion: 'versao-antiga', method: 'registo' }),
+    ).rejects.toThrow('Recarrega');
+    await patient.mutation(api.privacy.recordConsent, { policyVersion: PRIVACY_POLICY_VERSION, method: 'sem-conta' });
+    const data = await patient.query(api.privacy.exportMyData, {});
+    expect(data.consentimentos).toEqual([
+      expect.objectContaining({ versaoDaPolitica: PRIVACY_POLICY_VERSION, forma: 'entrada sem conta' }),
+    ]);
+    await patient.mutation(api.privacy.deleteMyAccount, { confirmation: 'APAGAR' });
+    const left = await t.run((ctx) => ctx.db.query('privacyConsents').collect());
+    expect(left.filter((c) => c.userId === patientId)).toEqual([]);
+  });
+
+  it('needs a session', async () => {
+    const { t } = await setup();
+    await expect(
+      t.mutation(api.privacy.recordConsent, { policyVersion: PRIVACY_POLICY_VERSION, method: 'registo' }),
+    ).rejects.toThrow('sessão');
   });
 });

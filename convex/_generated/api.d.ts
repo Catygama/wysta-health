@@ -35,6 +35,7 @@ import type * as lib_attachments from "../lib/attachments.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_authProbe from "../lib/authProbe.js";
 import type * as lib_errors from "../lib/errors.js";
+import type * as lib_privacyVersion from "../lib/privacyVersion.js";
 import type * as lib_professional from "../lib/professional.js";
 import type * as lib_readingTime from "../lib/readingTime.js";
 import type * as lib_risk from "../lib/risk.js";
@@ -85,6 +86,7 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/authProbe": typeof lib_authProbe;
   "lib/errors": typeof lib_errors;
+  "lib/privacyVersion": typeof lib_privacyVersion;
   "lib/professional": typeof lib_professional;
   "lib/readingTime": typeof lib_readingTime;
   "lib/risk": typeof lib_risk;
