@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { gotoApp, loginAs } from '../../helpers/auth';
-import { TEST_USERS, seedConversation } from '../../helpers/convex';
+import { TEST_USERS, seedConversation, seedUser } from '../../helpers/convex';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 // Serious and critical violations fail the suite.
@@ -37,15 +37,18 @@ test.describe('Accessibility (axe, WCAG 2.1 AA)', () => {
     await audit(page, 'login');
   });
 
-  test('patient: home, triage, conversation, profile and education', async ({ page }) => {
+  test('patient: home, triage, conversation, profile and education', async ({ page }, testInfo) => {
+    // A patient of its own: other specs leave open conversations that skip triage.
+    const email = `a11y-axe-${testInfo.project.name}-${Date.now()}@e2e.local`;
+    await seedUser({ email, password: 'e2e-test-pw', role: 'patient', profile: { displayName: 'A11y' } });
     const { conversationId } = await seedConversation({
-      patientEmail: TEST_USERS.patientB.email,
+      patientEmail: email,
       topic: 'contraception',
       title: 'A11y',
       status: 'waiting',
       initialMessage: 'Olá, tenho uma dúvida.',
     });
-    await loginAs(page, TEST_USERS.patientB.email);
+    await loginAs(page, email);
     await audit(page, 'patient-home');
 
     await page.goto('/triage?topic=pregnancy&mode=professional');

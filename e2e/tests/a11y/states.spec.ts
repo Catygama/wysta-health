@@ -1,11 +1,14 @@
 import { test, expect } from '@playwright/test';
 import { loginAs } from '../../helpers/auth';
-import { TEST_USERS } from '../../helpers/convex';
+import { TEST_USERS, seedUser } from '../../helpers/convex';
 
 // Screen readers on the web get the selection state (WCAG 4.1.2), not only
 // the colour: aria-checked on options, aria-expanded on menus.
-test('selection state reaches assistive technology', async ({ page }) => {
-  await loginAs(page, TEST_USERS.patientB.email);
+test('selection state reaches assistive technology', async ({ page }, testInfo) => {
+  // A patient of its own: other specs leave open conversations that skip triage.
+  const email = `a11y-states-${testInfo.project.name}-${Date.now()}@e2e.local`;
+  await seedUser({ email, password: 'e2e-test-pw', role: 'patient', profile: { displayName: 'A11y' } });
+  await loginAs(page, email);
 
   // Triage: options are radios in a group named by the question.
   await page.goto('/triage?topic=pregnancy&mode=professional');
