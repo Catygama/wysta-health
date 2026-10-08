@@ -1,6 +1,8 @@
 import { internalMutation } from './_generated/server';
 import { v } from 'convex/values';
 import { CHAT_CLOSING_RULE } from './ai/defaults';
+import { toNurseWording } from './lib/nurseWording';
+import type { Doc } from './_generated/dataModel';
 
 // One-off cleanup: before AI chats became read-only context, an escalated or
 // taken-over AI chat was converted in place into a professional conversation
@@ -71,5 +73,43 @@ export const updateChatClosingRule = internalMutation({
       createdBy: current.createdBy,
     });
     return { updated: true };
+  },
+});
+
+// One-off: the app now says "enfermeiro" for the health professional. Inserts
+// a new version (history kept) of every stored prompt that still says
+// "profissional", with the same rewording as the defaults (lib/nurseWording).
+// The context line the chat prompt reads is now "Enfermeiro:", so run this
+// right after deploying.
+// Run: "bunx convex run maintenance:useNurseWording" (add --prod for prod),
+// with '{"dryRun": true}' first to only list what would change.
+export const useNurseWording = internalMutation({
+  args: { dryRun: v.optional(v.boolean()) },
+  handler: async (ctx, { dryRun }) => {
+    // Latest version per purpose + topic (versions are rows; newest wins).
+    const latest = new Map<string, Doc<'aiPrompts'>>();
+    for (const p of await ctx.db.query('aiPrompts').order('desc').take(2000)) {
+      const key = `${p.purpose}/${p.topic ?? ''}`;
+      if (!latest.has(key)) latest.set(key, p);
+    }
+    const updated: string[] = [];
+    for (const [key, p] of latest) {
+      const systemPrompt = toNurseWording(p.systemPrompt);
+      const userTemplate = p.userTemplate === undefined ? undefined : toNurseWording(p.userTemplate);
+      if (systemPrompt === p.systemPrompt && userTemplate === p.userTemplate) continue;
+      updated.push(key);
+      if (dryRun) continue;
+      await ctx.db.insert('aiPrompts', {
+        purpose: p.purpose,
+        topic: p.topic,
+        systemPrompt,
+        userTemplate,
+        temperature: p.temperature,
+        maxTokens: p.maxTokens,
+        notes: '"profissional" passa a "enfermeiro"',
+        createdBy: p.createdBy,
+      });
+    }
+    return { updated, dryRun: !!dryRun };
   },
 });

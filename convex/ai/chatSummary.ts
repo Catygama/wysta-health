@@ -106,7 +106,7 @@ export const generateOnClose = internalAction({
 
       const text = access.messages
         .map((m) =>
-          `${m.senderId === m.patientId ? 'Utente' : 'Profissional'}: ${m.content}`
+          `${m.senderId === m.patientId ? 'Utente' : 'Enfermeiro'}: ${m.content}`
         )
         .join('\n');
 
@@ -164,7 +164,7 @@ function renderConversation(
   messages: Array<{ senderId: string; patientId: string; content: string }>
 ): string {
   const lines = messages.map((m) => {
-    const role = m.senderId === m.patientId ? 'Utente' : 'Profissional';
+    const role = m.senderId === m.patientId ? 'Utente' : 'Enfermeiro';
     return `${role}: ${m.content}`;
   });
   return lines.join('\n');
