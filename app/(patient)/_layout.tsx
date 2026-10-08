@@ -1,5 +1,6 @@
 import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { useUnistyles } from 'react-native-unistyles';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { usePushRegistration } from '@/hooks/usePushRegistration';
 import { TabBarProvider, useTabBar } from '@/contexts/TabBarContext';
@@ -22,8 +23,10 @@ export default function PatientLayout() {
 
 function PatientTabs() {
   const { isTabBarHidden } = useTabBar();
+  const { theme } = useUnistyles();
   return (
-    <NativeTabs hidden={isTabBarHidden}>
+    // Selected tab in the brand colour (iOS defaults to system blue).
+    <NativeTabs hidden={isTabBarHidden} tintColor={theme.colors.inkText}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
         <NativeTabs.Trigger.Label>Início</NativeTabs.Trigger.Label>
