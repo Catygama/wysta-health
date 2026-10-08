@@ -136,6 +136,10 @@ export default defineSchema({
     // patient toggles to from the chat header. Cleared when either side
     // closes or converts.
     counterpartConversationId: v.optional(v.id('conversations')),
+    // Conversation with a nurse only: _creationTime of the last patient message
+    // the AI has already answered after a switch to the assistant
+    // (conversations.switchMode), so the same question is never answered twice.
+    aiAnsweredPendingThrough: v.optional(v.number()),
   })
     .index('by_patient', ['patientId'])
     .index('by_professional', ['professionalId'])

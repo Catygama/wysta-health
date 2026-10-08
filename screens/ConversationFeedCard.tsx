@@ -55,7 +55,9 @@ export function ConversationFeedCard({
               <Text style={styles.time}>{relativeTime(conversation.previewAt)}</Text>
             )}
           </View>
-          {conversation.preview && (
+          {/* Not `preview &&`: an AI reply being prepared has an empty preview,
+              and an empty string can't be a child of a View on web. */}
+          {!!conversation.preview && (
             <Text style={styles.preview} numberOfLines={1}>
               {conversation.preview}
             </Text>
