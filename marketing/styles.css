@@ -260,17 +260,6 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .check-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .check-list li { display: flex; align-items: flex-start; gap: 12px; font-size: 17px; color: var(--text); }
 .check-list .tick { margin-top: 1px; }
-.audience-not {
-  background: var(--surface); border: 1px solid var(--divider); border-radius: 22px;
-  padding: 26px 28px; display: grid; gap: 10px;
-}
-.audience-not h3 { font-size: 21px; color: var(--ink); margin-bottom: 2px; }
-.audience-not p { font-size: 16px; color: var(--text-2); }
-.audience-not strong { color: var(--ink); }
-.audience-not a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
-@media (min-width: 860px) {
-  .audience { grid-template-columns: 1.3fr 1fr; gap: 48px; }
-}
 
 /* Privacy */
 /* Text on the left, the list in a card on the right (stacked on phones). */
