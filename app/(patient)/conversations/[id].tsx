@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -9,6 +9,7 @@ import { MessageThread } from '@/screens/MessageThread';
 import { useTabBar } from '@/contexts/TabBarContext';
 import { TOPICS } from '@/constants/topics';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { errorText } from '@/lib/errorText';
 
 export default function PatientConversation() {
   const { id, waiting } = useLocalSearchParams<{ id: string; waiting?: string }>();
@@ -49,7 +50,7 @@ export default function PatientConversation() {
         params: isAiOnly && !target.created ? { id: target.id, waiting: '1' } : { id: target.id },
       });
     } catch (e: any) {
-      setSwitchError(e?.message ?? 'Não foi possível mudar de conversa.');
+      setSwitchError(errorText(e, 'Não foi possível mudar de conversa.'));
     } finally {
       setSwitching(false);
     }
@@ -60,6 +61,7 @@ export default function PatientConversation() {
       <Stack.Screen
         options={{
           title: topic?.label ?? 'Conversa',
+          ...WEB_HEADER_FIT,
           headerRight:
             conversation && !closed
               ? () => (
@@ -98,6 +100,22 @@ export default function PatientConversation() {
   );
 }
 
+// Web header (react-navigation's JS header): the title keeps its full width and
+// the actions get what's left, so on a phone they spilled over the title and
+// off the right edge. Let the title shrink (it ellipsizes) and keep the actions
+// at their natural size. Native headers lay this out themselves.
+// Below this width the header buttons use short labels (larger phones in
+// landscape and tablets get the full ones).
+const COMPACT_HEADER_WIDTH = 480;
+
+const WEB_HEADER_FIT =
+  Platform.OS === 'web'
+    ? ({
+        headerTitleContainerStyle: { flexShrink: 1 },
+        headerRightContainerStyle: { flexGrow: 1, flexShrink: 0, flexBasis: 'auto' },
+      } as object)
+    : {};
+
 function SwitchButton({
   toAi,
   busy,
@@ -108,12 +126,17 @@ function SwitchButton({
   onPress: () => void;
 }) {
   const { theme } = useUnistyles();
+  // Narrow phones: short label, so the topic title keeps its room.
+  const compact = useWindowDimensions().width < COMPACT_HEADER_WIDTH;
+  const label = toAi ? 'Conversar com IA' : 'Falar com enfermeiro';
   return (
     <Pressable
       testID={toAi ? 'conversation-switch-to-ai' : 'conversation-switch-to-professional'}
       onPress={onPress}
       disabled={busy}
       hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => [styles.cta, (pressed || busy) && styles.ctaBusy]}
     >
       {busy ? (
@@ -125,29 +148,31 @@ function SwitchButton({
           color={theme.colors.onInk}
         />
       )}
-      <Text style={styles.ctaText}>{toAi ? 'Conversar com IA' : 'Falar com profissional'}</Text>
+      <Text style={styles.ctaText}>{compact ? (toAi ? 'IA' : 'Enfermeiro') : label}</Text>
     </Pressable>
   );
 }
 
 function EndButton({ onPress }: { onPress: () => void }) {
   const { theme } = useUnistyles();
-  // Narrow phones: icon only, so the topic title keeps its room.
-  const compact = useWindowDimensions().width < 420;
+  // Narrow phones: icon above a small label, so the topic title keeps its room.
+  const compact = useWindowDimensions().width < COMPACT_HEADER_WIDTH;
   return (
     <Pressable
       testID="conversation-end-button"
+      accessibilityRole="button"
       onPress={onPress}
       hitSlop={8}
       accessibilityLabel="Terminar conversa"
-      style={({ pressed }) => [styles.endBtn, pressed && styles.ctaBusy]}
+      style={({ pressed }) => [styles.endBtn, compact && styles.endBtnCompact, pressed && styles.ctaBusy]}
     >
       <Icon
         name={{ sf: 'xmark.circle', ion: 'close-circle-outline' }}
-        size={compact ? 18 : 14}
+        size={compact ? 16 : 14}
         color={theme.colors.inkText}
       />
-      {!compact && <Text style={styles.endText}>Terminar</Text>}
+      {/* Narrow phones: the word sits under the icon, so it stays visible. */}
+      <Text style={compact ? styles.endTextCompact : styles.endText}>Terminar</Text>
     </Pressable>
   );
 }
@@ -166,7 +191,7 @@ function AiOnlyBanner() {
       <View style={styles.body}>
         <Text style={styles.title}>Conversa com a assistente AI</Text>
         <Text style={styles.sub}>
-          Cada mensagem tua recebe resposta automática. Um profissional de saúde pode ou não
+          Cada mensagem tua recebe resposta automática. Um enfermeiro pode ou não
           ver esta conversa.
         </Text>
       </View>
@@ -180,7 +205,7 @@ function WaitingBanner() {
     <View testID="waiting-professional-banner" style={[styles.banner, styles.waitingBanner]}>
       <Icon name={{ sf: 'clock', ion: 'time-outline' }} size={18} color={theme.colors.inkText} />
       <View style={styles.body}>
-        <Text style={styles.title}>A aguardar resposta do profissional</Text>
+        <Text style={styles.title}>A aguardar resposta do enfermeiro</Text>
         <Text style={styles.sub}>Vais receber uma notificação quando responder.</Text>
       </View>
     </View>
@@ -190,7 +215,12 @@ function WaitingBanner() {
 function ErrorBanner({ text, onDismiss }: { text: string; onDismiss: () => void }) {
   const { theme } = useUnistyles();
   return (
-    <Pressable style={[styles.banner, styles.errorBanner]} onPress={onDismiss}>
+    <Pressable
+      style={[styles.banner, styles.errorBanner]}
+      onPress={onDismiss}
+      accessibilityRole="button"
+      accessibilityHint="Fecha o aviso"
+    >
       <Icon
         name={{ sf: 'exclamationmark.triangle', ion: 'warning-outline' }}
         size={16}
@@ -258,4 +288,12 @@ const styles = StyleSheet.create((theme) => ({
     gap: 4,
   },
   endText: { fontSize: 12, fontWeight: '500', color: theme.colors.inkText },
+  endBtnCompact: {
+    flexDirection: 'column',
+    gap: 0,
+    paddingHorizontal: theme.spacing.xs,
+    paddingVertical: 4,
+    borderRadius: theme.radius.md,
+  },
+  endTextCompact: { fontSize: 10, fontWeight: '500', color: theme.colors.inkText },
 }));

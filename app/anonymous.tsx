@@ -20,10 +20,12 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fonts } from '@/lib/fonts';
 import { ChatMessage } from '@/components/chat/ChatMessage';
 import { AiResponseMessage } from '@/screens/MessageThread';
+import { SafetyRuleMessage } from '@/screens/SafetyRuleMessage';
+import type { SafetyRuleId } from '@/convex/lib/aiSafetyMessages';
 
 // Text only: for clinical safety and data protection the AI assistant doesn't
 // analyse images or documents (attachments exist only in chats with professionals).
-type Turn = { id: number; fromPatient: boolean; content: string };
+type Turn = { id: number; fromPatient: boolean; content: string; safetyRule?: SafetyRuleId };
 
 const INPUT_MIN_HEIGHT = 44;
 const INPUT_MAX_HEIGHT = 140;
@@ -99,7 +101,7 @@ export default function AnonymousChat() {
     setBusy(true);
     try {
       const r = await respond({ query, history });
-      setTurns((t) => [...t, { id: nextId.current++, fromPatient: false, content: r.answer }]);
+      setTurns((t) => [...t, { id: nextId.current++, fromPatient: false, content: r.answer, safetyRule: r.safetyRule }]);
     } catch {
       setError('Não foi possível obter resposta. Tenta outra vez.');
     } finally {
@@ -138,7 +140,7 @@ export default function AnonymousChat() {
           ListHeaderComponent={
             <View style={styles.notice}>
               <Text style={styles.noticeText}>
-                Esta conversa não fica guardada nem é partilhada com um profissional. Quando
+                Esta conversa não fica guardada nem é partilhada com um enfermeiro. Quando
                 saíres, é apagada. As respostas são apenas informativas; em caso de urgência
                 liga 112 ou SNS 24 (808 24 24 24).
               </Text>
@@ -147,6 +149,8 @@ export default function AnonymousChat() {
           renderItem={({ item }) =>
             item.fromPatient ? (
               <ChatMessage side="own" content={item.content} messageType="text" />
+            ) : item.safetyRule ? (
+              <SafetyRuleMessage ruleId={item.safetyRule} content={item.content} />
             ) : (
               <AiResponseMessage content={item.content} />
             )
@@ -169,8 +173,7 @@ export default function AnonymousChat() {
               testID="anonymous-input"
               value={text}
               onChangeText={setText}
-              placeholder="Escreve uma mensagem..."
-              placeholderTextColor={theme.colors.textTertiary as any}
+              accessibilityLabel="Escrever mensagem"
               multiline
               editable={!busy}
               style={styles.input}

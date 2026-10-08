@@ -75,7 +75,7 @@ export const listLatest = query({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    return ctx.db.query('aiInvocations').order('desc').take(50);
+    return ctx.db.query('aiInvocations').order('desc').take(10);
   },
 });
 
@@ -91,5 +91,65 @@ export const listChain = query({
       .withIndex('by_parent', (q) => q.eq('parentInvocationId', rootId))
       .take(50);
     return [root, ...children];
+  },
+});
+
+// Cost per assistant response, for reporting. A response is a root 'chat'
+// invocation (the draft); its safety/clinical validators and the judge are
+// children via parentInvocationId, so each response's cost includes them.
+// Summaries (chat-summary, user-summary) are separate agents, reported apart.
+// Run from the Convex dashboard: ai/invocations:costPerResponse, args {}.
+// From the CLI, --prod only reaches production with CONVEX_DEPLOY_KEY set.
+// (optionally { sinceMs } to count only invocations created after that time).
+export const costPerResponse = internalQuery({
+  args: { sinceMs: v.optional(v.number()) },
+  handler: async (ctx, { sinceMs }) => {
+    const since = sinceMs ?? 0;
+    const byPurpose: Record<string, { count: number; costUsd: number }> = {};
+    const add = (purpose: string, cost: number) => {
+      const row = (byPurpose[purpose] ??= { count: 0, costUsd: 0 });
+      row.count++;
+      row.costUsd += cost;
+    };
+    let responses = 0;
+    let chainCostUsd = 0;
+    let withoutCost = 0;
+    for await (const draft of ctx.db
+      .query('aiInvocations')
+      .withIndex('by_purpose', (q) => q.eq('purpose', 'chat'))) {
+      if (draft.parentInvocationId || draft._creationTime < since) continue;
+      responses++;
+      if (draft.costUsd === undefined) withoutCost++;
+      chainCostUsd += draft.costUsd ?? 0;
+      add(draft.purpose, draft.costUsd ?? 0);
+      for await (const step of ctx.db
+        .query('aiInvocations')
+        .withIndex('by_parent', (q) => q.eq('parentInvocationId', draft._id))) {
+        if (step.costUsd === undefined) withoutCost++;
+        chainCostUsd += step.costUsd ?? 0;
+        add(step.purpose, step.costUsd ?? 0);
+      }
+    }
+    const summaries: Record<string, { count: number; costUsd: number }> = {};
+    for (const purpose of ['chat-summary', 'user-summary'] as const) {
+      const row = (summaries[purpose] = { count: 0, costUsd: 0 });
+      for await (const inv of ctx.db
+        .query('aiInvocations')
+        .withIndex('by_purpose', (q) => q.eq('purpose', purpose))) {
+        if (inv._creationTime < since) continue;
+        row.count++;
+        row.costUsd += inv.costUsd ?? 0;
+      }
+    }
+    return {
+      responses,
+      chainCostUsd,
+      costPerResponseUsd: responses ? chainCostUsd / responses : null,
+      // Invocations in the chain with no recorded cost (errors before the
+      // provider answered, or pending): counted as 0.
+      invocationsWithoutCost: withoutCost,
+      byPurpose,
+      summaries,
+    };
   },
 });

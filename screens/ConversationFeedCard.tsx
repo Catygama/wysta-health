@@ -32,7 +32,7 @@ export function ConversationFeedCard({
   const topic = TOPICS.find((t) => t.id === conversation.topic);
   const pastel = theme.topic[topic?.color ?? 'general'];
   const who =
-    conversation.responderName ?? (conversation.isAiOnly ? 'Assistente IA' : 'Profissional de saúde');
+    conversation.responderName ?? (conversation.isAiOnly ? 'Assistente IA' : 'Enfermeiro/a');
 
   return (
     <View style={[styles.wrap, !isLast && styles.divider]}>
@@ -55,7 +55,9 @@ export function ConversationFeedCard({
               <Text style={styles.time}>{relativeTime(conversation.previewAt)}</Text>
             )}
           </View>
-          {conversation.preview && (
+          {/* Not `preview &&`: an AI reply being prepared has an empty preview,
+              and an empty string can't be a child of a View on web. */}
+          {!!conversation.preview && (
             <Text style={styles.preview} numberOfLines={1}>
               {conversation.preview}
             </Text>
@@ -71,7 +73,8 @@ export function ConversationFeedCard({
           onPress={onEnd}
           style={({ pressed }) => [styles.endBtn, pressed && styles.pressed]}
         >
-          <Icon name={{ sf: 'xmark.circle', ion: 'close-circle-outline' }} size={22} color={theme.colors.textSecondary} />
+          <Icon name={{ sf: 'xmark.circle', ion: 'close-circle-outline' }} size={20} color={theme.colors.textSecondary} />
+          <Text style={styles.endText}>Terminar</Text>
         </Pressable>
       )}
     </View>
@@ -90,7 +93,8 @@ const styles = StyleSheet.create((theme) => ({
     paddingLeft: theme.spacing.md,
     paddingRight: theme.spacing.sm,
   },
-  endBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  endBtn: { minWidth: 56, minHeight: 44, alignItems: 'center', justifyContent: 'center', gap: 1 },
+  endText: { fontSize: 11, fontWeight: '500', color: theme.colors.textSecondary },
   pressed: { opacity: 0.6 },
   icon: {
     width: 40,

@@ -64,7 +64,7 @@ export function WebPushCard() {
       <Text style={styles.title}>Notificações</Text>
       {status === 'on' ? (
         <Text style={styles.text}>
-          Ativas neste browser. Avisamos-te quando um profissional responder.
+          Ativas neste browser. Avisamos-te quando um enfermeiro responder.
         </Text>
       ) : status === 'denied' ? (
         <Text style={styles.text}>
@@ -74,7 +74,7 @@ export function WebPushCard() {
       ) : (
         <>
           <Text style={styles.text}>
-            Recebe um aviso neste browser quando um profissional responder.
+            Recebe um aviso neste browser quando um enfermeiro responder.
           </Text>
           {status === 'error' ? (
             <Text style={styles.error}>Não foi possível ativar. Tenta novamente.</Text>

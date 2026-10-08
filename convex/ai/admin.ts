@@ -6,7 +6,7 @@
 import { v } from 'convex/values';
 import { action, mutation, query } from '../_generated/server';
 import { internal } from '../_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserIdInAction } from '../lib/accounts';
 import { requireAdmin } from '../lib/auth';
 import { runAgent } from './runAgent';
 import { maskApiKey } from './configs';
@@ -22,6 +22,7 @@ import {
 } from './registry';
 import { topicValidator, TOPIC_IDS } from '../lib/topics';
 import type { Doc } from '../_generated/dataModel';
+import { userError, NOT_AUTHENTICATED, ADMIN_ONLY } from '../lib/errors';
 
 // Latest config + latest prompt for a purpose (or null). Helper shared by the
 // queries below. Uses the by_purpose index, newest first.
@@ -161,7 +162,7 @@ export const saveConfig = mutation({
         .order('desc')
         .first();
       if (!prev) {
-        throw new Error('Sem key anterior para reutilizar — cola uma API key.');
+        throw userError('Não há uma chave anterior para reutilizar. Cola uma chave de API.');
       }
       apiKey = prev.apiKey;
     }
@@ -192,7 +193,7 @@ export const savePrompt = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAdmin(ctx);
     if (args.systemPrompt.trim().length === 0) {
-      throw new Error('O prompt de sistema não pode estar vazio.');
+      throw userError('O prompt de sistema não pode estar vazio.');
     }
     return ctx.db.insert('aiPrompts', {
       purpose: args.purpose,
@@ -218,8 +219,8 @@ export const resetPromptToDefault = mutation({
       ? DEFAULT_TOPIC_PROMPTS[purpose]?.[topic]
       : DEFAULT_PROMPTS[purpose];
     if (!def) {
-      throw new Error(
-        `Sem prompt default registado para: ${purpose}${topic ? ` / ${topic}` : ''}`
+      throw userError(
+        `Sem instruções predefinidas para: ${purpose}${topic ? ` / ${topic}` : ''}`
       );
     }
     return ctx.db.insert('aiPrompts', {
@@ -247,12 +248,12 @@ export const testPurpose = action({
     ctx,
     { purpose, vars }
   ): Promise<{ output: string; invocationId: string }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserIdInAction(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const isAdmin = await ctx.runQuery(internal.ai.chatSummary.isCallerAdmin, {
       userId,
     });
-    if (!isAdmin) throw new Error('Admin only');
+    if (!isAdmin) throw userError(ADMIN_ONLY);
     const result = await runAgent(ctx, { purpose, vars });
     return { output: result.output, invocationId: result.invocationId };
   },

@@ -7,6 +7,7 @@ import type { GenericMutationCtx, GenericActionCtx } from 'convex/server';
 import type { DataModel } from '../_generated/dataModel';
 import { callLlmText, callLlmObject, callLlmStream } from './llm';
 import { renderTemplate } from './template';
+import { pseudonymize } from './pseudonymize';
 import { computeCostUsd } from './pricing';
 import type { AiPurpose } from './types';
 import { aiPurposeValidator as aiPurpose } from './registry';
@@ -26,6 +27,9 @@ export type RunAgentArgs<T extends ZodTypeAny | undefined = undefined> = {
   parentInvocationId?: Id<'aiInvocations'>;
   outputSchema?: T;
   onDelta?: (textSoFar: string) => void | Promise<void>;
+  /** The patient the content is about: her name and email are replaced in
+   *  every variable before the prompt reaches the provider. */
+  subjectId?: Id<'users'>;
 };
 
 export type RunAgentResult<T> = {
@@ -64,7 +68,11 @@ export async function runAgent<T extends ZodTypeAny | undefined = undefined>(
 
   // Render template before creating the invocation row — throws early if vars missing,
   // so no orphaned 'pending' rows are left behind.
-  const vars = args.topic ? { ...args.vars, topic: args.topic } : args.vars;
+  let vars = args.topic ? { ...args.vars, topic: args.topic } : args.vars;
+  if (args.subjectId) {
+    const identity = await ctx.runQuery(internal.ai.pseudonymize.identityFor, { userId: args.subjectId });
+    vars = Object.fromEntries(Object.entries(vars).map(([k, val]) => [k, pseudonymize(val, identity)]));
+  }
   const userPrompt = renderTemplate(prompt.userTemplate ?? '', vars);
 
   const invocationId = await ctx.runMutation(

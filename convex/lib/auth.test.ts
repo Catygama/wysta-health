@@ -31,7 +31,7 @@ describe('requireAdmin', () => {
     const t = convexTest(schema, modules);
     await expect(
       t.mutation(internal.lib.authProbe.run, {})
-    ).rejects.toThrow(/not authenticated/i);
+    ).rejects.toThrow(/sessão terminou/i);
   });
 
   it('throws when caller has no profile', async () => {

@@ -12,19 +12,27 @@ import { strings } from '@/constants/strings';
 import { guestAuthEnabled } from '@/lib/env';
 import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
+import { errorText } from '@/lib/errorText';
+import { ConsentCheckbox } from '@/components/ConsentCheckbox';
+import { useConsentAfterSignIn } from '@/hooks/useConsentAfterSignIn';
 
 export default function Login() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
+  const consent = useConsentAfterSignIn();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  // Age and privacy consent, above "Entrar": needed to sign in and to enter
+  // without an account.
+  const [consented, setConsented] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState('');
 
   async function handleLogin() {
     setError('');
+    if (!consented) return;
     setLoading(true);
     try {
       await signIn('password', { email, password, flow: 'signIn' });
@@ -37,12 +45,14 @@ export default function Login() {
 
   async function handleGuest() {
     setError('');
+    if (!consented) return;
     setGuestLoading(true);
     try {
+      // Set before signing in: the session can become active before signIn() resolves.
+      consent.markPending('sem-conta');
       await signIn('anonymous');
     } catch (e: any) {
-      const message = e?.message ?? String(e);
-      setError(`Guest falhou: ${message}`);
+      setError(errorText(e, 'Não foi possível entrar sem conta. Tenta de novo.'));
     } finally {
       setGuestLoading(false);
     }
@@ -51,7 +61,7 @@ export default function Login() {
 
   // Navigate once the session is actually active: redirecting right after
   // signIn() resolves races the auth state and bounces back to login.
-  if (isAuthenticated) return <Redirect href="/" />;
+  if (isAuthenticated && consent.ready) return <Redirect href="/" />;
   return (
     <ScrollView
       style={styles.screen}
@@ -91,11 +101,13 @@ export default function Login() {
             {error}
           </Text>
         ) : null}
+        <ConsentCheckbox testID="auth-consent-checkbox" checked={consented} onChange={setConsented} />
         <Button
           testID="auth-login-button"
           label={strings.auth.login}
           onPress={handleLogin}
           loading={loading}
+          disabled={!consented}
         />
       </View>
 
@@ -105,10 +117,11 @@ export default function Login() {
           <Button
             testID="auth-guest-button"
             strongBorder
-            label="Entrar como convidado"
+            label="Entrar sem conta"
             variant="secondary"
             onPress={handleGuest}
             loading={guestLoading}
+            disabled={!consented}
           />
         </View>
       )}
@@ -137,7 +150,7 @@ export default function Login() {
           size={16}
           color={styles.proLinkText.color}
         />
-        <Text style={styles.proLinkText}>Sou profissional de saúde →</Text>
+        <Text style={styles.proLinkText}>Sou enfermeiro/a →</Text>
       </Pressable>
     </ScrollView>
   );

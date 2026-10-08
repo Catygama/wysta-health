@@ -13,6 +13,7 @@ import {
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/convex/_generated/api';
 import { MessageThread } from '@/screens/MessageThread';
 import { AiContextBlock } from '@/screens/AiContextBlock';
@@ -22,12 +23,12 @@ import { TOPICS } from '@/constants/topics';
 import { fonts } from '@/lib/fonts';
 import {
   PRIORITY_LABELS,
-  PRIORITY_COLORS,
+  priorityColors,
 } from '@/constants/conversation';
 import { useTabBar } from '@/contexts/TabBarContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { pregnancyClinicalLabel } from '@/constants/profile';
 import type { AlertLevel } from '@/convex/lib/alerts';
+import { errorText } from '@/lib/errorText';
 
 // What the options panel shows: the menu, or one of the views it opens.
 type PanelView = 'menu' | 'internal' | 'summary' | 'triage';
@@ -47,7 +48,6 @@ export default function ProfessionalConversation() {
   const messages = useQuery(api.messages.list, id ? { conversationId: id as any } : 'skip');
   const assign = useMutation(api.conversations.assign);
   const close = useMutation(api.conversations.close);
-  const markUrgent = useMutation(api.conversations.markUrgent);
   const recommendInPerson = useMutation(api.conversations.recommendInPerson);
   const { setIsTabBarHidden } = useTabBar();
   const [redirectOpen, setRedirectOpen] = useState(false);
@@ -111,7 +111,6 @@ export default function ProfessionalConversation() {
       canEscalate={canEscalate}
       canClose={canClose}
       onAssign={() => assign({ id: id as any })}
-      onMarkUrgent={() => markUrgent({ id: id as any })}
       onRequestClose={() => setConfirmClose(true)}
       onOpenRelated={(relatedId) =>
         router.push({ pathname: '/(professional)/cases/[id]', params: { id: relatedId } })
@@ -152,7 +151,7 @@ export default function ProfessionalConversation() {
           {isAssignedToOther ? 'Assumir conversa e responder' : 'Atribuir a mim e responder'}
         </Text>
       </Pressable>
-      <Text style={styles.assignHint}>Ao atribuir, passas a ser o profissional deste caso.</Text>
+      <Text style={styles.assignHint}>Ao atribuir, passas a ser o enfermeiro deste caso.</Text>
     </View>
   ) : (
     <View style={styles.quick}>
@@ -221,14 +220,27 @@ export default function ProfessionalConversation() {
 
       {!wide && (
         <Modal visible={drawerOpen} transparent animationType="fade" onRequestClose={() => setDrawerOpen(false)}>
-          <View style={styles.drawerWrap}>
-            <Pressable
-              style={styles.drawerShade}
-              accessibilityLabel="Fechar opções"
-              onPress={() => setDrawerOpen(false)}
-            />
-            <View style={styles.drawer}>{panel}</View>
-          </View>
+          {/* A modal is its own native window on iOS: it needs its own provider
+              for SafeAreaView to know the status bar and home indicator. */}
+          <SafeAreaProvider>
+            <View style={styles.drawerWrap}>
+              <Pressable
+                style={styles.drawerShade}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar opções"
+                onPress={() => setDrawerOpen(false)}
+              />
+              {/* SafeAreaView measures where it sits, so the panel clears the status
+                  bar and home indicator inside the modal. Inline style: Unistyles
+                  styles are partly dropped on third-party components. */}
+              <SafeAreaView
+                edges={['top', 'bottom']}
+                style={{ width: '85%', maxWidth: 380, backgroundColor: theme.colors.background }}
+              >
+                {panel}
+              </SafeAreaView>
+            </View>
+          </SafeAreaProvider>
         </Modal>
       )}
 
@@ -280,7 +292,6 @@ type OptionsPanelProps = {
   canEscalate: boolean;
   canClose: boolean;
   onAssign: () => void;
-  onMarkUrgent: () => void;
   onRequestClose: () => void;
   onOpenRelated: (id: string) => void;
 };
@@ -335,6 +346,11 @@ function OptionsPanel(p: OptionsPanelProps) {
             scope="internal"
             canSend={p.isMine}
             closed={p.isClosed}
+            header={
+              <Text testID="internal-notes-export-notice" style={styles.assignHint}>
+                As notas internas podem ser consultadas pela utente se pedir uma cópia dos seus dados.
+              </Text>
+            }
           />
         </View>
       </View>
@@ -385,7 +401,6 @@ function OptionsPanel(p: OptionsPanelProps) {
               {c.patient.displayName ?? c.patient.email ?? 'Utente convidada'}
               {c.patient.ageRange ? ` • ${c.patient.ageRange}` : ''}
               {c.patient.location ? ` • ${c.patient.location}` : ''}
-              {c.patient.pregnancyStatus ? ` • ${pregnancyClinicalLabel(c.patient.pregnancyStatus)}` : ''}
             </Text>
             {(c.patient.conditions?.length ?? 0) > 0 && (
               <Text style={styles.patientMeta}>
@@ -425,14 +440,6 @@ function OptionsPanel(p: OptionsPanelProps) {
             chevron
             onPress={() => p.onView('summary')}
           />
-          {p.canEscalate && c.priority !== 'urgent' && (
-            <MenuItem
-              testID="conversation-mark-urgent"
-              icon={{ sf: 'arrow.up', ion: 'arrow-up' }}
-              label="Aumentar prioridade"
-              onPress={p.onMarkUrgent}
-            />
-          )}
           {c.contextConversation && c.contextConversation.kind !== 'ai-only' && (
             <MenuItem
               testID="related-context-conversation"
@@ -473,7 +480,7 @@ function MenuItem({
   testID?: string;
 }) {
   const { theme } = useUnistyles();
-  const color = danger ? PRIORITY_COLORS.urgent : theme.colors.textPrimary;
+  const color = danger ? priorityColors(theme.name).urgent : theme.colors.textPrimary;
   return (
     <Pressable
       testID={testID}
@@ -540,7 +547,7 @@ function SummaryPanel({
     try {
       await generate({ conversationId: conversationId as any });
     } catch (e: any) {
-      setError(e?.message ?? 'Falha ao gerar sumário');
+      setError(errorText(e, 'Não foi possível gerar o sumário.'));
     } finally {
       setBusy(false);
     }
@@ -564,6 +571,7 @@ function SummaryPanel({
         {error && <Text style={styles.error}>{error}</Text>}
         <Pressable
           testID="generate-ai-summary-button"
+          accessibilityRole="button"
           disabled={genDisabled}
           onPress={onGenerate}
           style={[styles.genBtn, genDisabled ? styles.genBtnOff : styles.genBtnOn]}
@@ -604,7 +612,7 @@ function ClinicalProfile({
     try {
       await generate({ patientId });
     } catch (e: any) {
-      setError(e?.message ?? 'Falha');
+      setError(errorText(e, 'Não foi possível concluir. Tenta de novo.'));
     } finally {
       setBusy(false);
     }
@@ -616,6 +624,7 @@ function ClinicalProfile({
         testID="clinical-profile-toggle"
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
+        aria-expanded={open}
         onPress={() => setOpen((o) => !o)}
         style={({ pressed }) => [styles.profileHead, pressed && styles.dim]}
       >
@@ -638,6 +647,7 @@ function ClinicalProfile({
           {error && <Text style={styles.error}>{error}</Text>}
           <Pressable
             testID="generate-user-summary-button"
+            accessibilityRole="button"
             disabled={busy}
             onPress={onGenerate}
             style={[styles.profileBtn, busy && styles.dim]}
@@ -656,7 +666,7 @@ function SheetHeader({ title, onClose, closeTestID }: { title: string; onClose: 
   return (
     <View style={styles.sheetHeader}>
       <Text style={styles.sheetTitle}>{title}</Text>
-      <Pressable testID={closeTestID} onPress={onClose} hitSlop={8}>
+      <Pressable testID={closeTestID} onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Fechar">
         <Icon name={{ sf: 'xmark', ion: 'close' } as IconName} size={22} color={theme.colors.textSecondary} />
       </Pressable>
     </View>
@@ -687,7 +697,7 @@ function RecommendInPersonSheet({
       setExtraNote('');
       onClose();
     } catch (e: any) {
-      setError(e?.message ?? 'Falha');
+      setError(errorText(e, 'Não foi possível concluir. Tenta de novo.'));
     } finally {
       setBusy(false);
     }
@@ -725,7 +735,7 @@ function RecommendInPersonSheet({
             <Text style={styles.switchLabel}>Encerrar a conversa após enviar</Text>
           </View>
           {error && <Text style={styles.error}>{error}</Text>}
-          <Pressable testID="redirect-submit" disabled={busy} onPress={submit} style={[styles.sheetCta, busy && styles.dim]}>
+          <Pressable testID="redirect-submit" accessibilityRole="button" disabled={busy} onPress={submit} style={[styles.sheetCta, busy && styles.dim]}>
             {busy && <ActivityIndicator color={theme.colors.onInk} size="small" />}
             <Text style={styles.sheetCtaText}>{busy ? 'A enviar...' : 'Enviar mensagem'}</Text>
           </Pressable>
@@ -800,7 +810,6 @@ const styles = StyleSheet.create((theme) => ({
   sideColumn: { width: 340, borderLeftWidth: 1, borderLeftColor: theme.colors.divider },
   drawerWrap: { flex: 1, flexDirection: 'row' },
   drawerShade: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
-  drawer: { width: '85%', maxWidth: 380, backgroundColor: theme.colors.background },
   panel: { flex: 1, backgroundColor: theme.colors.background },
   panelFill: { flex: 1 },
   panelHeader: {

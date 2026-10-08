@@ -7,21 +7,22 @@ import { action, internalMutation, internalQuery } from '../_generated/server';
 import { hasProfessionalAccess } from '../lib/professional';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserIdInAction } from '../lib/accounts';
 import { runAgent } from './runAgent';
+import { userError, NOT_AUTHENTICATED } from '../lib/errors';
 
 export const generate = action({
   args: { patientId: v.id('users') },
   handler: async (ctx, { patientId }): Promise<{ summary: string; invocationId: string }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserIdInAction(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
 
     const access = await ctx.runQuery(internal.ai.userSummary.assertAccess, {
       callerId: userId,
       patientId,
     });
     if (!access.allowed) {
-      throw new Error('Only professionals or admins can generate user summaries');
+      throw userError('Só os enfermeiros podem gerar o perfil clínico.');
     }
 
     const result = await runAgent(ctx, {
@@ -31,6 +32,7 @@ export const generate = action({
         conversationSummaries: access.conversationSummaries,
       },
       userId,
+      subjectId: patientId,
     });
 
     await ctx.runMutation(internal.ai.userSummary.storeSummary, {
@@ -91,11 +93,10 @@ export const storeSummary = internalMutation({
   },
 });
 
-function renderProfile(p: { ageRange?: string; pregnancyStatus?: string; conditions?: string[]; medications?: string[] } | null): string {
+function renderProfile(p: { ageRange?: string; conditions?: string[]; medications?: string[] } | null): string {
   if (!p) return 'Sem registo.';
   const parts: string[] = [];
   if (p.ageRange) parts.push(`Faixa etária: ${p.ageRange}`);
-  if (p.pregnancyStatus) parts.push(`Gravidez: ${p.pregnancyStatus}`);
   if (p.conditions?.length) parts.push(`Condições: ${p.conditions.join(', ')}`);
   if (p.medications?.length) parts.push(`Medicação: ${p.medications.join(', ')}`);
   return parts.length > 0 ? parts.join('\n') : 'Sem dados estruturados registados.';

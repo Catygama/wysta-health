@@ -8,36 +8,8 @@ import {
 } from '../../helpers/convex';
 
 // Tests the new escalation flows that replaced the old escalate dialog:
-// - Aumentar prioridade (markUrgent)
 // - Recomendar consulta presencial (recommendInPerson, with optional close)
 test.describe('Conversation escalation flows', () => {
-  test('Aumentar prioridade para urgente', async ({ page }) => {
-    const seeded = await seedConversation({
-      patientEmail: TEST_USERS.patientA.email,
-      professionalEmail: TEST_USERS.professionalA.email,
-      topic: 'menstrual-cycle',
-      title: 'Esc — urgente',
-      priority: 'medium',
-      status: 'active',
-      initialMessage: 'Olá, dores fortes.',
-    });
-    await loginAs(page, TEST_USERS.professionalA.email);
-    await page.goto(`/(professional)/cases/${seeded.conversationId}`);
-
-    const button = page.getByTestId('conversation-mark-urgent');
-    await expect(button).toBeVisible({ timeout: 15_000 });
-    await button.click();
-    await expect(button).toBeHidden({ timeout: 5_000 });
-
-    await expect
-      .poll(async () => (await getConversation(seeded.conversationId))?.priority, {
-        timeout: 5_000,
-      })
-      .toBe('urgent');
-
-    await logoutViaBridge(page);
-  });
-
   test('Recomendar presencial sem fechar deixa conversa aberta', async ({ page }) => {
     const seeded = await seedConversation({
       patientEmail: TEST_USERS.patientA.email,

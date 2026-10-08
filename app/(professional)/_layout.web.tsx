@@ -7,7 +7,7 @@ import { TabBarProvider } from '@/contexts/TabBarContext';
 
 const ITEMS: NavItem[] = [
   {
-    label: 'Fila',
+    label: 'Pedidos',
     href: '/queue',
     icon: {
       sf: 'list.bullet.clipboard',
@@ -26,7 +26,7 @@ const ITEMS: NavItem[] = [
   },
   {
     label: 'Perfil',
-    href: '/profile',
+    href: '/account',
     icon: { sf: 'person', ion: 'person-outline' },
   },
 ];

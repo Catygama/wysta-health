@@ -1,44 +1,35 @@
 import { Slot } from 'expo-router';
-import { View, Text, useWindowDimensions } from 'react-native';
+import { ScrollView, View, useWindowDimensions } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
-import { fonts } from '@/lib/fonts';
-import { BrandMark } from '@/components/ui/BrandMark';
 
 const MOBILE_BREAKPOINT = 640;
 
+// Web sign-in / sign-up: the screen in a centred card on wide screens. The
+// whole page scrolls (scrollbar at the window edge), not the card.
 export default function AuthLayoutWeb() {
   const { width } = useWindowDimensions();
   const isMobile = width < MOBILE_BREAKPOINT;
 
   return (
-    <View style={[styles.root, isMobile ? styles.rootMobile : styles.rootDesktop]}>
-      <View style={[styles.brandBar, isMobile ? styles.brandBarMobile : styles.brandBarDesktop]}>
-        <View style={styles.brand}>
-          <BrandMark size={30} />
-          <Text style={styles.wordmark}>Wysta</Text>
-        </View>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[styles.page, !isMobile && styles.pageDesktop]}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={[styles.panel, isMobile ? styles.panelMobile : styles.panelDesktop]}>
+        <Slot />
       </View>
-      <View style={[styles.center, !isMobile && styles.centerDesktop]}>
-        <View style={[styles.panel, isMobile ? styles.panelMobile : styles.panelDesktop]}>
-          <Slot />
-        </View>
-      </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
-  root: { flex: 1, minHeight: '100vh' as any },
-  rootMobile: { backgroundColor: theme.colors.background },
-  rootDesktop: { backgroundColor: theme.colors.background },
-  brandBar: { paddingHorizontal: theme.spacing.lg },
-  brandBarMobile: { paddingTop: theme.spacing.lg, alignItems: 'flex-start' },
-  brandBarDesktop: { paddingTop: theme.spacing.xl, alignItems: 'center' },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
-  wordmark: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText, letterSpacing: -0.3 },
-  center: { flex: 1, alignItems: 'center' },
-  centerDesktop: { paddingVertical: theme.spacing.lg },
-  panel: { flex: 1, width: '100%' },
+  // dvh: the visible height. On iPhone Safari 100vh is taller than what's
+  // shown, so the whole page could slide up under the status bar.
+  root: { flex: 1, height: '100dvh' as any, backgroundColor: theme.colors.background },
+  page: { flexGrow: 1, alignItems: 'center' },
+  pageDesktop: { paddingVertical: theme.spacing.xl },
+  panel: { width: '100%' },
   panelMobile: { backgroundColor: theme.colors.background, borderRadius: 0 },
   panelDesktop: {
     maxWidth: 480,

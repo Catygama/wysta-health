@@ -4,6 +4,7 @@ import { useQuery, useAction, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import type { FunctionReturnType } from 'convex/server';
 import { api } from '@/convex/_generated/api';
+import { errorText } from '@/lib/errorText';
 import { fonts } from '@/lib/fonts';
 import type { TopicId } from '@/convex/lib/topics';
 
@@ -47,7 +48,7 @@ export default function AdminAi() {
       setCapInput('');
       setCapMsg(`Limite atualizado para $${usd.toFixed(2)}/dia/utente.`);
     } catch (e: any) {
-      setCapMsg(e?.message ?? 'Falha');
+      setCapMsg(errorText(e, 'Não foi possível concluir.'));
     } finally {
       setSavingCap(false);
     }
@@ -78,7 +79,7 @@ export default function AdminAi() {
             {settings === undefined ? '...' : `$${settings.dailyCostCapUsd.toFixed(2)}`}
           </Text>
           {settings && !settings.hasOverride && (
-            <Text style={styles.muted}>(default — nunca alterado)</Text>
+            <Text style={styles.muted}>(valor predefinido, nunca alterado)</Text>
           )}
           {settings?.lastChangedAt && (
             <Text style={styles.muted}>
@@ -98,6 +99,7 @@ export default function AdminAi() {
           />
           <Pressable
             testID="admin-ai-cap-save"
+            accessibilityRole="button"
             disabled={capDisabled}
             onPress={saveCap}
             style={[styles.btn, capDisabled ? styles.btnOff : styles.btnOn]}
@@ -149,7 +151,7 @@ export default function AdminAi() {
         </>
       )}
 
-      <Card title="Invocações recentes (50)">
+      <Card title="Invocações recentes (10)">
         {invocations === undefined ? (
           <ActivityIndicator color={theme.colors.inkText} />
         ) : invocations.length === 0 ? (
@@ -171,7 +173,7 @@ export default function AdminAi() {
               <Text style={styles.muted}>
                 {new Date(inv._creationTime).toLocaleString('pt-PT')}
                 {inv.latencyMs !== undefined && ` · ${inv.latencyMs}ms`}
-                {inv.inputTokens !== undefined && ` · ${inv.inputTokens}/${inv.outputTokens ?? 0} tok`}
+                {inv.inputTokens !== undefined && ` · ${inv.inputTokens}/${inv.outputTokens ?? 0} tokens`}
                 {inv.costUsd !== undefined && ` · $${inv.costUsd.toFixed(6)}`}
               </Text>
               {inv.errorMessage && <Text style={styles.error}>{inv.errorMessage}</Text>}
@@ -265,6 +267,7 @@ function DiagramNode({
   return (
     <Pressable
       testID={`admin-ai-node-${purpose}`}
+      accessibilityRole="button"
       onPress={() => onSelect(purpose)}
       style={styles.node}
     >
@@ -278,7 +281,7 @@ function DiagramNode({
         {info?.label ?? purpose}
       </Text>
       <Text style={styles.nodeModel} numberOfLines={1}>
-        {info?.model ?? 'sem config'}
+        {info?.model ?? 'sem configuração'}
       </Text>
     </Pressable>
   );
@@ -309,13 +312,15 @@ function PurposeCard({
     <View style={styles.card}>
       <Pressable
         testID={`admin-ai-purpose-${row.purpose}`}
+        accessibilityRole="button"
+        aria-expanded={open}
         onPress={onToggle}
         style={styles.purposeHeader}
       >
         <View style={styles.purposeHeaderText}>
           <Text style={styles.cardTitle}>{row.meta.label}</Text>
           <Text style={styles.muted}>
-            {row.config ? `${row.config.provider} / ${row.config.modelId}` : 'sem config'}
+            {row.config ? `${row.config.provider} / ${row.config.modelId}` : 'sem configuração'}
           </Text>
         </View>
         <View style={styles.purposeHeaderRight}>
@@ -382,9 +387,9 @@ function ConfigEditor({
         apiKey: keyEdit.trim() || undefined,
       });
       setKeyEdit('');
-      setMsg('Config guardada.');
+      setMsg('Configuração guardada.');
     } catch (e: any) {
-      setMsg(e?.message ?? 'Falha');
+      setMsg(errorText(e, 'Não foi possível concluir.'));
     } finally {
       setSaving(false);
     }
@@ -394,14 +399,16 @@ function ConfigEditor({
     <View style={styles.block}>
       <Text style={styles.blockTitle}>Modelo & key</Text>
 
-      <Text style={styles.fieldLabel}>Provider</Text>
-      <View style={styles.chipRow}>
+      <Text style={styles.fieldLabel}>Fornecedor</Text>
+      <View style={styles.chipRow} accessibilityRole="radiogroup" aria-label="Fornecedor">
         {providers.map((p) => {
           const active = p === provider;
           const isWired = wired.includes(p);
           return (
             <Pressable
               key={p}
+              accessibilityRole="radio"
+              aria-checked={active}
               onPress={() => setProvider(p as any)}
               style={[styles.chip, active && styles.chipActive]}
             >
@@ -415,7 +422,7 @@ function ConfigEditor({
       </View>
       {!wired.includes(provider) && (
         <Text style={styles.warn}>
-          Provider ainda não ligado em llm.ts — vai falhar em runtime até ser adicionado.
+          Este fornecedor ainda não está ligado no código (llm.ts). As chamadas vão falhar até ser adicionado.
         </Text>
       )}
 
@@ -431,11 +438,11 @@ function ConfigEditor({
         style={styles.field}
       />
 
-      <Text style={styles.fieldLabel}>Endpoint (opcional)</Text>
+      <Text style={styles.fieldLabel}>Endereço do serviço (opcional)</Text>
       <TextInput
         value={endpoint}
         onChangeText={setEndpoint}
-        placeholder="https://… (deixa vazio para o default do provider)"
+        placeholder="https://… (deixa vazio para usar o do fornecedor)"
         placeholderTextColor={theme.colors.textTertiary as any}
         autoCapitalize="none"
         autoCorrect={false}
@@ -443,23 +450,23 @@ function ConfigEditor({
       />
 
       <View style={styles.keyHeaderRow}>
-        <Text style={styles.fieldLabel}>API key</Text>
-        <Pressable onPress={() => setReveal((r) => !r)}>
+        <Text style={styles.fieldLabel}>Chave de API</Text>
+        <Pressable onPress={() => setReveal((r) => !r)} accessibilityRole="button">
           <Text style={styles.link}>{reveal ? 'Esconder' : 'Mostrar'}</Text>
         </Pressable>
       </View>
       {reveal ? (
         <Text testID={`admin-ai-key-reveal-${row.purpose}`} style={styles.keyReveal}>
-          {revealed === undefined ? 'a carregar…' : revealed ?? '(sem key)'}
+          {revealed === undefined ? 'a carregar…' : revealed ?? '(sem chave)'}
         </Text>
       ) : (
-        <Text style={styles.muted}>{row.config?.apiKeyMasked ?? '(sem key)'}</Text>
+        <Text style={styles.muted}>{row.config?.apiKeyMasked ?? '(sem chave)'}</Text>
       )}
       <TextInput
         testID={`admin-ai-key-${row.purpose}`}
         value={keyEdit}
         onChangeText={setKeyEdit}
-        placeholder="Nova key (deixa vazio para manter a atual)"
+        placeholder="Nova chave (deixa vazio para manter a atual)"
         placeholderTextColor={theme.colors.textTertiary as any}
         secureTextEntry
         autoCapitalize="none"
@@ -469,17 +476,18 @@ function ConfigEditor({
 
       <Pressable
         testID={`admin-ai-save-config-${row.purpose}`}
+        accessibilityRole="button"
         disabled={saving}
         onPress={save}
         style={[styles.btnBlock, saving ? styles.btnOff : styles.btnOn]}
       >
         {saving && <ActivityIndicator color={theme.colors.onInk} size="small" />}
-        <Text style={[styles.btnText, saving && styles.btnTextOff]}>Guardar config</Text>
+        <Text style={[styles.btnText, saving && styles.btnTextOff]}>Guardar configuração</Text>
       </Pressable>
       {row.defaultModel && (
-        <Text style={styles.muted}>Default: {row.defaultModel}</Text>
+        <Text style={styles.muted}>Predefinido: {row.defaultModel}</Text>
       )}
-      {msg && <Text style={msg === 'Config guardada.' ? styles.ok : styles.error}>{msg}</Text>}
+      {msg && <Text style={msg === 'Configuração guardada.' ? styles.ok : styles.error}>{msg}</Text>}
     </View>
   );
 }
@@ -533,7 +541,7 @@ function PromptEditor({
   async function save() {
     setMsg(null);
     if (systemPrompt.trim().length === 0) {
-      setMsg('O prompt de sistema não pode estar vazio.');
+      setMsg('As instruções de sistema não podem estar vazias.');
       return;
     }
     const temp = temperature.trim() === '' ? undefined : Number(temperature);
@@ -543,7 +551,7 @@ function PromptEditor({
       return;
     }
     if (tok !== undefined && (!Number.isInteger(tok) || tok <= 0)) {
-      setMsg('Max tokens deve ser inteiro positivo.');
+      setMsg('O máximo de tokens deve ser um número inteiro positivo.');
       return;
     }
     setSaving(true);
@@ -556,9 +564,9 @@ function PromptEditor({
         temperature: temp,
         maxTokens: tok,
       });
-      setMsg('Prompt guardado.');
+      setMsg('Instruções guardadas.');
     } catch (e: any) {
-      setMsg(e?.message ?? 'Falha');
+      setMsg(errorText(e, 'Não foi possível concluir.'));
     } finally {
       setSaving(false);
     }
@@ -569,9 +577,9 @@ function PromptEditor({
     setResetting(true);
     try {
       await resetPrompt({ purpose: row.purpose, topic: topicArg });
-      setMsg('Reposto ao default — reabre o cartão para ver.');
+      setMsg('Repostas as instruções predefinidas. Reabre o cartão para ver.');
     } catch (e: any) {
-      setMsg(e?.message ?? 'Falha');
+      setMsg(errorText(e, 'Não foi possível concluir.'));
     } finally {
       setResetting(false);
     }
@@ -584,15 +592,17 @@ function PromptEditor({
 
   return (
     <View style={styles.block}>
-      <Text style={styles.blockTitle}>Prompt</Text>
+      <Text style={styles.blockTitle}>Instruções (prompt)</Text>
 
-      <View style={styles.chipRow}>
+      <View style={styles.chipRow} accessibilityRole="radiogroup" aria-label="Âmbito do prompt">
         <Pressable
+          accessibilityRole="radio"
+          aria-checked={scope === 'default'}
           onPress={() => selectScope('default')}
           style={[styles.chip, scope === 'default' && styles.chipActive]}
         >
           <Text style={[styles.chipText, scope === 'default' && styles.chipTextActive]}>
-            Default
+            Todos os temas (predefinição)
           </Text>
         </Pressable>
         {availableTopics.map((tp) => {
@@ -601,6 +611,8 @@ function PromptEditor({
           return (
             <Pressable
               key={tp}
+              accessibilityRole="radio"
+              aria-checked={active}
               onPress={() => selectScope(tp as TopicId)}
               style={[styles.chip, active && styles.chipActive]}
             >
@@ -614,11 +626,11 @@ function PromptEditor({
       </View>
       {scope !== 'default' && !variant && (
         <Text style={styles.muted}>
-          Sem variante para este tópico — guarda para criar (senão usa o default global).
+          Sem variante para este tema. Guarda para a criar; até lá, usa as instruções gerais.
         </Text>
       )}
 
-      <Text style={styles.fieldLabel}>System prompt</Text>
+      <Text style={styles.fieldLabel}>Instruções de sistema</Text>
       <TextInput
         testID={`admin-ai-system-${row.purpose}`}
         multiline
@@ -629,7 +641,7 @@ function PromptEditor({
         style={styles.fieldTall}
       />
 
-      <Text style={styles.fieldLabel}>User template</Text>
+      <Text style={styles.fieldLabel}>Modelo da mensagem</Text>
       {row.meta.variables.length > 0 && (
         <View style={styles.chipRow}>
           {row.meta.variables.map((varName) => (
@@ -662,7 +674,7 @@ function PromptEditor({
           />
         </View>
         <View style={styles.half}>
-          <Text style={styles.fieldLabel}>Max tokens</Text>
+          <Text style={styles.fieldLabel}>Máximo de tokens</Text>
           <TextInput
             value={maxTokens}
             onChangeText={setMaxTokens}
@@ -677,26 +689,28 @@ function PromptEditor({
       <View style={styles.inputRow}>
         <Pressable
           testID={`admin-ai-save-prompt-${row.purpose}`}
+          accessibilityRole="button"
           disabled={saving}
           onPress={save}
           style={[styles.btnFlex, saving ? styles.btnOff : styles.btnOn]}
         >
           {saving && <ActivityIndicator color={theme.colors.onInk} size="small" />}
-          <Text style={[styles.btnText, saving && styles.btnTextOff]}>Guardar prompt</Text>
+          <Text style={[styles.btnText, saving && styles.btnTextOff]}>Guardar instruções</Text>
         </Pressable>
         {hasDefault && (
           <Pressable
+            accessibilityRole="button"
             disabled={resetting}
             onPress={reset}
             style={[styles.btnFlex, styles.btnGhost]}
           >
             {resetting && <ActivityIndicator color={theme.colors.inkText} size="small" />}
-            <Text style={styles.btnGhostText}>Repor default</Text>
+            <Text style={styles.btnGhostText}>Repor predefinição</Text>
           </Pressable>
         )}
       </View>
       {msg && (
-        <Text style={msg.endsWith('guardado.') || msg.includes('Reposto') ? styles.ok : styles.error}>
+        <Text style={msg.endsWith('guardadas.') || msg.startsWith('Repostas') ? styles.ok : styles.error}>
           {msg}
         </Text>
       )}
@@ -725,7 +739,7 @@ function TestRunner({ row }: { row: PurposeRow }) {
       const r = await testPurpose({ purpose: row.purpose, vars: full });
       setOutput(r.output);
     } catch (e: any) {
-      setError(e?.message ?? 'Falha');
+      setError(errorText(e, 'Não foi possível concluir.'));
     } finally {
       setRunning(false);
     }
@@ -749,6 +763,7 @@ function TestRunner({ row }: { row: PurposeRow }) {
       ))}
       <Pressable
         testID={`admin-ai-test-${row.purpose}`}
+        accessibilityRole="button"
         disabled={running}
         onPress={run}
         style={[styles.btnBlock, running ? styles.btnOff : styles.btnOn]}

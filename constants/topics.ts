@@ -49,7 +49,7 @@ export const TOPICS: Topic[] = [
   },
   {
     id: 'menstrual-cycle',
-    label: 'Ciclo Menstrual',
+    label: 'Ciclo menstrual',
     icon: { sf: 'calendar', ion: 'calendar', glyph: 'droplet-filled' },
     description: 'Irregularidades, dor e alterações',
     color: 'cycle',

@@ -7,21 +7,22 @@ import { action, internalAction, internalMutation, internalQuery } from '../_gen
 import { hasProfessionalAccess } from '../lib/professional';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserIdInAction } from '../lib/accounts';
 import { runAgent } from './runAgent';
+import { userError, NOT_AUTHENTICATED, ADMIN_ONLY } from '../lib/errors';
 
 export const generate = action({
   args: { conversationId: v.id('conversations') },
   handler: async (ctx, { conversationId }): Promise<{ summary: string; invocationId: string }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserIdInAction(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
 
     const access = await ctx.runQuery(internal.ai.chatSummary.assertAccess, {
       conversationId,
       userId,
     });
     if (!access.allowed) {
-      throw new Error('Only the assigned professional or an admin can generate summaries');
+      throw userError('Só o enfermeiro atribuído pode gerar o sumário desta conversa.');
     }
 
     const text = renderConversation(access.messages);
@@ -29,6 +30,7 @@ export const generate = action({
       purpose: 'chat-summary',
       vars: { conversationText: text },
       userId,
+      subjectId: access.patientId,
       conversationId,
     });
 
@@ -51,10 +53,10 @@ export const assertAccess = internalQuery({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    const isAdmin = profile?.role === 'admin';
-    // The assigned professional, as long as their account is still approved.
+    // Only the assigned professional, as long as their account is still
+    // approved. Admins have no access to clinical content.
     const isAssigned = conversation.professionalId === userId && hasProfessionalAccess(profile);
-    if (!isAdmin && !isAssigned) return { allowed: false as const, messages: [] };
+    if (!isAssigned) return { allowed: false as const, messages: [] };
 
     const messages = await ctx.db
       .query('messages')
@@ -64,6 +66,7 @@ export const assertAccess = internalQuery({
 
     return {
       allowed: true as const,
+      patientId: conversation.patientId,
       messages: messages
         .filter((m) => !m.isInternal && m.messageType !== 'system')
         .map((m) => ({
@@ -103,7 +106,7 @@ export const generateOnClose = internalAction({
 
       const text = access.messages
         .map((m) =>
-          `${m.senderId === m.patientId ? 'Utente' : 'Profissional'}: ${m.content}`
+          `${m.senderId === m.patientId ? 'Utente' : 'Enfermeiro'}: ${m.content}`
         )
         .join('\n');
 
@@ -111,6 +114,7 @@ export const generateOnClose = internalAction({
         purpose: 'chat-summary',
         vars: { conversationText: text },
         userId: triggeredBy,
+        subjectId: access.patientId,
         conversationId,
       });
       await ctx.runMutation(internal.ai.chatSummary.storeSummary, {
@@ -132,10 +136,10 @@ export const generateOnClose = internalAction({
 export const adminTest = action({
   args: { conversationText: v.string() },
   handler: async (ctx, { conversationText }): Promise<{ summary: string; invocationId: string }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserIdInAction(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const isAdmin = await ctx.runQuery(internal.ai.chatSummary.isCallerAdmin, { userId });
-    if (!isAdmin) throw new Error('Admin only');
+    if (!isAdmin) throw userError(ADMIN_ONLY);
     const result = await runAgent(ctx, {
       purpose: 'chat-summary',
       vars: { conversationText },
@@ -160,7 +164,7 @@ function renderConversation(
   messages: Array<{ senderId: string; patientId: string; content: string }>
 ): string {
   const lines = messages.map((m) => {
-    const role = m.senderId === m.patientId ? 'Utente' : 'Profissional';
+    const role = m.senderId === m.patientId ? 'Utente' : 'Enfermeiro';
     return `${role}: ${m.content}`;
   });
   return lines.join('\n');

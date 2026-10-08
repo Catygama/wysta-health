@@ -13,7 +13,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { TriageAlert } from '@/screens/TriageAlert';
+import { UrgencyAlert } from '@/screens/UrgencyAlert';
 import { resolveAlert, type ResolvedAlert } from '@/constants/triageAlerts';
 import { isAlertAnswer, moreSevere, showsAlert, type AlertLevel, type QuestionAlert } from '@/convex/lib/alerts';
 import { TOPICS, type TopicId } from '@/constants/topics';
@@ -48,12 +48,12 @@ export default function Triage() {
   const { theme } = useUnistyles();
   const triage = useQuery(api.triage.getByTopic, topic ? { topic } : 'skip');
   const createConversation = useMutation(api.conversations.create);
-  // One open professional conversation per topic: if there is one, skip the
-  // questionnaire and go straight to it.
+  // One open conversation per topic with a nurse and one with the AI: if the
+  // chosen kind is already open, skip the questionnaire and go straight to it.
   const wantsProfessional = kindForMode(mode) === 'human-async';
   const openByTopic = useQuery(
-    api.conversations.openProfessionalByTopic,
-    user && wantsProfessional ? {} : 'skip',
+    wantsProfessional ? api.conversations.openProfessionalByTopic : api.conversations.openAiByTopic,
+    user ? {} : 'skip',
   );
 
   const [step, setStep] = useState(0);
@@ -148,12 +148,12 @@ export default function Triage() {
   if (!user) return <Redirect href="/(auth)/login" />;
   if (role !== 'patient') return <Redirect href="/" />;
 
-  const openId = wantsProfessional ? openByTopic?.[topic] : undefined;
+  const openId = openByTopic?.[topic];
   if (openId) {
     return <Redirect href={{ pathname: '/(patient)/conversations/[id]', params: { id: openId } }} />;
   }
 
-  if (triage === undefined || (wantsProfessional && openByTopic === undefined)) {
+  if (triage === undefined || (user && openByTopic === undefined)) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={theme.colors.inkText} />
@@ -263,7 +263,25 @@ export default function Triage() {
         </View>
       </View>
 
-      {activeAlert && <TriageAlert alert={activeAlert} onDismiss={dismissAlert} />}
+      {activeAlert && (
+        // Same design as the original urgency alert; the level sets the title,
+        // the message and the numbers to call (constants/triageAlerts.ts).
+        <UrgencyAlert
+          testIDPrefix="triage-alert"
+          title={activeAlert.label}
+          message={activeAlert.message}
+          calls={
+            activeAlert.level === 'emergency'
+              ? ['112']
+              : activeAlert.level === 'urgent'
+                ? ['sns24', '112']
+                : []
+          }
+          snsAccessibilityLabel={activeAlert.call?.a11yLabel}
+          dismissLabel={activeAlert.level === 'time-sensitive' ? 'Continuar' : undefined}
+          onDismiss={dismissAlert}
+        />
+      )}
 
       <View style={styles.card}>
         <Text style={styles.question}>
@@ -272,15 +290,16 @@ export default function Triage() {
         </Text>
 
         {current.type === 'yes-no' && (
-          <View style={styles.yesNoRow}>
+          <View style={styles.yesNoRow} accessibilityRole="radiogroup" aria-label={current.question}>
             {(['yes', 'no'] as const).map((opt) => {
               const selected = answers[current.id] === opt;
               return (
                 <Pressable
                   key={opt}
                   testID={`triage-option-${opt}`}
-                  accessibilityRole="button"
+                  accessibilityRole="radio"
                   accessibilityState={{ selected }}
+                  aria-checked={selected}
                   onPress={() => handleAnswer(opt)}
                   style={[styles.yesNo, selected ? styles.optOn : styles.optOff]}
                 >
@@ -294,15 +313,16 @@ export default function Triage() {
         )}
 
         {current.type === 'multiple-choice' && current.options && (
-          <View style={styles.optionList}>
+          <View style={styles.optionList} accessibilityRole="radiogroup" aria-label={current.question}>
             {current.options.map((opt, idx) => {
               const selected = answers[current.id] === opt;
               return (
                 <Pressable
                   key={opt}
                   testID={`triage-option-${idx}`}
-                  accessibilityRole="button"
+                  accessibilityRole="radio"
                   accessibilityState={{ selected }}
+                  aria-checked={selected}
                   onPress={() => handleAnswer(opt)}
                   style={[styles.option, selected ? styles.optOn : styles.optOff]}
                 >
@@ -317,7 +337,7 @@ export default function Triage() {
 
         {current.type === 'scale' && current.options && (
           <View style={styles.scaleWrap}>
-            <View style={styles.scaleRow}>
+            <View style={styles.scaleRow} accessibilityRole="radiogroup" aria-label={current.question}>
               {current.options.map((opt) => {
                 const value = Number(opt);
                 const selected = answers[current.id] === value;
@@ -325,9 +345,10 @@ export default function Triage() {
                   <Pressable
                     key={opt}
                     testID={`triage-scale-${opt}`}
-                    accessibilityRole="button"
+                    accessibilityRole="radio"
                     accessibilityLabel={`${opt} de ${current.options!.length}`}
                     accessibilityState={{ selected }}
+                    aria-checked={selected}
                     onPress={() => handleAnswer(value)}
                     style={[styles.scaleCell, selected ? styles.optOn : styles.optOff]}
                   >
@@ -447,7 +468,7 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.pill,
     overflow: 'hidden',
   },
-  progressFill: { height: 6, backgroundColor: theme.colors.ink },
+  progressFill: { height: 6, backgroundColor: theme.colors.inkText },
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,

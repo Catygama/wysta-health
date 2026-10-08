@@ -99,7 +99,7 @@ describe('switchMode', () => {
   it("rejects another user's conversation", async () => {
     const { pro, proConvId } = await setup();
     await expect(pro.mutation(api.conversations.switchMode, { id: proConvId })).rejects.toThrow(
-      'Unauthorized'
+      'Não tens acesso a esta conversa.'
     );
   });
 });
@@ -236,7 +236,7 @@ describe('ending conversations', () => {
     });
     const other = t.withIdentity({ subject: `${otherId}|s3` });
     await expect(other.mutation(api.conversations.close, { id: proConvId })).rejects.toThrow(
-      'Unauthorized'
+      'Não tens acesso a esta conversa.'
     );
   });
 
@@ -298,6 +298,21 @@ describe('one open professional conversation per topic', () => {
     });
     const map = await patient.query(api.conversations.openProfessionalByTopic, {});
     expect(map).toEqual({ contraception: proConvId });
+  });
+
+  it('one open AI chat per topic: asking again returns it', async () => {
+    const { patient } = await setup();
+    const first = await patient.mutation(api.conversations.create, { topic: 'pregnancy', title: 'IA', kind: 'ai-only' });
+    const second = await patient.mutation(api.conversations.create, { topic: 'pregnancy', title: 'IA', kind: 'ai-only' });
+    expect(second).toBe(first);
+    expect(await patient.query(api.conversations.openAiByTopic, {})).toEqual({ pregnancy: first });
+  });
+
+  it('switching from the nurse chat to the AI returns the open AI chat on the topic', async () => {
+    const { patient, proConvId } = await setup();
+    const aiId = await patient.mutation(api.conversations.create, { topic: 'contraception', title: 'IA', kind: 'ai-only' });
+    const res = await patient.mutation(api.conversations.switchMode, { id: proConvId });
+    expect(res).toEqual({ id: aiId, created: false });
   });
 });
 

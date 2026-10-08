@@ -66,7 +66,7 @@ describe('a new account cannot give itself professional or admin access', () => 
     expect(await newcomer.query(api.conversations.listForProfessional, {})).toEqual([]);
     expect(await newcomer.query(api.conversations.get, { id: convId })).toBeNull();
     // ...and it can't approve itself.
-    await expect(newcomer.mutation(api.users.approveProfessional, { userId: newId })).rejects.toThrow('Admin only');
+    await expect(newcomer.mutation(api.users.approveProfessional, { userId: newId })).rejects.toThrow('Só a administração pode fazer isto.');
   });
 
   it('setRole needs an admin, so a new account cannot promote itself', async () => {
@@ -74,7 +74,7 @@ describe('a new account cannot give itself professional or admin access', () => 
     await newcomer.mutation(api.users.ensureProfile, {});
     for (const role of ['professional', 'admin'] as const) {
       await expect(newcomer.mutation(api.users.setRole, { targetUserId: newId, role })).rejects.toThrow(
-        'Unauthorized',
+        'Só a administração pode fazer isto.',
       );
     }
     expect((await profileOf(t, newId))?.role).toBe('patient');
@@ -94,15 +94,16 @@ describe('a new account cannot give itself professional or admin access', () => 
     await expect(as(patientId).mutation(api.users.bootstrapAdmin, {})).rejects.toThrow('Já existe um administrador.');
   });
 
-  it('the last admin cannot be removed, which would reopen bootstrapAdmin', async () => {
+  it('an admin cannot change their own role; another admin can', async () => {
     const { t, as, adminId, patientId } = await setup();
     const admin = as(adminId!);
     await expect(admin.mutation(api.users.setRole, { targetUserId: adminId!, role: 'patient' })).rejects.toThrow(
-      'Não é possível remover o último administrador.',
+      'Não podes alterar o teu próprio role.',
     );
-    // With a second admin, demoting one is fine.
+    expect((await profileOf(t, adminId!))?.role).toBe('admin');
+    // A second admin can demote the first one.
     await admin.mutation(api.users.setRole, { targetUserId: patientId, role: 'admin' });
-    await admin.mutation(api.users.setRole, { targetUserId: adminId!, role: 'patient' });
+    await as(patientId).mutation(api.users.setRole, { targetUserId: adminId!, role: 'patient' });
     expect((await profileOf(t, adminId!))?.role).toBe('patient');
   });
 

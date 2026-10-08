@@ -18,6 +18,7 @@ export function FilterChip({ label, active, onPress, accentColor, testID }: Prop
       testID={testID}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
+      aria-pressed={active}
       hitSlop={6}
       onPress={onPress}
       style={[styles.chip, active ? { backgroundColor: activeBg } : styles.chipIdle]}

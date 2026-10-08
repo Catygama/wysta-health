@@ -26,6 +26,7 @@ test('pending professional waits for admin approval, then reaches the queue', as
   await logoutViaBridge(page);
 
   await loginAs(page, TEST_USERS.admin.email);
+  await page.goto('/verifications');
   const request = page.getByTestId(`verification-request-${PENDING.email}`);
   await expect(request).toBeVisible({ timeout: 15_000 });
   await expect(request).toContainText('54321');

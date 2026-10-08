@@ -1,10 +1,12 @@
-import { internalMutation, mutation, query, type MutationCtx } from './_generated/server';
+import { internalMutation, internalQuery, mutation, query, type MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import { paginationOptsValidator } from 'convex/server';
 import type { Id } from './_generated/dataModel';
 import { requireAdmin } from './lib/auth';
+import { eraseAccount, signOutEverywhere, getActiveUserId } from './lib/accounts';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
+import { userError, NOT_AUTHENTICATED, ADMIN_ONLY } from './lib/errors';
 
 export const currentUser = query({
   args: {},
@@ -30,8 +32,8 @@ export const ensureProfile = mutation({
     isGuest: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserId(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const existing = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
@@ -49,8 +51,8 @@ export const ensureProfile = mutation({
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserId(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     return ctx.storage.generateUploadUrl();
   },
 });
@@ -64,16 +66,16 @@ export const submitProfessionalVerification = mutation({
     professionalVerificationNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserId(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     if (!args.professionalLicenseNumber.trim()) {
-      throw new Error('Cédula obrigatória.');
+      throw userError('Cédula obrigatória.');
     }
     if (!args.professionalSpecialty.trim()) {
-      throw new Error('Especialidade obrigatória.');
+      throw userError('Especialidade obrigatória.');
     }
     if (args.professionalVerificationDocuments.length === 0) {
-      throw new Error('Pelo menos um documento é obrigatório.');
+      throw userError('Pelo menos um documento é obrigatório.');
     }
 
     const existing = await ctx.db
@@ -83,7 +85,7 @@ export const submitProfessionalVerification = mutation({
 
     // An admin account would lose its role (and possibly the last admin).
     if (existing?.role === 'admin') {
-      throw new Error('Uma conta de administrador não pode pedir verificação de profissional.');
+      throw userError('Uma conta de administrador não pode pedir verificação de enfermeiro.');
     }
 
     // An admin confirms the licence (Ordem dos Enfermeiros) before the account
@@ -123,13 +125,13 @@ export const updateProfile = mutation({
     medications: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserId(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const profile = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    if (!profile) throw new Error('Profile not found');
+    if (!profile) throw userError('Não encontrámos o teu perfil.');
     await ctx.db.patch(profile._id, args);
   },
 });
@@ -151,14 +153,14 @@ export const hasAnyAdmin = query({
 export const bootstrapAdmin = mutation({
   args: {},
   handler: async (ctx) => {
-    const callerId = await getAuthUserId(ctx);
-    if (!callerId) throw new Error('Not authenticated');
+    const callerId = await getActiveUserId(ctx);
+    if (!callerId) throw userError(NOT_AUTHENTICATED);
     const anyAdmin = await ctx.db
       .query('userProfiles')
       .filter((q) => q.eq(q.field('role'), 'admin'))
       .first();
     if (anyAdmin) {
-      throw new Error('Já existe um administrador.');
+      throw userError('Já existe um administrador.');
     }
     let profile = await ctx.db
       .query('userProfiles')
@@ -187,18 +189,20 @@ export const setRole = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const callerId = await getAuthUserId(ctx);
-    if (!callerId) throw new Error('Not authenticated');
+    const callerId = await getActiveUserId(ctx);
+    if (!callerId) throw userError(NOT_AUTHENTICATED);
     const callerProfile = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', callerId))
       .unique();
-    if (callerProfile?.role !== 'admin') throw new Error('Unauthorized');
+    if (callerProfile?.role !== 'admin') throw userError(ADMIN_ONLY);
+    // Another admin has to change it: an admin can't demote or lock themselves out.
+    if (args.targetUserId === callerId) throw userError('Não podes alterar o teu próprio role.');
     const targetProfile = await ctx.db
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.targetUserId))
       .unique();
-    if (!targetProfile) throw new Error('Target user profile not found');
+    if (!targetProfile) throw userError('Não encontrámos o perfil deste utilizador.');
     // Never leave the deployment without an admin: that would reopen
     // bootstrapAdmin to any signed-in account.
     if (targetProfile.role === 'admin' && args.role !== 'admin') {
@@ -208,7 +212,7 @@ export const setRole = mutation({
           q.and(q.eq(q.field('role'), 'admin'), q.neq(q.field('_id'), targetProfile._id))
         )
         .first();
-      if (!otherAdmin) throw new Error('Não é possível remover o último administrador.');
+      if (!otherAdmin) throw userError('Não é possível remover o último administrador.');
     }
     // Promoting someone to professional is itself an admin decision, so the
     // account is approved at the same time.
@@ -228,7 +232,7 @@ export const setRole = mutation({
 export const listUsers = query({
   args: {},
   handler: async (ctx) => {
-    const callerId = await getAuthUserId(ctx);
+    const callerId = await getActiveUserId(ctx);
     if (!callerId) return [];
     const callerProfile = await ctx.db
       .query('userProfiles')
@@ -239,7 +243,16 @@ export const listUsers = query({
     return Promise.all(
       profiles.map(async (p) => {
         const user = await ctx.db.get(p.userId);
-        return { ...p, user };
+        // Account management only: leave out the patient's clinical fields.
+        const {
+          conditions: _conditions,
+          medications: _medications,
+          pregnancyStatus: _pregnancyStatus,
+          aiSummary: _aiSummary,
+          aiSummaryAt: _aiSummaryAt,
+          ...account
+        } = p;
+        return { ...account, user };
       })
     );
   },
@@ -298,10 +311,10 @@ async function reviewProfessional(
     .withIndex('by_user', (q) => q.eq('userId', targetUserId))
     .unique();
   if (!profile || profile.role !== 'professional') {
-    throw new Error('Este utilizador não tem um pedido de verificação de profissional.');
+    throw userError('Este utilizador não tem um pedido de verificação de enfermeiro.');
   }
   if (profile.professionalVerificationStatus !== 'pending') {
-    throw new Error('Este pedido já foi analisado.');
+    throw userError('Este pedido já foi analisado.');
   }
   const trimmed = reason?.trim() || undefined;
   await ctx.db.patch(profile._id, {
@@ -327,7 +340,8 @@ async function reviewProfessional(
 // access and shows up in the admin's "Pedidos de verificação".
 // Idempotent: reviewed, pending and rejected accounts are left alone.
 // Run it from the Convex dashboard (Functions → users:requireReviewForUnreviewedProfessionals,
-// args {}) or: bunx convex run --prod users:requireReviewForUnreviewedProfessionals
+// args {}) or, with the production CONVEX_DEPLOY_KEY set:
+// bunx convex run --prod users:requireReviewForUnreviewedProfessionals
 export const requireReviewForUnreviewedProfessionals = internalMutation({
   args: { paginationOpts: v.optional(paginationOptsValidator) },
   handler: async (ctx, args) => {
@@ -386,4 +400,87 @@ export const rejectProfessional = mutation({
 export const guestProfessionalEnabled = query({
   args: {},
   handler: async () => process.env.ALLOW_GUEST_PROFESSIONAL === 'true',
+});
+
+// ── Admin: block access and delete accounts ───────────────────────────────
+
+// The account an admin acts on: never their own (another admin has to), and
+// it must exist.
+async function otherUserProfile(ctx: MutationCtx, adminId: Id<'users'>, userId: Id<'users'>) {
+  if (userId === adminId) throw userError('Não podes fazer isto à tua própria conta.');
+  const profile = await ctx.db
+    .query('userProfiles')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .unique();
+  if (!profile) throw userError('Não encontrámos o perfil deste utilizador.');
+  return profile;
+}
+
+// Blocks access: the user is signed out on every device, and while blocked
+// every query and mutation treats them as signed out. Nothing is deleted.
+export const blockUser = mutation({
+  args: { userId: v.id('users'), reason: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const { userId: adminId } = await requireAdmin(ctx);
+    const profile = await otherUserProfile(ctx, adminId, args.userId);
+    if (profile.blockedAt) return null;
+    const reason = args.reason?.trim() || undefined;
+    await ctx.db.patch(profile._id, { blockedAt: Date.now(), blockedBy: adminId, blockedReason: reason });
+    await signOutEverywhere(ctx, args.userId);
+    await ctx.db.insert('auditLog', {
+      adminId,
+      targetUserId: args.userId,
+      action: 'account-blocked',
+      details: reason ? `Acesso bloqueado: ${reason}` : 'Acesso bloqueado.',
+    });
+    return null;
+  },
+});
+
+export const unblockUser = mutation({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const { userId: adminId } = await requireAdmin(ctx);
+    const profile = await otherUserProfile(ctx, adminId, args.userId);
+    if (!profile.blockedAt) return null;
+    await ctx.db.patch(profile._id, { blockedAt: undefined, blockedBy: undefined, blockedReason: undefined });
+    await ctx.db.insert('auditLog', {
+      adminId,
+      targetUserId: args.userId,
+      action: 'account-unblocked',
+      details: 'Acesso desbloqueado.',
+    });
+    return null;
+  },
+});
+
+// Deletes the account for good (lib/accounts.ts eraseAccount): a patient's
+// conversations and data go with it; a professional's open conversations go
+// back to the queue. The audit log keeps a record without personal data.
+export const deleteUser = mutation({
+  args: { userId: v.id('users'), confirmation: v.literal('APAGAR') },
+  handler: async (ctx, args) => {
+    const { userId: adminId } = await requireAdmin(ctx);
+    const profile = await otherUserProfile(ctx, adminId, args.userId);
+    const role = profile.role;
+    await eraseAccount(ctx, args.userId);
+    await ctx.db.insert('auditLog', {
+      adminId,
+      action: 'account-deleted',
+      details: `Conta apagada pela administração (${role === 'patient' ? 'utente' : role === 'professional' ? 'enfermeiro' : 'admin'}).`,
+    });
+    return null;
+  },
+});
+
+// For actions (no database access): whether the signed-in user isn't blocked.
+export const isActive = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    const profile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+    return !profile?.blockedAt;
+  },
 });

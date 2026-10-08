@@ -25,8 +25,6 @@ export function ArticleScreen() {
 
   if (!article) return null;
 
-  const topic = TOPICS.find((t) => t.id === article.topic);
-
   return (
     <ScrollView
       style={styles.screen}
@@ -49,6 +47,26 @@ export function ArticleScreen() {
         <Icon name={{ sf: 'chevron.left', ion: 'chevron-back' }} size={20} color={theme.colors.textPrimary} />
         <Text style={styles.backText}>Explorar</Text>
       </Pressable>
+      <ArticleView article={article} />
+    </ScrollView>
+  );
+}
+
+export type ArticleViewData = {
+  title: string;
+  topic: string;
+  summary: string;
+  content: string;
+  whenToSeekHelp?: string;
+  readingTimeMinutes: number;
+};
+
+// The article as the patient reads it (title to "Quando procurar ajuda"). Also
+// the admin editor's preview.
+export function ArticleView({ article }: { article: ArticleViewData }) {
+  const topic = TOPICS.find((t) => t.id === article.topic);
+  return (
+    <>
       <View style={styles.head}>
         <Text style={styles.title}>{article.title}</Text>
 
@@ -57,7 +75,7 @@ export function ArticleScreen() {
           {article.readingTimeMinutes} min de leitura
         </Text>
 
-        {article.summary && <Text style={styles.summary}>{article.summary}</Text>}
+        {article.summary ? <Text style={styles.summary}>{article.summary}</Text> : null}
       </View>
 
       <View style={styles.bodyBlocks}>
@@ -89,7 +107,7 @@ export function ArticleScreen() {
         })}
       </View>
 
-      {article.whenToSeekHelp && (
+      {article.whenToSeekHelp ? (
         <View style={styles.callout}>
           <Text style={styles.calloutTitle}>Quando procurar ajuda</Text>
           {helpItems(article.whenToSeekHelp).map((item, i) => (
@@ -99,9 +117,8 @@ export function ArticleScreen() {
             </View>
           ))}
         </View>
-      )}
-
-    </ScrollView>
+      ) : null}
+    </>
   );
 }
 
@@ -194,6 +211,6 @@ const styles = StyleSheet.create((theme) => ({
   callout: { gap: theme.spacing.sm },
   calloutTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: theme.colors.inkText },
   helpItem: { flexDirection: 'row', gap: theme.spacing.sm },
-  bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.ink, marginTop: 10 },
+  bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.inkText, marginTop: 10 },
   calloutBody: { flex: 1, fontSize: 16, color: theme.colors.textPrimary, lineHeight: 24 },
 }));

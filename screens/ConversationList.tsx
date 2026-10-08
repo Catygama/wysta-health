@@ -2,7 +2,7 @@ import { View, Text, FlatList, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { TOPICS } from '@/constants/topics';
-import { PRIORITY_LABELS, PRIORITY_COLORS } from '@/constants/conversation';
+import { PRIORITY_LABELS, priorityColors } from '@/constants/conversation';
 import { Icon } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Card';
 import { relativeTime } from '@/lib/format';
@@ -31,6 +31,8 @@ type Props = {
   conversations: Conversation[];
   basePath: string;
   showPriority?: boolean;
+  /** Triage alert badge ("Urgente", "Sensível ao tempo"…); the Pedidos list hides it. */
+  showAlertLevel?: boolean;
   /** Shown when the list is empty, so a filtered-out list doesn't look broken. */
   emptyComponent?: React.ReactElement | null;
   /** Shows a button on the right of each card that ends the conversation. */
@@ -43,6 +45,7 @@ export function ConversationList({
   conversations,
   basePath,
   showPriority = false,
+  showAlertLevel = true,
   emptyComponent,
   onEnd,
 }: Props) {
@@ -60,7 +63,15 @@ export function ConversationList({
       ListEmptyComponent={emptyComponent}
       renderItem={({ item }) => {
         const topic = TOPICS.find((t) => t.id === item.topic);
-        const priorityColor = PRIORITY_COLORS[item.priority] ?? theme.colors.textSecondary;
+        const pastel = theme.topic[topic?.color ?? 'general'];
+        const priorityColor = priorityColors(theme.name)[item.priority] ?? theme.colors.textSecondary;
+        // Chip text: the hues that don't reach 4.5:1 on their own tint use the
+        // nearest palette colour (WCAG 1.4.3); the tint stays the same.
+        const priorityTextColor =
+          ((theme.name === 'dark'
+            ? { high: theme.colors.warning }
+            : { low: theme.colors.success, medium: theme.colors.warning }) as Record<string, string>)[item.priority] ??
+          priorityColor;
         return (
           <Card
             testID={`conversation-row-${item._id}`}
@@ -73,6 +84,10 @@ export function ConversationList({
             style={styles.card}
           >
             <View style={styles.cardRow}>
+              {/* Same topic icon as the patient's conversation list. */}
+              <View style={[styles.topicIcon, { backgroundColor: pastel.fill }]}>
+                {topic && <Icon name={topic.icon} size={18} color={pastel.on} />}
+              </View>
               <View style={styles.cardBody}>
                 <View style={styles.top}>
                   <Text style={styles.name} numberOfLines={1}>
@@ -84,15 +99,15 @@ export function ConversationList({
                   {item.preview ? `"${item.preview}"` : 'Questionário de triagem concluído'}
                 </Text>
                 <View style={styles.pills}>
-                  {showPriority && item.alertLevel ? (
+                  {showPriority && showAlertLevel && item.alertLevel ? (
                     <AlertLevelBadge level={item.alertLevel} testID={`alert-level-${item._id}`} />
                   ) : null}
                   <View style={[styles.pill, styles.topicPill]}>
                     <Text style={styles.topicText}>{topic?.label ?? item.topic}</Text>
                   </View>
                   {showPriority && item.priority ? (
-                    <View style={[styles.pill, { backgroundColor: priorityColor + '18' }]}>
-                      <Text style={[styles.pillText, { color: priorityColor }]}>
+                    <View style={[styles.pill, { backgroundColor: priorityColor + (theme.name === 'dark' ? '29' : '18') }]}>
+                      <Text style={[styles.pillText, { color: priorityTextColor }]}>
                         {PRIORITY_LABELS[item.priority] ?? item.priority}
                       </Text>
                     </View>
@@ -100,7 +115,7 @@ export function ConversationList({
                   {item.fromAi ? (
                     <View style={[styles.pill, styles.topicPill]}>
                       <Icon name={{ sf: 'sparkles', ion: 'sparkles-outline' }} size={11} color={theme.colors.textSecondary} />
-                      <Text style={styles.topicText}>Vem da IA</Text>
+                      <Text style={styles.topicText}>Iniciada com a IA</Text>
                     </View>
                   ) : null}
                 </View>
@@ -132,6 +147,14 @@ const styles = StyleSheet.create((theme) => ({
   card: { gap: 4 },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   cardBody: { flex: 1, gap: 4 },
+  topicIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   endBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.6 },
   top: {

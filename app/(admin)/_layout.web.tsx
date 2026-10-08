@@ -9,6 +9,27 @@ const ITEMS: NavItem[] = [
     icon: { sf: 'person.2', ion: 'people-outline' },
     match: (p) => p === '/',
   },
+  {
+    label: 'Verificações',
+    href: '/verifications',
+    icon: { sf: 'checkmark.seal', ion: 'shield-checkmark-outline' },
+  },
+  {
+    label: 'Conteúdos',
+    href: '/content',
+    icon: { sf: 'doc.text', ion: 'document-text-outline' },
+    match: (p) => p.startsWith('/content'),
+  },
+  {
+    label: 'Gestão da IA',
+    href: '/ai',
+    icon: { sf: 'sparkles', ion: 'sparkles-outline' },
+  },
+  {
+    label: 'Perfil',
+    href: '/my-account',
+    icon: { sf: 'person', ion: 'person-outline' },
+  },
 ];
 
 export default function AdminLayoutWeb() {

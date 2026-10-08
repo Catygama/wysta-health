@@ -49,7 +49,7 @@ export default function ProfessionalProfile() {
         <Row label="Email" value={user?.email ?? '—'} selectable />
       </Card>
 
-      <HistoryLink onPress={() => router.push('/(professional)/profile/history')} />
+      <HistoryLink onPress={() => router.push('/(professional)/account/history')} />
 
       <Card title="Dados profissionais">
         <Row label="Nome" value={profile?.displayName ?? '—'} />
@@ -69,7 +69,7 @@ export default function ProfessionalProfile() {
           <Text style={styles.privacyTitle}>Confidencialidade</Text>
           <Text style={styles.privacyText}>
             Os dados das utentes são confidenciais. As notas internas só são visíveis a
-            profissionais.
+            enfermeiros.
           </Text>
         </View>
       </View>

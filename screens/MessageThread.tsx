@@ -29,6 +29,8 @@ import {
   type PickedImage,
   type PickedFile,
 } from '@/lib/upload';
+import { errorText } from '@/lib/errorText';
+import { SafetyRuleMessage } from '@/screens/SafetyRuleMessage';
 
 function formatBytes(bytes?: number): string | null {
   if (!bytes || bytes <= 0) return null;
@@ -134,7 +136,7 @@ export function MessageThread({
         setPendingDocument(null);
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Não foi possível abrir a galeria.');
+      setError(errorText(e, 'Não foi possível abrir a galeria.'));
     }
   }
 
@@ -147,7 +149,7 @@ export function MessageThread({
         setPendingImage(null);
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Não foi possível abrir o seletor de ficheiros.');
+      setError(errorText(e, 'Não foi possível abrir o seletor de ficheiros.'));
     }
   }
 
@@ -196,7 +198,7 @@ export function MessageThread({
       setPendingDocument(null);
       listRef.current?.scrollToEnd();
     } catch (e: any) {
-      setError(e?.message ?? 'Erro a enviar mensagem.');
+      setError(errorText(e, 'Não foi possível enviar a mensagem. Tenta de novo.'));
     } finally {
       setUploading(false);
       setSending(false);
@@ -230,7 +232,7 @@ export function MessageThread({
             <View testID="thread-next-step" style={styles.nextStep}>
               <Text style={styles.nextStepTitle}>Agora, conta-nos o que se passa</Text>
               <Text style={styles.nextStepText}>
-                Escreve a tua dúvida em baixo. Um profissional responde normalmente em 24h.
+                Escreve a tua dúvida em baixo. Um enfermeiro responde normalmente em 24h.
               </Text>
             </View>
           ) : null
@@ -251,10 +253,10 @@ export function MessageThread({
             />
             <Text style={styles.emptyText}>
               {scope === 'internal'
-                ? 'Sem notas internas. As notas só são visíveis a profissionais.'
+                ? 'Sem notas internas. As notas só são visíveis a enfermeiros.'
                 : isProfessional
                   ? 'Sem mensagens nesta conversa.'
-                  : 'Escreve a primeira mensagem para o profissional.'}
+                  : 'Escreve a primeira mensagem para o enfermeiro.'}
             </Text>
           </View>
         }
@@ -264,6 +266,9 @@ export function MessageThread({
             item.metadata?.triageData
           ) {
             return <TriageMessage data={item.metadata.triageData} aiOnly={aiOnly} />;
+          }
+          if (item.metadata?.safetyRule && !item.streaming) {
+            return <SafetyRuleMessage ruleId={item.metadata.safetyRule} content={item.content} />;
           }
           if (item.messageType === 'system') {
             return <SystemMessage content={item.content} />;
@@ -298,6 +303,7 @@ export function MessageThread({
                 attachmentName={item.attachmentName}
                 attachmentSize={item.attachmentSize}
                 messageType={item.messageType}
+                author={(item as any).authorName}
               />
             </Animated.View>
           );
@@ -306,19 +312,23 @@ export function MessageThread({
 
       {/* A screen-supplied footer (e.g. "Atribuir a mim") replaces the notice. */}
       {!canSend && !closed && aboveComposer ? (
-        <View style={styles.composer}>{aboveComposer}</View>
+        <View style={[styles.composer, insets.bottom > 0 && { paddingBottom: theme.spacing.sm + insets.bottom }]}>
+          {aboveComposer}
+        </View>
       ) : null}
 
       {!canSend && !closed && !aboveComposer && (
-        <View style={styles.notice}>
+        <View style={[styles.notice, insets.bottom > 0 && { paddingBottom: theme.spacing.sm + insets.bottom }]}>
           <Text style={styles.noticeText}>
-            Para responder, atribui esta conversa a ti.
+            {isInternalScope
+              ? 'Atribui esta conversa a ti para poderes escrever notas internas.'
+              : 'Para responder, atribui esta conversa a ti.'}
           </Text>
         </View>
       )}
 
       {closed && (
-        <View style={styles.notice}>
+        <View style={[styles.notice, insets.bottom > 0 && { paddingBottom: theme.spacing.sm + insets.bottom }]}>
           <Text style={styles.noticeText}>Conversa encerrada.</Text>
         </View>
       )}
@@ -412,6 +422,7 @@ export function MessageThread({
                 <>
                   <Pressable
                     testID="message-attach-image"
+                    accessibilityRole="button"
                     onPress={handlePickImage}
                     disabled={uploading || sending}
                     style={({ pressed }) => [
@@ -429,6 +440,7 @@ export function MessageThread({
                   </Pressable>
                   <Pressable
                     testID="message-attach-document"
+                    accessibilityRole="button"
                     onPress={handlePickDocument}
                     disabled={uploading || sending}
                     style={({ pressed }) => [
@@ -454,18 +466,15 @@ export function MessageThread({
                 testID={isInternalScope ? 'message-input-internal' : 'message-input'}
                 value={text}
                 onChangeText={setText}
-                placeholder={
-                  isInternalScope
-                    ? 'Escreve uma nota interna...'
-                    : 'Escreve uma mensagem...'
-                }
-                placeholderTextColor={theme.colors.textTertiary as any}
+                // No placeholder text (it was cut off on phones); the label is for screen readers.
+                accessibilityLabel={isInternalScope ? 'Escrever nota interna' : 'Escrever mensagem'}
                 multiline
                 editable={!uploading && !sending}
                 style={styles.input}
               />
               <Pressable
                 testID={isInternalScope ? 'message-send-internal' : 'message-send'}
+                accessibilityRole="button"
                 onPress={handleSend}
                 disabled={!canSubmit}
                 style={[styles.sendBtn, canSubmit ? styles.sendBtnActive : styles.sendBtnIdle]}
@@ -511,8 +520,8 @@ function TriageMessage({
           copies the triage over, and professionals can open the AI chat. */}
       <Text style={styles.triageBody}>
         {aiOnly
-          ? 'Respostas guardadas para a assistente IA. O profissional de saúde também tem acesso.'
-          : 'Respostas guardadas para o profissional de saúde.'}
+          ? 'Respostas guardadas para a assistente IA. O enfermeiro também tem acesso.'
+          : 'Respostas guardadas para o enfermeiro.'}
       </Text>
     </View>
   );
@@ -546,12 +555,23 @@ export function AiResponseMessage({
           size={14}
           color={styles.aiLabel.color}
         />
-        <Text style={styles.aiLabel}>Assistente Wysta</Text>
+        <Text style={styles.aiLabel}>Assistente de IA</Text>
       </View>
-      <Text style={styles.aiBody} selectable>
-        {content}
-        {streaming ? <Text style={styles.aiCursor}>{content ? ' ▍' : 'a escrever…'}</Text> : null}
-      </Text>
+      {streaming ? (
+        // The answer is shown only once the safety checks have approved it.
+        <View
+          testID="ai-response-preparing"
+          style={styles.aiPreparing}
+          accessibilityLiveRegion="polite"
+        >
+          <ActivityIndicator size="small" color={styles.aiLabel.color} />
+          <Text style={styles.aiCursor}>A preparar a resposta…</Text>
+        </View>
+      ) : (
+        <Text style={styles.aiBody} selectable>
+          {content}
+        </Text>
+      )}
     </View>
   );
 }
@@ -562,6 +582,7 @@ function SuggestEndButton({ onPress }: { onPress: () => void }) {
       <Text style={styles.suggestEndText}>Já tens o que precisavas?</Text>
       <Pressable
         testID="ai-suggest-end-button"
+        accessibilityRole="button"
         onPress={onPress}
         style={({ pressed }) => [styles.suggestEndBtn, pressed && styles.suggestEndPressed]}
       >
@@ -724,7 +745,8 @@ const styles = StyleSheet.create((theme) => ({
     letterSpacing: 0.3,
   },
   aiBody: { fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 },
-  aiCursor: { color: theme.colors.textTertiary },
+  aiCursor: { fontSize: 15, color: theme.colors.textSecondary },
+  aiPreparing: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   suggestEnd: {
     flexDirection: 'row',
     alignItems: 'center',

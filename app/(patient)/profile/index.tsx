@@ -7,7 +7,7 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useConvex } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useRouter } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -15,26 +15,39 @@ import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
-import { WellbeingTrend } from '@/components/WellbeingTrend';
 import { HistoryLink } from '@/components/HistoryLink';
 import { AcademicNotice } from '@/components/AcademicNotice';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ThemeCard } from '@/components/ThemeCard';
 import { WebPushCard } from '@/components/WebPushCard';
 import { fonts } from '@/lib/fonts';
-import { PREGNANCY_OPTIONS } from '@/constants/profile';
+import { saveJson } from '@/lib/saveJson';
+import { errorText } from '@/lib/errorText';
 
 const AGE_RANGES = ['<18', '18-25', '26-35', '36-45', '46-55', '>55'];
-
-const PREGNANCY_LABELS: Record<string, string> = Object.fromEntries(
-  PREGNANCY_OPTIONS.map((o) => [o.value, o.label])
-);
 
 export default function Profile() {
   const router = useRouter();
   const { signOut } = useAuthActions();
   const user = useQuery(api.users.currentUser);
   const updateProfile = useMutation(api.users.updateProfile);
+  const deleteAccount = useMutation(api.privacy.deleteMyAccount);
+  const convex = useConvex();
+  const [exporting, setExporting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteWord, setDeleteWord] = useState('');
+
+  async function exportData() {
+    setExporting(true);
+    try {
+      const data = await convex.query(api.privacy.exportMyData, {});
+      await saveJson(`wysta-os-meus-dados-${new Date().toISOString().slice(0, 10)}.json`, data);
+    } catch (e) {
+      setNotice({ title: 'Exportar dados', message: errorText(e, 'Não foi possível exportar os teus dados. Tenta de novo.') });
+    } finally {
+      setExporting(false);
+    }
+  }
   const { theme } = useUnistyles();
 
   const [editing, setEditing] = useState(false);
@@ -42,7 +55,6 @@ export default function Profile() {
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [ageRange, setAgeRange] = useState('');
-  const [pregnancyStatus, setPregnancyStatus] = useState('');
   const [location, setLocation] = useState('');
   const [conditionInput, setConditionInput] = useState('');
   const [conditions, setConditions] = useState<string[]>([]);
@@ -53,7 +65,6 @@ export default function Profile() {
   function resetForm() {
     setDisplayName(user?.profile?.displayName ?? '');
     setAgeRange(user?.profile?.ageRange ?? '');
-    setPregnancyStatus(user?.profile?.pregnancyStatus ?? '');
     setLocation(user?.profile?.location ?? '');
     setConditions(user?.profile?.conditions ?? []);
     setMedications(user?.profile?.medications ?? []);
@@ -80,7 +91,6 @@ export default function Profile() {
       await updateProfile({
         displayName: displayName.trim() || undefined,
         ageRange: ageRange || undefined,
-        pregnancyStatus: pregnancyStatus || undefined,
         location: location.trim() || undefined,
         conditions: conditions.length ? conditions : undefined,
         medications: medications.length ? medications : undefined,
@@ -115,6 +125,7 @@ export default function Profile() {
         {!editing && (
           <Pressable
             testID="profile-edit-button"
+            accessibilityRole="button"
             // Load the saved profile into the form when editing starts.
             onPress={() => {
               resetForm();
@@ -132,8 +143,6 @@ export default function Profile() {
       </Card>
 
       <HistoryLink onPress={() => router.push('/(patient)/profile/history')} />
-
-      <WellbeingTrend />
 
       {editing ? (
         <View style={styles.group}>
@@ -157,7 +166,7 @@ export default function Profile() {
           </Card>
 
           <Card title="Faixa etária">
-            <View style={styles.pillRow}>
+            <View style={styles.pillRow} accessibilityRole="radiogroup" aria-label="Faixa etária">
               {AGE_RANGES.map((age) => (
                 <SelectPill
                   key={age}
@@ -165,22 +174,6 @@ export default function Profile() {
                   label={age}
                   active={ageRange === age}
                   onPress={() => setAgeRange(ageRange === age ? '' : age)}
-                />
-              ))}
-            </View>
-          </Card>
-
-          <Card title="Estado de gravidez">
-            <View style={styles.optionList}>
-              {PREGNANCY_OPTIONS.map((opt) => (
-                <SelectRow
-                  key={opt.value}
-                  testID={`profile-pregnancy-${opt.value}`}
-                  label={opt.label}
-                  active={pregnancyStatus === opt.value}
-                  onPress={() =>
-                    setPregnancyStatus(pregnancyStatus === opt.value ? '' : opt.value)
-                  }
                 />
               ))}
             </View>
@@ -229,10 +222,6 @@ export default function Profile() {
           <Card title="Dados de saúde">
             <Row label="Nome" value={user?.profile?.displayName ?? '—'} />
             <Row label="Faixa etária" value={user?.profile?.ageRange ?? '—'} />
-            <Row
-              label="Estado de gravidez"
-              value={PREGNANCY_LABELS[user?.profile?.pregnancyStatus ?? ''] ?? '—'}
-            />
             <Row label="Localidade" value={user?.profile?.location ?? '—'} />
           </Card>
 
@@ -259,8 +248,12 @@ export default function Profile() {
         <View style={styles.privacyBody}>
           <Text style={styles.privacyTitle}>Privacidade dos dados</Text>
           <Text style={styles.privacyText}>
-            A tua informação é tratada com confidencialidade. Apenas profissionais
-            envolvidos no acompanhamento têm acesso aos dados clínicos.
+            As tuas conversas e dados de saúde só são vistos pela equipa de enfermagem
+            verificada da Wysta. A administração gere as contas, mas não tem acesso às
+            conversas. Para gerar as respostas da assistente e os resumos para a equipa,
+            partes das tuas conversas são enviadas a um fornecedor externo de IA
+            (atualmente a OpenAI, nos EUA), sem o teu nome nem o teu email. Podes
+            exportar ou apagar os teus dados em Gestão de conta.
           </Text>
         </View>
       </View>
@@ -268,26 +261,19 @@ export default function Profile() {
       <View style={styles.manageCard}>
         <Text style={styles.manageTitle}>Gestão de conta</Text>
         <Pressable
-          onPress={() =>
-            setNotice({
-              title: 'Exportar dados',
-              message:
-                'Em breve poderás exportar uma cópia dos teus dados. Por agora contacta o suporte.',
-            })
-          }
+          testID="profile-export-button"
+          accessibilityRole="button"
+          onPress={exportData}
+          disabled={exporting}
           style={styles.manageRow}
         >
           <Icon name={{ sf: 'square.and.arrow.up', ion: 'cloud-download-outline' }} size={18} color={theme.colors.inkText} />
-          <Text style={styles.manageLink}>Exportar os meus dados</Text>
+          <Text style={styles.manageLink}>{exporting ? 'A preparar os teus dados…' : 'Exportar os meus dados'}</Text>
         </Pressable>
         <Pressable
-          onPress={() =>
-            setNotice({
-              title: 'Apagar conta',
-              message:
-                'A eliminação de conta requer confirmação manual. Contacta o suporte para procedermos.',
-            })
-          }
+          testID="profile-delete-account-button"
+          accessibilityRole="button"
+          onPress={() => setConfirmDelete(true)}
           style={styles.manageRow}
         >
           <Icon name={{ sf: 'trash', ion: 'trash-outline' }} size={18} color={theme.colors.danger} />
@@ -318,6 +304,32 @@ export default function Profile() {
         }}
       />
       <ConfirmDialog
+        testID="delete-account-dialog"
+        visible={confirmDelete}
+        title="Apagar a tua conta?"
+        message="Vamos apagar o teu perfil, as tuas conversas e mensagens, os ficheiros que enviaste e os teus registos de bem-estar. Não é possível recuperar. Se quiseres uma cópia, exporta primeiro os teus dados. Para confirmar, escreve APAGAR."
+        confirmLabel="Apagar conta"
+        confirmDisabled={deleteWord.trim().toUpperCase() !== 'APAGAR'}
+        onCancel={() => {
+          setConfirmDelete(false);
+          setDeleteWord('');
+        }}
+        onConfirm={async () => {
+          await deleteAccount({ confirmation: 'APAGAR' });
+          setConfirmDelete(false);
+          await signOut();
+        }}
+      >
+        <Input
+          testID="delete-account-input"
+          label="Escreve APAGAR"
+          value={deleteWord}
+          onChangeText={setDeleteWord}
+          autoCapitalize="characters"
+          autoComplete="off"
+        />
+      </ConfirmDialog>
+      <ConfirmDialog
         visible={notice !== null}
         title={notice?.title ?? ''}
         message={notice?.message}
@@ -346,7 +358,7 @@ function BootstrapAdminCard() {
     try {
       await bootstrap();
     } catch (e: any) {
-      setError(e?.message ?? 'Falhou.');
+      setError(errorText(e, 'Não foi possível concluir. Tenta de novo.'));
     } finally {
       setLoading(false);
     }
@@ -392,17 +404,14 @@ function Row({ label, value, selectable }: { label: string; value: string; selec
 type SelectPillProps = { label: string; active: boolean; onPress: () => void; testID?: string };
 function SelectPill({ label, active, onPress, testID }: SelectPillProps) {
   return (
-    <Pressable testID={testID} onPress={onPress} style={[styles.selPill, active ? styles.selOn : styles.selOffSunken]}>
+    <Pressable
+      testID={testID}
+      onPress={onPress}
+      style={[styles.selPill, active ? styles.selOn : styles.selOffSunken]}
+      accessibilityRole="radio"
+      aria-checked={active}
+    >
       <Text style={[styles.selPillText, active ? styles.selTextOn : styles.selTextOff]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-type SelectRowProps = { label: string; active: boolean; onPress: () => void; testID?: string };
-function SelectRow({ label, active, onPress, testID }: SelectRowProps) {
-  return (
-    <Pressable testID={testID} onPress={onPress} style={[styles.selRow, active ? styles.selOn : styles.selOffSunken]}>
-      <Text style={[styles.selRowText, active ? styles.selTextOn : styles.selRowTextOff]}>{label}</Text>
     </Pressable>
   );
 }
@@ -433,6 +442,8 @@ function TagEditor({ value, onChangeText, tags, onAdd, onRemove, placeholder }: 
         <Pressable
           onPress={onAdd}
           disabled={!value.trim()}
+          accessibilityRole="button"
+          accessibilityLabel="Adicionar"
           style={[styles.tagAdd, value.trim() ? styles.tagAddOn : styles.tagAddOff]}
         >
           <Text style={styles.tagAddText}>＋</Text>
@@ -441,7 +452,13 @@ function TagEditor({ value, onChangeText, tags, onAdd, onRemove, placeholder }: 
       {tags.length > 0 && (
         <View style={styles.tagWrap}>
           {tags.map((tag) => (
-            <Pressable key={tag} onPress={() => onRemove(tag)} style={styles.tagChip}>
+            <Pressable
+              key={tag}
+              onPress={() => onRemove(tag)}
+              style={styles.tagChip}
+              accessibilityRole="button"
+              accessibilityLabel={`Remover ${tag}`}
+            >
               <Text style={styles.tagChipText}>{tag}</Text>
               <Icon name={{ sf: 'xmark', ion: 'close' }} size={10} color={theme.colors.inkText} />
             </Pressable>
@@ -484,7 +501,6 @@ const styles = StyleSheet.create((theme) => ({
   rowLabel: { fontSize: 12, color: theme.colors.textSecondary },
   rowValue: { fontSize: 16, color: theme.colors.textPrimary },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
-  optionList: { gap: theme.spacing.sm },
   actions: { gap: theme.spacing.sm },
   selOn: { backgroundColor: theme.colors.ink },
   selOffSunken: { backgroundColor: theme.colors.surfaceSunken },
@@ -497,9 +513,6 @@ const styles = StyleSheet.create((theme) => ({
     borderCurve: 'continuous',
   },
   selPillText: { fontSize: 14, fontWeight: '500' },
-  selRow: { padding: theme.spacing.md, borderRadius: theme.radius.md, borderCurve: 'continuous' },
-  selRowText: { fontSize: 16 },
-  selRowTextOff: { color: theme.colors.textPrimary },
   privacy: {
     backgroundColor: theme.colors.surfaceSunken,
     borderRadius: theme.radius.md,

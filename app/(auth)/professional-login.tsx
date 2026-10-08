@@ -12,6 +12,7 @@ import { api } from '@/convex/_generated/api';
 import { guestAuthEnabled } from '@/lib/env';
 import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
+import { errorText } from '@/lib/errorText';
 
 export default function ProfessionalLogin() {
   const { signIn } = useAuthActions();
@@ -44,8 +45,7 @@ export default function ProfessionalLogin() {
     try {
       await signIn('anonymous-professional');
     } catch (e: any) {
-      const message = e?.message ?? String(e);
-      setError(`Guest professional falhou: ${message}`);
+      setError(errorText(e, 'Não foi possível entrar em modo de demonstração. Tenta de novo.'));
     } finally {
       setGuestLoading(false);
     }
@@ -66,8 +66,8 @@ export default function ProfessionalLogin() {
         <View style={styles.logo}>
           <Icon name={{ sf: 'stethoscope', ion: 'medkit' }} size={30} color={theme.colors.onInk} />
         </View>
-        <Text style={styles.title}>Profissional</Text>
-        <Text style={styles.tagline}>Acesso para profissionais de saúde verificados.</Text>
+        <Text style={styles.title}>Enfermeiro</Text>
+        <Text style={styles.tagline}>Acesso para enfermeiros verificados.</Text>
       </View>
 
       <AcademicNotice />
@@ -108,7 +108,7 @@ export default function ProfessionalLogin() {
           <Button
             testID="auth-professional-guest-button"
             strongBorder
-            label="Entrar como profissional convidado"
+            label="Entrar como enfermeiro convidado"
             variant="secondary"
             onPress={handleGuest}
             loading={guestLoading}

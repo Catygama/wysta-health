@@ -130,7 +130,7 @@ export const AI_PURPOSE_META: Record<AiPurpose, PurposeMeta> = {
   'chat-summary': {
     label: 'Resumo de conversa',
     description:
-      'Sumariza uma conversa fechada entre utente e profissional (motivo, resposta, próximos passos).',
+      'Sumariza uma conversa fechada entre utente e enfermeiro (motivo, resposta, próximos passos).',
     group: 'resumos',
     variables: ['conversationText'],
     producesJson: false,
@@ -138,7 +138,7 @@ export const AI_PURPOSE_META: Record<AiPurpose, PurposeMeta> = {
   'user-summary': {
     label: 'Resumo de perfil',
     description:
-      'Constrói um resumo de perfil do utente para o profissional ver ao abrir a conversa.',
+      'Constrói um resumo de perfil do utente para o enfermeiro ver ao abrir a conversa.',
     group: 'resumos',
     variables: ['profileData', 'conversationSummaries'],
     producesJson: false,

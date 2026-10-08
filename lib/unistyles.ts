@@ -30,7 +30,7 @@ const topicsDark = {
   cycle: { fill: '#5C1E2C', on: '#F2C9D0' },
   intimate: { fill: '#4A2A44', on: '#E6D3E3' },
   pregnancy: { fill: '#5A3226', on: '#F5D6C8' },
-  general: { fill: '#3E2C26', on: '#E6D5CC' },
+  general: { fill: '#5E4A36', on: '#EBD9BF' },
   wellbeing: { fill: '#5A2A1E', on: '#E9C2B4' },
 } as const;
 
@@ -72,6 +72,9 @@ const lightTheme = {
     // faint to delimit a control, especially in dark mode).
     border: 'rgba(80,0,13,0.22)',
     borderStrong: 'rgba(80,0,13,0.5)',
+    // Idle outline of a text field (components/ui/Input). Its own token so the
+    // field can reach 3:1 (WCAG 1.4.11) without changing button outlines.
+    inputBorder: 'rgba(80,0,13,0.22)',
     // Soft glow around a focused input (paired with an ink border).
     focusRing: 'rgba(80,0,13,0.14)',
   },
@@ -81,30 +84,34 @@ const lightTheme = {
 const darkTheme = {
   ...shared,
   name: 'dark',
+  // Warm plum dark: deep plum-brown page, slightly lighter cards, dusty-rose
+  // (brand #E3C7C7) primary buttons with dark text and accents.
   colors: {
     ink: '#E3C7C7',
     inkText: '#E3C7C7',
-    inkPressed: '#D4B3B3',
-    onInk: '#50000D',
-    accent: '#EFB9B0',
-    butter: '#5A2020',
-    background: '#2A0006',
-    surface: '#3D000A',
-    surfaceSunken: '#330008',
-    textPrimary: '#EFDCD6',
-    textSecondary: '#CFAFAA',
-    // AA (4.5:1) on the dark background.
-    textTertiary: '#A88480',
+    inkPressed: '#D2B2B2',
+    onInk: '#3A1520',
+    accent: '#E3C7C7',
+    butter: '#4A3038',
+    background: '#2C2125',
+    surface: '#382A2F',
+    surfaceSunken: '#30242A',
+    textPrimary: '#F5EAEC',
+    textSecondary: '#C8B4B9',
+    // AA (4.5:1) on the background and on cards.
+    textTertiary: '#A8949A',
     danger: '#F2879E',
     onDanger: '#2A0006',
-    dangerLight: '#3A1822',
+    dangerLight: '#4A2A33',
     warning: '#E0AE5C',
-    warningSurface: '#3A2E16',
-    success: '#6FC8AC',
-    divider: 'rgba(239,220,214,0.12)',
-    border: 'rgba(239,220,214,0.30)',
-    borderStrong: 'rgba(239,220,214,0.5)',
-    focusRing: 'rgba(227,199,199,0.22)',
+    warningSurface: '#3E3022',
+    success: '#7FD3A0',
+    divider: 'rgba(255,255,255,0.08)',
+    border: 'rgba(255,255,255,0.16)',
+    borderStrong: 'rgba(255,255,255,0.30)',
+    // 3:1 against the field fill, the page and the cards (WCAG 1.4.11).
+    inputBorder: 'rgba(255,255,255,0.40)',
+    focusRing: 'rgba(227,199,199,0.25)',
   },
   topic: topicsDark,
 } as const;

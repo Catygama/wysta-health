@@ -61,15 +61,15 @@ describe('professional verification', () => {
     expect(await pro.query(api.conversations.queueStats, {})).toBeNull();
     expect(await pro.query(api.conversations.get, { id: convId })).toBeNull();
     expect(await pro.query(api.messages.list, { conversationId: convId })).toEqual([]);
-    await expect(pro.mutation(api.conversations.assign, { id: convId })).rejects.toThrow('Unauthorized');
+    await expect(pro.mutation(api.conversations.assign, { id: convId })).rejects.toThrow('Não tens acesso a esta conversa.');
   });
 
   it('only an admin can list, approve or reject requests', async () => {
     const { patient, pro, admin, proId } = await setup();
     for (const who of [patient, pro]) {
-      await expect(who.query(api.users.listPendingVerifications, {})).rejects.toThrow('Admin only');
-      await expect(who.mutation(api.users.approveProfessional, { userId: proId })).rejects.toThrow('Admin only');
-      await expect(who.mutation(api.users.rejectProfessional, { userId: proId })).rejects.toThrow('Admin only');
+      await expect(who.query(api.users.listPendingVerifications, {})).rejects.toThrow('Só a administração pode fazer isto.');
+      await expect(who.mutation(api.users.approveProfessional, { userId: proId })).rejects.toThrow('Só a administração pode fazer isto.');
+      await expect(who.mutation(api.users.rejectProfessional, { userId: proId })).rejects.toThrow('Só a administração pode fazer isto.');
     }
     const list = await admin.query(api.users.listPendingVerifications, {});
     expect(list).toHaveLength(1);
@@ -132,7 +132,7 @@ describe('professional verification', () => {
     const legacy = t.withIdentity({ subject: `${legacyId}|s` });
     expect(await legacy.query(api.conversations.listForProfessional, {})).toEqual([]);
     expect(await legacy.query(api.conversations.get, { id: convId })).toBeNull();
-    await expect(legacy.mutation(api.conversations.assign, { id: convId })).rejects.toThrow('Unauthorized');
+    await expect(legacy.mutation(api.conversations.assign, { id: convId })).rejects.toThrow('Não tens acesso a esta conversa.');
   });
 
   it('the migration sends every unreviewed professional back to review, once', async () => {

@@ -52,7 +52,7 @@ export function ProfessionalVerificationStatus({ status, rejectionReason }: Prop
         ) : (
           <>
             <Text style={styles.body}>
-              Não conseguimos confirmar os dados do teu registo como profissional de saúde.
+              Não conseguimos confirmar os dados do teu registo como enfermeiro.
             </Text>
             {rejectionReason ? (
               <View style={styles.reason}>

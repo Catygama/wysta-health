@@ -5,8 +5,13 @@
   "observability": {
     "enabled": true
   },
+  // Worker in front of the assets: HTTPS redirect, security and cache headers.
+  "main": "worker/app.ts",
   "assets": {
     "directory": "dist",
+    "binding": "ASSETS",
+    // Every request goes through the Worker so the headers apply to all.
+    "run_worker_first": true,
     // Expo Router is a single-page app: unknown paths (/queue, /triage, ...)
     // must serve index.html so reloads and deep links work.
     "not_found_handling": "single-page-application"

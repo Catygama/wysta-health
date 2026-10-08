@@ -3,11 +3,12 @@
 // server-side; users only ever read/write their own check-ins.
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserId } from './lib/accounts';
+import { userError, NOT_AUTHENTICATED } from './lib/errors';
 
 function assertScore(n: number, min: number, max: number, label: string) {
   if (!Number.isFinite(n) || n < min || n > max) {
-    throw new Error(`${label} deve estar entre ${min} e ${max}.`);
+    throw userError(`${label} deve estar entre ${min} e ${max}.`);
   }
 }
 
@@ -20,8 +21,8 @@ export const submitCheckin = mutation({
     note: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserId(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     assertScore(args.desire, 1, 5, 'Desejo');
     assertScore(args.satisfaction, 1, 5, 'Satisfação');
     assertScore(args.pain, 0, 5, 'Dor');
@@ -40,7 +41,7 @@ export const submitCheckin = mutation({
 export const listCheckins = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, { limit }) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return [];
     return ctx.db
       .query('wellbeingCheckins')
@@ -53,7 +54,7 @@ export const listCheckins = query({
 export const latestCheckin = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return null;
     return ctx.db
       .query('wellbeingCheckins')

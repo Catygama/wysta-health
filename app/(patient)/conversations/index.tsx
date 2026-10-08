@@ -42,7 +42,7 @@ export default function PatientConversations() {
           </View>
           <Text style={styles.title}>Sem conversas abertas</Text>
           <Text style={styles.body}>
-            Escolhe um tópico no Início para falares com um profissional de saúde ou com a
+            Escolhe um tópico no Início para falares com um enfermeiro ou com a
             assistente AI.
           </Text>
           <View style={styles.cta}>
@@ -61,7 +61,10 @@ export default function PatientConversations() {
         data={open}
         keyExtractor={(item) => item._id}
         style={styles.list}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { backgroundColor: theme.colors.surface, borderColor: theme.colors.divider },
+        ]}
         contentInsetAdjustmentBehavior="automatic"
         renderItem={({ item, index }) => (
           <ConversationFeedCard

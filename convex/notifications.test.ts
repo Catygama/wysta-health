@@ -55,7 +55,7 @@ describe('web push subscriptions', () => {
         ...SUB,
         endpoint: 'http://evil.example/push',
       })
-    ).rejects.toThrow('Invalid push endpoint');
+    ).rejects.toThrow('notificações');
   });
 
   it('keeps native and web entries side by side', async () => {

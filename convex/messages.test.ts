@@ -14,7 +14,13 @@ async function setup() {
   const ids = await t.run(async (ctx) => {
     const user = async (role: Role) => {
       const id = (await ctx.db.insert('users', {})) as Id<'users'>;
-      await ctx.db.insert('userProfiles', { userId: id, role });
+      await ctx.db.insert('userProfiles', {
+        userId: id,
+        role,
+        ...(role === 'professional'
+          ? { professionalVerificationStatus: 'verified' as const }
+          : {}),
+      });
       return id;
     };
     const patientId = await user('patient');

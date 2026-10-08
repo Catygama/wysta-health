@@ -2,19 +2,23 @@ import { useState } from 'react';
 import { View, Text } from 'react-native';
 import { useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/convex/_generated/api';
 import { ConversationList } from '@/screens/ConversationList';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
-import { PRIORITY_COLORS } from '@/constants/conversation';
+import { priorityColors } from '@/constants/conversation';
 
 // "Pedidos": requests for a professional that nobody has picked up yet. Once a
 // professional assigns one to themselves it moves to their "Conversas" tab.
 
 type Priority = 'urgent' | 'high' | 'medium' | 'low';
 type PriorityFilter = Priority | 'all';
-type Sort = 'oldest' | 'newest';
+// 'priority' keeps the server's order: alert level and risk first, then the
+// oldest within the same level. Sorting by date is an explicit choice.
+type Sort = 'priority' | 'oldest' | 'newest';
 
 const SORT_LABELS: Record<Sort, string> = {
+  priority: 'Por prioridade',
   oldest: 'Mais antigo',
   newest: 'Mais recente',
 };
@@ -28,7 +32,7 @@ const PRIORITY_LABELS: Record<PriorityFilter, string> = {
 };
 
 export default function Requests() {
-  const [sort, setSort] = useState<Sort>('oldest');
+  const [sort, setSort] = useState<Sort>('priority');
   const [priority, setPriority] = useState<PriorityFilter>('all');
   const { theme } = useUnistyles();
 
@@ -37,61 +41,69 @@ export default function Requests() {
     priority: priority === 'all' ? undefined : priority,
   });
 
-  // Urgency is handled by the priority filter; here the order is by time only.
-  const sorted = [...(requests ?? [])].sort((a, b) =>
-    sort === 'oldest' ? a._creationTime - b._creationTime : b._creationTime - a._creationTime
-  );
+  const sorted =
+    sort === 'priority'
+      ? (requests ?? [])
+      : [...(requests ?? [])].sort((a, b) =>
+          sort === 'oldest' ? a._creationTime - b._creationTime : b._creationTime - a._creationTime
+        );
 
   // From the theme so the dots stay legible in dark mode.
+  const colors = priorityColors(theme.name);
   const priorityColor: Record<Priority, string> = {
-    urgent: PRIORITY_COLORS.urgent,
-    high: theme.colors.danger,
-    medium: theme.colors.warning,
-    low: PRIORITY_COLORS.low,
+    urgent: colors.urgent,
+    high: colors.high,
+    medium: colors.medium,
+    low: colors.low,
   };
 
   const count = requests?.length;
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Text testID="queue-count" style={styles.count}>
-          {count === undefined
-            ? ' '
-            : count === 1
-              ? '1 pedido por atribuir'
-              : `${count} pedidos por atribuir`}
-        </Text>
-
-        <View style={styles.menus}>
-          <DropdownMenu
-            testID="queue-sort"
-            label={SORT_LABELS[sort]}
-            value={sort}
-            onChange={setSort}
-            options={(Object.keys(SORT_LABELS) as Sort[]).map((s) => ({
-              value: s,
-              label: SORT_LABELS[s],
-            }))}
-          />
-          <DropdownMenu
-            testID="queue-priority"
-            label={`Prioridade: ${PRIORITY_LABELS[priority].toLowerCase()}`}
-            value={priority}
-            onChange={setPriority}
-            options={(Object.keys(PRIORITY_LABELS) as PriorityFilter[]).map((p) => ({
-              value: p,
-              label: PRIORITY_LABELS[p],
-              dotColor: p === 'all' ? undefined : priorityColor[p],
-            }))}
-          />
+      {/* Clears the status bar on phones (0 on web). Plain inline style:
+          Unistyles styles are partly dropped on third-party components. */}
+      <SafeAreaView edges={['top']} style={{ backgroundColor: theme.colors.background }}>
+        <View style={styles.header}>
+          <Text testID="queue-count" style={styles.count}>
+            {count === undefined
+              ? ' '
+              : count === 1
+                ? '1 pedido por atribuir'
+                : `${count} pedidos por atribuir`}
+          </Text>
+  
+          <View style={styles.menus}>
+            <DropdownMenu
+              testID="queue-sort"
+              label={SORT_LABELS[sort]}
+              value={sort}
+              onChange={setSort}
+              options={(Object.keys(SORT_LABELS) as Sort[]).map((s) => ({
+                value: s,
+                label: SORT_LABELS[s],
+              }))}
+            />
+            <DropdownMenu
+              testID="queue-priority"
+              label={`Prioridade: ${PRIORITY_LABELS[priority].toLowerCase()}`}
+              value={priority}
+              onChange={setPriority}
+              options={(Object.keys(PRIORITY_LABELS) as PriorityFilter[]).map((p) => ({
+                value: p,
+                label: PRIORITY_LABELS[p],
+                dotColor: p === 'all' ? undefined : priorityColor[p],
+              }))}
+            />
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
 
       <ConversationList
         conversations={sorted as any}
         basePath="/(professional)/cases"
         showPriority
+        showAlertLevel={false}
         // Nothing while loading, so a filter change doesn't flash the empty text.
         emptyComponent={
           requests === undefined ? null : (

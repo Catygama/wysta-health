@@ -10,16 +10,20 @@ import { Icon } from '@/components/ui/Icon';
 import { strings } from '@/constants/strings';
 import { fonts } from '@/lib/fonts';
 import { AcademicNotice } from '@/components/AcademicNotice';
+import { ConsentCheckbox } from '@/components/ConsentCheckbox';
+import { useConsentAfterSignIn } from '@/hooks/useConsentAfterSignIn';
 
 export default function Register() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
+  const consentRecord = useConsentAfterSignIn();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [consent, setConsent] = useState(false);
 
   async function handleRegister() {
     setError('');
@@ -27,8 +31,14 @@ export default function Register() {
       setError(strings.errors.passwordMismatch);
       return;
     }
+    if (!consent) {
+      setError('Para criar conta, confirma que tens 18 anos ou mais e que leste a política de privacidade.');
+      return;
+    }
     setLoading(true);
     try {
+      // Set before signing in: the session can become active before signIn() resolves.
+      consentRecord.markPending('registo');
       await signIn('password', { email, password, flow: 'signUp' });
     } catch {
       setError(strings.errors.generic);
@@ -40,7 +50,7 @@ export default function Register() {
 
   // Navigate once the session is actually active: redirecting right after
   // signIn() resolves races the auth state and bounces back to login.
-  if (isAuthenticated) return <Redirect href="/" />;
+  if (isAuthenticated && consentRecord.ready) return <Redirect href="/" />;
   return (
     <ScrollView
       style={styles.screen}
@@ -82,6 +92,7 @@ export default function Register() {
             {error}
           </Text>
         ) : null}
+        <ConsentCheckbox testID="auth-consent-checkbox" checked={consent} onChange={setConsent} />
         <Button
           testID="auth-register-button"
           label={strings.auth.register}
@@ -113,7 +124,7 @@ export default function Register() {
           size={16}
           color={styles.proLinkText.color}
         />
-        <Text style={styles.proLinkText}>Sou profissional de saúde →</Text>
+        <Text style={styles.proLinkText}>Sou enfermeiro/a →</Text>
       </Pressable>
     </ScrollView>
   );

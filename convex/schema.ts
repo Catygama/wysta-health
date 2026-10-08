@@ -4,6 +4,7 @@ import { authTables } from '@convex-dev/auth/server';
 import { aiPurposeValidator as aiPurpose, aiProviderValidator as aiProvider } from './ai/registry';
 import { topicValidator as topic } from './lib/topics';
 import { alertLevelValidator as alertLevel } from './lib/alerts';
+import { safetyRuleIdValidator } from './lib/aiSafetyMessages';
 
 const priority = v.union(
   v.literal('low'),
@@ -67,6 +68,11 @@ export default defineSchema({
     professionalVerificationRejectionReason: v.optional(v.string()),
     // Guest sessions (Anonymous provider) — for testing only
     isGuest: v.optional(v.boolean()),
+    // Blocked by an admin (users.blockUser): signed out and refused by every
+    // query and mutation until unblocked (lib/accounts.ts getActiveUserId).
+    blockedAt: v.optional(v.number()),
+    blockedBy: v.optional(v.id('users')),
+    blockedReason: v.optional(v.string()),
     // Push destinations (max 15, oldest evicted on overflow). Native entries
     // hold an Expo push token; web entries hold the subscription endpoint in
     // `token` plus its encryption keys.
@@ -131,6 +137,10 @@ export default defineSchema({
     // patient toggles to from the chat header. Cleared when either side
     // closes or converts.
     counterpartConversationId: v.optional(v.id('conversations')),
+    // Conversation with a nurse only: _creationTime of the last patient message
+    // the AI has already answered after a switch to the assistant
+    // (conversations.switchMode), so the same question is never answered twice.
+    aiAnsweredPendingThrough: v.optional(v.number()),
   })
     .index('by_patient', ['patientId'])
     .index('by_professional', ['professionalId'])
@@ -171,6 +181,13 @@ export default defineSchema({
         // AI answer that suggests ending the conversation (shows a
         // "Terminar conversa" button to the patient).
         suggestClose: v.optional(v.boolean()),
+        // Fixed message of a safety rule (lib/aiSafetyMessages): a system
+        // message in a nurse conversation or an ai-response in an AI chat.
+        // Shown as an alert card, left out of list previews.
+        safetyRule: v.optional(safetyRuleIdValidator),
+        // Patient message that triggered a safety rule: already answered by
+        // the fixed message, so a switch to the AI doesn't answer it again.
+        triggeredSafetyRule: v.optional(safetyRuleIdValidator),
       })
     ),
   }).index('by_conversation', ['conversationId']),
@@ -212,6 +229,8 @@ export default defineSchema({
         highRisk: riskBucket,
       })
     ),
+    // Last edit by an admin in Conteúdos → Triagem (the seed leaves these alone).
+    updatedAt: v.optional(v.number()),
   }).index('by_topic', ['topic']),
 
   educationalContent: defineTable({
@@ -223,9 +242,23 @@ export default defineSchema({
     tags: v.array(v.string()),
     isPublished: v.boolean(),
     readingTimeMinutes: v.number(),
+    // Last edit by an admin in Conteúdos (seeded articles have none).
+    updatedAt: v.optional(v.number()),
+    // Title of the built-in article this one came from, so re-running the
+    // seed still finds it after an admin renames it.
+    seedKey: v.optional(v.string()),
   })
     .index('by_topic', ['topic'])
     .index('by_published', ['isPublished']),
+
+  // Demonstrable consent (GDPR art. 7(1)): when and which version of the
+  // privacy policy each person accepted, and how they entered.
+  privacyConsents: defineTable({
+    userId: v.id('users'),
+    policyVersion: v.string(),
+    acceptedAt: v.number(),
+    method: v.union(v.literal('registo'), v.literal('sem-conta')),
+  }).index('by_user', ['userId']),
 
   wellbeingCheckins: defineTable({
     userId: v.id('users'),
@@ -239,7 +272,8 @@ export default defineSchema({
   auditLog: defineTable({
     // Conversation actions set conversationId + professionalId; account
     // reviews (professional-approved/-rejected) set adminId + targetUserId;
-    // professional-review-required (a migration, no admin) sets targetUserId.
+    // professional-review-required (a migration, no admin) sets targetUserId;
+    // article edits (article-*) set adminId, with the article in details.
     conversationId: v.optional(v.id('conversations')),
     professionalId: v.optional(v.id('users')),
     adminId: v.optional(v.id('users')),
@@ -256,7 +290,14 @@ export default defineSchema({
       v.literal('redirect-recommended'),
       v.literal('professional-approved'),
       v.literal('professional-rejected'),
-      v.literal('professional-review-required')
+      v.literal('professional-review-required'),
+      v.literal('article-saved'),
+      v.literal('article-published'),
+      v.literal('article-unpublished'),
+      v.literal('triage-updated'),
+      v.literal('account-blocked'),
+      v.literal('account-unblocked'),
+      v.literal('account-deleted')
     ),
     details: v.string(),
   }).index('by_conversation', ['conversationId']),

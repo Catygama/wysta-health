@@ -37,16 +37,18 @@ export default function PatientHome() {
   const { theme } = useUnistyles();
   const user = useQuery(api.users.currentUser);
   const greeting =
-    user?.profile?.displayName?.trim().split(/s+/)[0] || user?.email?.split('@')[0] || 'utente';
+    user?.profile?.displayName?.trim().split(/\s+/)[0] || user?.email?.split('@')[0] || 'utente';
   // Which path the patient chose on Home; the topic picker is open while set.
   const [pickerMode, setPickerMode] = useState<ConversationMode | null>(null);
   const openByTopic = useQuery(api.conversations.openProfessionalByTopic) ?? {};
+  const openAiByTopic = useQuery(api.conversations.openAiByTopic) ?? {};
+  const openForMode = (mode: ConversationMode | null) => (mode === 'ai' ? openAiByTopic : openByTopic);
 
   function startTopic(topicId: string) {
     const mode = pickerMode ?? 'professional';
     setPickerMode(null);
-    // One open professional conversation per topic: go back to it.
-    const openId = mode === 'professional' ? openByTopic[topicId] : undefined;
+    // One open conversation per topic with a nurse and one with the AI: go back to it.
+    const openId = openForMode(mode)[topicId];
     if (openId) {
       router.push({ pathname: '/(patient)/conversations/[id]', params: { id: openId } });
       return;
@@ -74,8 +76,8 @@ export default function PatientHome() {
           testID="home-path-professional"
           icon={{ sf: 'stethoscope', ion: 'medkit-outline' }}
           iconFill={theme.colors.butter}
-          title="Profissional de saúde"
-          description="Responde a umas perguntas e um profissional responde-te em até 24h"
+          title="Enfermeiro/a"
+          description="Responde a umas perguntas e um enfermeiro responde-te em até 24h"
           onPress={() => setPickerMode('professional')}
         />
         <PathCard
@@ -83,7 +85,7 @@ export default function PatientHome() {
           icon={{ sf: 'sparkles', ion: 'sparkles-outline' }}
           iconFill={theme.topic.intimate.fill}
           title="Assistente IA"
-          description="Responde a umas perguntas e recebe resposta imediata. Podes pedir um profissional a qualquer momento"
+          description="Responde a umas perguntas e recebe resposta imediata. Podes pedir um enfermeiro a qualquer momento"
           onPress={() => setPickerMode('ai')}
         />
         <AnonymousAiButton />
@@ -92,7 +94,7 @@ export default function PatientHome() {
       <TopicPickerSheet
         visible={pickerMode !== null}
         mode={pickerMode ?? 'professional'}
-        openTopics={pickerMode === 'professional' ? openByTopic : {}}
+        openTopics={pickerMode ? openForMode(pickerMode) : {}}
         onClose={() => setPickerMode(null)}
         onSelect={startTopic}
       />
@@ -109,7 +111,7 @@ function TopicPickerSheet({
 }: {
   visible: boolean;
   mode: ConversationMode;
-  /** Topics with an open professional conversation (shown as "em curso"). */
+  /** Topics with an open conversation of this mode (shown as "em curso"). */
   openTopics: Record<string, string>;
   onClose: () => void;
   onSelect: (topicId: string) => void;
@@ -123,7 +125,7 @@ function TopicPickerSheet({
         <View style={styles.sheet}>
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>
-              {mode === 'ai' ? 'Falar com a assistente IA' : 'Falar com um profissional'}
+              {mode === 'ai' ? 'Falar com a assistente IA' : 'Falar com enfermeiro'}
             </Text>
             <Pressable
               testID="topic-picker-close"
@@ -138,7 +140,7 @@ function TopicPickerSheet({
           <Text style={styles.sheetNote}>
             {mode === 'ai'
               ? 'Escolhe o tema. Depois de umas perguntas, a assistente responde-te na hora.'
-              : 'Escolhe o tema. Depois de umas perguntas, um profissional responde-te em até 24h.'}
+              : 'Escolhe o tema. Depois de umas perguntas, um enfermeiro responde-te em até 24h.'}
           </Text>
           <View style={[styles.topicList, twoColumns && styles.topicGrid]}>
             {/* The five topics, then the catch-all "general" as "Outro assunto". */}
@@ -185,7 +187,7 @@ function AnonymousAiButton() {
       style={styles.aiCard}
     >
       <View style={[styles.aiAvatar, styles.anonAvatar]}>
-        <Icon name={{ sf: 'lock', ion: 'lock-closed-outline' }} size={18} color={theme.colors.ink} />
+        <Icon name={{ sf: 'lock', ion: 'lock-closed-outline' }} size={18} color={theme.colors.inkText} />
       </View>
       <View style={styles.aiMeta}>
         <Text style={styles.aiTitle}>Pergunta anónima</Text>
@@ -217,7 +219,7 @@ function PathCard({
     <Card testID={testID} onPress={onPress} style={styles.pathCard}>
       <View style={styles.pathBody}>
         <View style={[styles.pathIcon, { backgroundColor: iconFill }]}>
-          <Icon name={icon} size={20} color={theme.colors.ink} />
+          <Icon name={icon} size={20} color={theme.colors.inkText} />
         </View>
         <Text style={styles.pathTitle}>{title}</Text>
         <Text style={styles.pathDesc}>{description}</Text>

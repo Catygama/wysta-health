@@ -53,6 +53,7 @@ export async function loginViaUI(
   await waitForBridge(page);
   await page.getByTestId('auth-email-input').fill(email);
   await page.getByTestId('auth-password-input').fill(password);
+  await page.getByTestId('auth-consent-checkbox').click();
   await page.getByTestId('auth-login-button').click();
 }
 

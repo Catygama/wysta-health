@@ -24,6 +24,10 @@ test('Internal notes are visible to professional but hidden from patient', async
     timeout: 15_000,
   });
   await sendInternalNote(page, 'NOTA INTERNA SECRETA');
+  // The team is told the patient can get these notes in her data export.
+  await expect(page.getByTestId('internal-notes-export-notice')).toContainText(
+    'podem ser consultadas pela utente se pedir uma cópia dos seus dados',
+  );
 
   // Backend stores it as isInternal=true.
   await expect

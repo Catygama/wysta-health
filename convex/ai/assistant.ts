@@ -8,8 +8,8 @@
 //
 // Each step is a separate runAgent call linked via parentInvocationId so the
 // audit tree reconstructs the chain. A placeholder ai-response message is
-// created immediately (streaming: true) and patched live as tokens arrive;
-// it is finalized (streaming: false) with the draft+disclaimer on approval,
+// created immediately (streaming: true, empty) and stays empty while the draft
+// is generated and checked; it is finalized (streaming: false) with the draft on approval,
 // the fixed forwarding text on block, or a fallback on error.
 
 import {
@@ -22,10 +22,14 @@ import {
 import { v } from 'convex/values';
 import { z } from 'zod';
 import { internal } from '../_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { getActiveUserIdInAction } from '../lib/accounts';
 import { runAgent } from './runAgent';
 import { SUGGEST_CLOSE_MARKER } from './defaults';
-import type { Id } from '../_generated/dataModel';
+import type { Doc, Id } from '../_generated/dataModel';
+import { findOpenProfessionalConversation } from '../conversations';
+import { userError, NOT_AUTHENTICATED } from '../lib/errors';
+import { detectSafetyRule, safetyRuleIdValidator, type SafetyRuleId } from '../lib/aiSafetyMessages';
+import type { TopicId } from '../lib/topics';
 
 // Removes the suggest-close marker from planner output — also a partial
 // marker still arriving at the end of a stream — so the patient never sees it.
@@ -52,13 +56,17 @@ const judgeSchema = z.object({
 });
 
 const FALLBACK_MESSAGE =
-  'Não consegui responder agora. Tenta novamente daqui a pouco ou fala com um profissional.';
+  'Não consegui responder agora. Tenta novamente daqui a pouco ou fala com um enfermeiro.';
 const BLOCKED_AUTO =
-  'Esta pergunta merece resposta de um profissional. Toca em "Falar com profissional" para entrar na fila.';
+  'Esta pergunta merece resposta de um enfermeiro. Toca em "Falar com enfermeiro" para entrar na fila.';
 const BLOCKED_RESPOND =
-  'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um profissional.';
+  'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um enfermeiro.';
 const BLOCKED_ESCALATE =
-  'Esta pergunta precisa de um profissional. Encaminhei-a para a tua conversa com o profissional, que te vai responder lá.';
+  'Esta pergunta precisa de um enfermeiro. Encaminhei-a para a tua conversa com o enfermeiro, que te vai responder lá.';
+// The question came from the conversation with the nurse (switchMode), so it
+// is already there waiting for an answer: nothing to forward.
+const BLOCKED_PENDING =
+  'Esta pergunta precisa de um enfermeiro. Já está na tua conversa com o enfermeiro, que te vai responder lá.';
 
 type StreamVars = {
   query: string;
@@ -68,15 +76,78 @@ type StreamVars = {
   topicAndRisk: string;
 };
 
-// Shared: create a placeholder ai-response message, stream the draft into it,
-// run the safety chain, then finalize (draft+disclaimer / blocked / fallback).
+// The chain itself: draft, then the two validators in parallel, then the judge.
+// Shared by the patient-facing actions and the offline evaluation
+// (ai/evaluation.ts). The draft is never shown before the judge decides.
+export async function runAssistantChain(
+  ctx: ActionCtx,
+  args: {
+    baseVars: StreamVars;
+    topic?: TopicId;
+    userId?: Id<'users'>;
+    /** The patient the content is about (pseudonymised before the provider). */
+    subjectId?: Id<'users'>;
+    conversationId?: Id<'conversations'>;
+  }
+) {
+  const { baseVars, topic, userId, subjectId, conversationId } = args;
+  const draft = await runAgent(ctx, {
+    purpose: 'chat',
+    topic,
+    vars: baseVars,
+    userId,
+    subjectId,
+    conversationId,
+  });
+  const { text: draftText, suggestClose } = stripSuggestClose(draft.output);
+  const validatorArgs = {
+    topic,
+    vars: { ...baseVars, draft: draftText },
+    userId,
+    subjectId,
+    conversationId,
+    parentInvocationId: draft.invocationId,
+    outputSchema: validatorSchema,
+  };
+  const [safety, clinical] = await Promise.all([
+    runAgent(ctx, { purpose: 'chat-validator-safety', ...validatorArgs }),
+    runAgent(ctx, { purpose: 'chat-validator-clinical', ...validatorArgs }),
+  ]);
+  const judged = await runAgent(ctx, {
+    purpose: 'chat-judge',
+    topic,
+    vars: {
+      ...baseVars,
+      draft: draftText,
+      safety: JSON.stringify(safety.output),
+      clinical: JSON.stringify(clinical.output),
+    },
+    userId,
+    subjectId,
+    conversationId,
+    parentInvocationId: draft.invocationId,
+    outputSchema: judgeSchema,
+  });
+  return {
+    sent: judged.output.action === 'send',
+    draftText,
+    suggestClose,
+    safety: safety.output,
+    clinical: clinical.output,
+    judged,
+    draftInvocationId: draft.invocationId,
+  };
+}
+
+// Shared: create an empty placeholder ai-response message, generate the draft,
+// run the safety chain, then finalize (approved draft / blocked / fallback).
 async function streamAndValidate(
   ctx: ActionCtx,
   args: {
     conversationId: Id<'conversations'>;
     patientId: Id<'users'>;
     baseVars: StreamVars;
-    topic?: string;
+    topic?: TopicId;
     blockedMessage: string;
   }
 ): Promise<{ sent: boolean; blocked: boolean }> {
@@ -84,66 +155,33 @@ async function streamAndValidate(
     internal.ai.assistant.createAssistantPlaceholder,
     { conversationId: args.conversationId, patientId: args.patientId }
   );
+  // Rule-based detection first (lib/aiSafetyMessages): baby movements, sexual
+  // violence and suicidal ideation get a fixed answer with concrete contacts,
+  // without calling the model, and the conversation is escalated.
+  const rule = detectSafetyRule(args.baseVars.query);
+  if (rule) {
+    await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
+      messageId,
+      content: rule.message,
+      safetyRule: rule.id,
+    });
+    await ctx.runMutation(internal.conversations.flagSafetyRule, {
+      conversationId: args.conversationId,
+      alertLevel: rule.alertLevel,
+      label: rule.label,
+    });
+    return { sent: true, blocked: false };
+  }
   try {
-    let lastWriteAt = 0;
-    let lastLen = 0;
-    const draft = await runAgent(ctx, {
-      purpose: 'chat',
-      topic: args.topic as any,
-      vars: args.baseVars,
+    // The placeholder stays empty ("A preparar a resposta…" in the app) until
+    // the validators and the judge decide.
+    const { sent, draftText, suggestClose, judged } = await runAssistantChain(ctx, {
+      baseVars: args.baseVars,
+      topic: args.topic,
       userId: args.patientId,
+      subjectId: args.patientId,
       conversationId: args.conversationId,
-      onDelta: async (textSoFar) => {
-        const now = Date.now();
-        if (now - lastWriteAt >= 150 || textSoFar.length - lastLen >= 24) {
-          lastWriteAt = now;
-          lastLen = textSoFar.length;
-          await ctx.runMutation(internal.ai.assistant.patchStreamingMessage, {
-            messageId,
-            content: stripSuggestClose(textSoFar).text,
-          });
-        }
-      },
     });
-    const { text: draftText, suggestClose } = stripSuggestClose(draft.output);
-
-    const [safety, clinical] = await Promise.all([
-      runAgent(ctx, {
-        purpose: 'chat-validator-safety',
-        topic: args.topic as any,
-        vars: { ...args.baseVars, draft: draftText },
-        userId: args.patientId,
-        conversationId: args.conversationId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-      runAgent(ctx, {
-        purpose: 'chat-validator-clinical',
-        topic: args.topic as any,
-        vars: { ...args.baseVars, draft: draftText },
-        userId: args.patientId,
-        conversationId: args.conversationId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-    ]);
-
-    const judged = await runAgent(ctx, {
-      purpose: 'chat-judge',
-      topic: args.topic as any,
-      vars: {
-        ...args.baseVars,
-        draft: draftText,
-        safety: JSON.stringify(safety.output),
-        clinical: JSON.stringify(clinical.output),
-      },
-      userId: args.patientId,
-      conversationId: args.conversationId,
-      parentInvocationId: draft.invocationId,
-      outputSchema: judgeSchema,
-    });
-
-    const sent = judged.output.action === 'send';
     await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
       messageId,
       content: sent ? draftText : args.blockedMessage,
@@ -178,26 +216,21 @@ export const createAssistantPlaceholder = internalMutation({
   },
 });
 
-export const patchStreamingMessage = internalMutation({
-  args: { messageId: v.id('messages'), content: v.string() },
-  handler: async (ctx, { messageId, content }) => {
-    await ctx.db.patch(messageId, { content });
-  },
-});
-
 export const finalizeAssistantMessage = internalMutation({
   args: {
     messageId: v.id('messages'),
     content: v.string(),
     invocationId: v.optional(v.id('aiInvocations')),
     suggestClose: v.optional(v.boolean()),
+    safetyRule: v.optional(safetyRuleIdValidator),
   },
-  handler: async (ctx, { messageId, content, invocationId, suggestClose }) => {
+  handler: async (ctx, { messageId, content, invocationId, suggestClose, safetyRule }) => {
     await ctx.db.patch(messageId, {
       content,
       streaming: false,
       ...(invocationId ? { aiInvocationId: invocationId } : {}),
       ...(suggestClose ? { metadata: { suggestClose: true } } : {}),
+      ...(safetyRule ? { metadata: { safetyRule } } : {}),
     });
   },
 });
@@ -221,9 +254,15 @@ export const respondAnonymous = action({
   handler: async (ctx, { query, history }): Promise<{
     sent: boolean;
     answer: string;
+    /** Set when the answer is a safety rule's fixed message. */
+    safetyRule?: SafetyRuleId;
   }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserIdInAction(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
+
+    // Same rule-based detection as the conversations: fixed answer, no model.
+    const rule = detectSafetyRule(query);
+    if (rule) return { sent: true, answer: rule.message, safetyRule: rule.id };
 
     const profile = await ctx.runQuery(internal.ai.assistant.gatherProfileOnly, {
       userId,
@@ -239,51 +278,17 @@ export const respondAnonymous = action({
         : 'Conversa anónima, sem mensagens anteriores.',
       patientProfile: profile.patientProfile,
       recentSummary: profile.recentSummary,
-      topicAndRisk: 'Anónimo (sem conversa)\nProfissional: conversa anónima, sem profissional.',
+      topicAndRisk: 'Anónimo (sem conversa)\nEnfermeiro: conversa anónima, sem enfermeiro.',
     };
 
-    const draft = await runAgent(ctx, {
-      purpose: 'chat',
-      vars: baseVars,
-      userId,
-    });
-    const [safety, clinical] = await Promise.all([
-      runAgent(ctx, {
-        purpose: 'chat-validator-safety',
-        vars: { ...baseVars, draft: stripSuggestClose(draft.output).text },
-        userId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-      runAgent(ctx, {
-        purpose: 'chat-validator-clinical',
-        vars: { ...baseVars, draft: stripSuggestClose(draft.output).text },
-        userId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-    ]);
-    const judged = await runAgent(ctx, {
-      purpose: 'chat-judge',
-      vars: {
-        ...baseVars,
-        draft: stripSuggestClose(draft.output).text,
-        safety: JSON.stringify(safety.output),
-        clinical: JSON.stringify(clinical.output),
-      },
-      userId,
-      parentInvocationId: draft.invocationId,
-      outputSchema: judgeSchema,
-    });
-
-    const sent = judged.output.action === 'send';
+    const { sent, judged } = await runAssistantChain(ctx, { baseVars, userId, subjectId: userId });
     // The chat prompt ends every answer with "…espera pela resposta do
-    // profissional…"; there is no professional in an anonymous chat.
+    // enfermeiro…"; there is no nurse in an anonymous chat.
     const answer = sent
       ? stripSuggestClose(judged.output.finalAnswer)
-          .text.replace(/\s*Para a tua situação concreta, espera pela resposta do profissional ou marca consulta presencial\.?/g, '')
+          .text.replace(/\s*Para a tua situação concreta, espera pela resposta do (?:profissional|enfermeiro) ou marca consulta presencial\.?/g, '')
           .trim()
-      : 'Esta pergunta precisa de um profissional de saúde, por isso não lhe posso responder aqui. Para acompanhamento, abre uma conversa com um profissional no Início.';
+      : 'Esta pergunta precisa de um enfermeiro, por isso não lhe posso responder aqui. Para acompanhamento, abre uma conversa com um enfermeiro no Início.';
 
     return { sent, answer };
   },
@@ -297,8 +302,11 @@ export const respondAuto = internalAction({
   args: {
     conversationId: v.id('conversations'),
     query: v.string(),
+    // Unanswered messages from the conversation with the nurse, answered on
+    // a switch to the AI (conversations.switchMode).
+    pendingFromProfessional: v.optional(v.boolean()),
   },
-  handler: async (ctx, { conversationId, query }) => {
+  handler: async (ctx, { conversationId, query, pendingFromProfessional }) => {
     const owner = await ctx.runQuery(internal.ai.assistant.getConversationPatient, {
       conversationId,
     });
@@ -319,11 +327,16 @@ export const respondAuto = internalAction({
         topicAndRisk: ctxData.topicAndRisk,
       },
       topic: ctxData.topic,
-      blockedMessage: ctxData.escalatesOnBlock ? BLOCKED_ESCALATE : BLOCKED_AUTO,
+      blockedMessage: pendingFromProfessional
+        ? BLOCKED_PENDING
+        : ctxData.escalatesOnBlock
+          ? BLOCKED_ESCALATE
+          : BLOCKED_AUTO,
     });
     // In an AI side chat of an open professional conversation, a question the
-    // AI can't answer is forwarded to that professional conversation.
-    if (blocked && ctxData.escalatesOnBlock) {
+    // AI can't answer is forwarded to that professional conversation (unless
+    // it came from there).
+    if (blocked && ctxData.escalatesOnBlock && !pendingFromProfessional) {
       await ctx.runMutation(internal.conversations.escalateAiConversation, {
         conversationId,
       });
@@ -348,7 +361,6 @@ export const gatherProfileOnly = internalQuery({
       .unique();
     const lines: string[] = [];
     if (profile?.ageRange) lines.push(`Faixa etária: ${profile.ageRange}`);
-    if (profile?.pregnancyStatus) lines.push(`Gravidez: ${profile.pregnancyStatus}`);
     if (profile?.conditions?.length) lines.push(`Condições: ${profile.conditions.join(', ')}`);
     if (profile?.medications?.length) lines.push(`Medicação: ${profile.medications.join(', ')}`);
     return {
@@ -365,14 +377,14 @@ export const respond = action({
     query: v.string(),
   },
   handler: async (ctx, { conversationId, query }): Promise<{ sent: boolean }> => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    const userId = await getActiveUserIdInAction(ctx);
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const ctxData = await ctx.runQuery(internal.ai.assistant.gatherContext, {
       conversationId,
       userId,
     });
     if (!ctxData.allowed) {
-      throw new Error('Only the patient on this conversation can ask the AI');
+      throw userError('Só a utente desta conversa pode falar com a assistente.');
     }
     return streamAndValidate(ctx, {
       conversationId,
@@ -427,23 +439,38 @@ export const gatherContext = internalQuery({
               ? 'AI (anterior)'
               : m.senderId === conv.patientId
                 ? 'Utente'
-                : 'Profissional';
+                : 'Enfermeiro';
           return `${role}: ${m.content}`;
         })
         .join('\n');
     let conversationHistory =
       visible.length > 0 ? formatLines(visible) : 'Sem histórico de mensagens.';
 
-    // Conversation this one was spawned from (e.g. the professional chat the
-    // patient left to talk to the AI): prepend its recent messages.
+    // Conversation to read alongside this one. For an AI chat: the patient's
+    // professional conversation on the topic — the one it was opened from, the
+    // linked one, or else the open one on the same topic (an AI chat started
+    // first has no context link). Otherwise: the conversation it came from.
+    let contextConv: Doc<'conversations'> | null = null;
+    if (conv.kind === 'ai-only') {
+      for (const id of [conv.contextConversationId, conv.counterpartConversationId]) {
+        if (!id) continue;
+        const c = await ctx.db.get(id);
+        if (c && c.patientId === userId && c.kind !== 'ai-only') {
+          contextConv = c;
+          break;
+        }
+      }
+      contextConv ??= await findOpenProfessionalConversation(ctx, userId, conv.topic);
+    } else if (conv.contextConversationId) {
+      contextConv = await ctx.db.get(conv.contextConversationId);
+    }
+
     let contextMessages: typeof messages = [];
-    if (conv.contextConversationId) {
+    if (contextConv) {
       contextMessages = (
         await ctx.db
           .query('messages')
-          .withIndex('by_conversation', (q) =>
-            q.eq('conversationId', conv.contextConversationId!)
-          )
+          .withIndex('by_conversation', (q) => q.eq('conversationId', contextConv._id))
           .order('desc')
           .take(20)
       ).reverse();
@@ -451,9 +478,13 @@ export const gatherContext = internalQuery({
         (m) => !m.isInternal && m.messageType !== 'system' && m.messageType !== 'triage-response'
       );
       if (contextVisible.length > 0) {
-        conversationHistory = `Conversa anterior (com profissional):\n${formatLines(contextVisible)}\n\nConversa atual:\n${conversationHistory}`;
+        const label =
+          contextConv.kind === 'ai-only' ? 'Conversa anterior (com a AI)' : 'Conversa com o enfermeiro';
+        conversationHistory = `${label}:\n${formatLines(contextVisible)}\n\nConversa atual:\n${conversationHistory}`;
       }
     }
+    const hasOpenProfessional =
+      !!contextConv && contextConv.kind !== 'ai-only' && contextConv.status !== 'closed';
 
     let escalatesOnBlock = false;
     if (conv.kind === 'ai-only' && conv.counterpartConversationId) {
@@ -469,8 +500,6 @@ export const gatherContext = internalQuery({
 
     const profileLines: string[] = [];
     if (profile?.ageRange) profileLines.push(`Faixa etária: ${profile.ageRange}`);
-    if (profile?.pregnancyStatus)
-      profileLines.push(`Gravidez: ${profile.pregnancyStatus}`);
     if (profile?.conditions?.length)
       profileLines.push(`Condições: ${profile.conditions.join(', ')}`);
     if (profile?.medications?.length)
@@ -487,9 +516,10 @@ export const gatherContext = internalQuery({
     const riskLabel = conv.riskLevel ? ` (risco ${conv.riskLevel})` : '';
     const goalLabel = conv.wellbeingGoal ? ` · Objetivo: ${conv.wellbeingGoal}` : '';
     // Tells the prompt whether a professional is involved (how to end answers).
-    const professionalLine = escalatesOnBlock
-      ? 'Profissional: a utente tem uma conversa com um profissional em curso.'
-      : 'Profissional: a utente não tem nenhuma conversa com um profissional em curso.';
+    const professionalLine =
+      escalatesOnBlock || hasOpenProfessional
+      ? 'Enfermeiro: a utente tem uma conversa com um enfermeiro em curso.'
+      : 'Enfermeiro: a utente não tem nenhuma conversa com um enfermeiro em curso.';
     const topicAndRisk = `Tópico: ${conv.topic}${riskLabel}${goalLabel}\n${professionalLine}`;
 
     return {

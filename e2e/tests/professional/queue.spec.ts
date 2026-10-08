@@ -56,4 +56,33 @@ test.describe('Professional queue', () => {
       )
       .toBe('active');
   });
+
+  test('orders by priority by default, not by date', async ({ page }) => {
+    // Older but low priority, then newer and urgent: the urgent one comes first.
+    const older = await seedConversation({
+      patientEmail: TEST_USERS.patientB.email,
+      topic: 'menstrual-cycle',
+      title: 'Fila — antiga, baixa',
+      priority: 'low',
+      status: 'waiting',
+    });
+    const urgent = await seedConversation({
+      patientEmail: TEST_USERS.patientB.email,
+      topic: 'pregnancy',
+      title: 'Fila — recente, urgente',
+      priority: 'urgent',
+      status: 'waiting',
+    });
+
+    await loginAs(page, TEST_USERS.professionalA.email);
+    await page.goto('/(professional)/queue');
+    await expect(page.getByTestId('queue-sort')).toContainText('Por prioridade', { timeout: 15_000 });
+
+    const rows = page.getByTestId(/^conversation-row-/);
+    await expect(page.getByTestId(`conversation-row-${older.conversationId}`)).toBeVisible({ timeout: 10_000 });
+    const order = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')));
+    expect(order.indexOf(`conversation-row-${urgent.conversationId}`)).toBeLessThan(
+      order.indexOf(`conversation-row-${older.conversationId}`),
+    );
+  });
 });

@@ -28,6 +28,7 @@ export default function Ongoing() {
         conversations={(conversations ?? []) as any}
         basePath="/(professional)/cases"
         showPriority
+        showAlertLevel={false}
         onEnd={setToEnd}
         emptyComponent={
           conversations === undefined ? null : (
@@ -36,9 +37,9 @@ export default function Ongoing() {
               {unassigned > 0 && (
                 <Button
                   testID="ongoing-empty-show-requests"
-                  kind="secondary"
+                  kind="primary"
                   size="sm"
-                  label={`Ver pedidos (${unassigned})`}
+                  label="Ver pedidos"
                   onPress={() => router.push('/(professional)/queue')}
                 />
               )}

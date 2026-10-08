@@ -2,14 +2,14 @@
    Google Fonts, so visitors' IP addresses aren't sent to Google. */
 @font-face {
   font-family: 'Fraunces';
-  src: url('/fonts/Fraunces-600.ttf') format('truetype');
+  src: url('/fonts/Fraunces-600.woff2') format('woff2'), url('/fonts/Fraunces-600.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Fraunces';
-  src: url('/fonts/Fraunces-700.ttf') format('truetype');
+  src: url('/fonts/Fraunces-700.woff2') format('woff2'), url('/fonts/Fraunces-700.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -38,6 +38,7 @@
   --rose: #F2C9D0;  --rose-on: #6B1A2A;       /* Ciclo menstrual */
   --mint: #E6D3E3;  --mint-on: #5B2350;       /* Saúde íntima (malva) */
   --apricot: #F5D6C8; --apricot-on: #7A3A24;  /* Gravidez (pêssego rosado) */
+  --coral: #E9C2B4; --coral-on: #6B2A1A;      /* Bem-estar sexual */
 
   --display: 'Fraunces', Georgia, serif;
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -79,6 +80,17 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
 }
 .btn:active { transform: scale(0.97); }
+
+/* Skip link (WCAG 2.4.1): off-screen until it gets keyboard focus, then in the
+   top-left corner with the site's ink button colours and focus ring. */
+.skip-link {
+  position: absolute; left: 12px; top: 12px; z-index: 100;
+  background: var(--ink); color: var(--bg); font-weight: 600;
+  padding: 10px 18px; border-radius: 999px; text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip-link:focus, .skip-link:focus-visible { transform: none; }
+main:focus { outline: none; }
 
 /* Keyboard focus: a solid wine ring, high contrast on every light background. */
 a:focus-visible, button:focus-visible, .btn:focus-visible {
@@ -168,8 +180,8 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .hero .btn-ghost-dark:hover::after { background: rgba(80,0,13,0.06); }
 .lede { font-size: clamp(17px, 2.2vw, 21px); color: var(--text-2); max-width: 540px; margin-top: 22px; }
 .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
-/* "Também no telemóvel": small phone drawing + platform links. iPhone has no
-   build yet, so it is plain text (not a link) until there is one. */
+/* "Também no telemóvel": small phone drawing + platform links. iPhone
+   goes to the public TestFlight link. */
 .app-download {
   margin-top: 28px;
   display: flex; align-items: center; gap: 10px;
@@ -178,7 +190,6 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .app-download strong { font-weight: 600; }
 .app-download a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .app-download .sep { color: var(--text-3); margin: 0 4px; }
-.app-download .soon { color: var(--text-2); }
 .phone-icon {
   position: relative; flex: none;
   width: 21px; height: 36px;
@@ -203,6 +214,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .dot-rose::before { background: #C4627E; }
 .dot-mint::before { background: #8C5A87; }
 .dot-apricot::before { background: #BF7556; }
+.dot-coral::before { background: #B5654A; }
 
 /* Chips */
 .chip-lilac { background: var(--lilac); color: var(--lilac-on); }
@@ -210,8 +222,9 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .chip-mint { background: var(--mint); color: var(--mint-on); }
 .chip-apricot { background: var(--apricot); color: var(--apricot-on); }
 
-/* Sections */
-.section { max-width: var(--shell); margin: 0 auto; padding: 44px 24px; }
+/* Sections: the same height of breathing room everywhere, and a menu link
+   lands with a little space above the title. */
+.section { max-width: var(--shell); margin: 0 auto; padding: 72px 24px; scroll-margin-top: 8px; }
 .section-alt { max-width: none; padding-left: 0; padding-right: 0; background: var(--bg-alt); }
 .section-alt > * { max-width: var(--shell); margin-left: auto; margin-right: auto; padding: 0 24px; }
 .section-title { font-size: clamp(28px, 4vw, 44px); color: var(--ink); }
@@ -229,19 +242,28 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .step p { color: var(--text-2); font-size: 15px; }
 
 /* Topics */
-.topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 28px; }
-.topic-card { border-radius: 20px; padding: 18px 22px; border: 1px solid var(--divider); }
-.topic-card h3 { font-size: 22px; margin-bottom: 4px; }
+/* Five cards in one row on a wide screen, wrapping evenly on smaller ones. */
+.topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 32px; }
+.topic-card { border-radius: 20px; padding: 22px; border: 1px solid var(--divider); }
+.topic-card h3 { font-size: 21px; margin-bottom: 6px; }
 .topic-card p { font-size: 15px; opacity: 0.85; }
 .topic-lilac { background: var(--lilac); color: var(--lilac-on); }
 .topic-rose { background: var(--rose); color: var(--rose-on); }
 .topic-mint { background: var(--mint); color: var(--mint-on); }
 .topic-apricot { background: var(--apricot); color: var(--apricot-on); }
+.topic-coral { background: var(--coral); color: var(--coral-on); }
+
+/* Para quem é */
+.audience { display: grid; gap: 20px; margin-top: 32px; align-items: start; }
+.audience-lead { font-size: 18px; font-weight: 600; color: var(--text-2); margin-bottom: 16px; }
+.check-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.check-list li { display: flex; align-items: flex-start; gap: 12px; font-size: 17px; color: var(--text-2); }
+.check-list .tick { margin-top: 1px; }
 
 /* Privacy */
 .privacy { display: grid; gap: 28px; }
 .privacy-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
-.privacy-list li { display: flex; align-items: center; gap: 12px; font-size: 17px; color: var(--text); }
+.privacy-list li { display: flex; align-items: center; gap: 12px; font-size: 17px; color: var(--text-2); }
 .tick {
   width: 26px; height: 26px; border-radius: 50%; flex: none;
   background: var(--mint); color: var(--mint-on);
@@ -261,6 +283,14 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .footer-copy { color: var(--text-3); font-size: 13px; }
 
 @media (max-width: 720px) {
+  .section { padding-top: 48px; padding-bottom: 48px; }
   .nav-links { gap: 14px; }
   .nav-links a:not(.btn) { display: none; }
 }
+
+/* Privacy policy page (privacidade.html) */
+.policy { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+.policy h1 { font-family: 'Fraunces', serif; color: var(--ink); font-size: 36px; margin: 0 0 4px; }
+.policy h2 { font-family: 'Fraunces', serif; color: var(--ink); font-size: 22px; margin: 32px 0 8px; }
+.policy p { color: var(--text); font-size: 17px; line-height: 1.6; margin: 0 0 12px; }
+.policy .policy-updated { color: var(--text-2); font-size: 14px; }

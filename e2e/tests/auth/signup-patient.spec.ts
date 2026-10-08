@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { gotoApp } from '../../helpers/auth';
-import { setUserProfile, seedUser, TEST_USERS } from '../../helpers/convex';
+import { setUserProfile, seedUser, TEST_USERS, listConsents } from '../../helpers/convex';
 
 const FRESH_EMAIL = 'patient-signup@e2e.local';
 const FRESH_PASSWORD = 'e2e-test-pw';
@@ -18,6 +18,7 @@ test.describe('Patient signup + onboarding', () => {
     await page.getByTestId('auth-email-input').fill(FRESH_EMAIL);
     await page.getByTestId('auth-password-input').fill(FRESH_PASSWORD);
     await page.getByTestId('auth-password-confirm-input').fill(FRESH_PASSWORD);
+    await page.getByTestId('auth-consent-checkbox').click();
     await page.getByTestId('auth-register-button').click();
 
     // Onboarding screen: pick options + continue
@@ -25,13 +26,15 @@ test.describe('Patient signup + onboarding', () => {
       timeout: 15_000,
     });
     await page.getByTestId('onboarding-age-26-35').click();
-    await page.getByTestId('onboarding-pregnancy-not-pregnant').click();
     await page.getByTestId('onboarding-name-input').fill('Maria Test');
     await page.getByTestId('onboarding-continue-button').click();
 
     // Patient home: both ways to start a conversation are offered.
     await expect(page.getByTestId('home-path-professional')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('home-path-ai')).toBeVisible();
+    // The consent was recorded on the server (date + policy version).
+    const consents = await listConsents(FRESH_EMAIL);
+    expect(consents).toEqual([expect.objectContaining({ method: 'registo', policyVersion: expect.any(String) })]);
   });
 
   test('mismatched password shows error', async ({ page }) => {
@@ -41,5 +44,19 @@ test.describe('Patient signup + onboarding', () => {
     await page.getByTestId('auth-password-confirm-input').fill('passwordB');
     await page.getByTestId('auth-register-button').click();
     await expect(page.getByTestId('auth-error')).toBeVisible();
+  });
+
+  test('creating an account needs the age and privacy consent', async ({ page }) => {
+    await gotoApp(page, '/(auth)/register');
+    await page.getByTestId('auth-email-input').fill('no-consent@e2e.local');
+    await page.getByTestId('auth-password-input').fill(FRESH_PASSWORD);
+    await page.getByTestId('auth-password-confirm-input').fill(FRESH_PASSWORD);
+    await page.getByTestId('auth-register-button').click();
+    await expect(page.getByTestId('auth-error')).toContainText('18 anos');
+    await expect(page).toHaveURL(/register/);
+    // The policy is one tap away.
+    await page.getByRole('link', { name: 'política de privacidade' }).click();
+    await expect(page.getByTestId('privacy-policy')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Quem acede aos teus dados')).toBeVisible();
   });
 });

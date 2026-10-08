@@ -13,6 +13,7 @@ import { fonts } from '@/lib/fonts';
 import { pickImage, uploadImage, type PickedImage } from '@/lib/upload';
 import { guestAuthEnabled } from '@/lib/env';
 import { withAuthRetry } from '@/lib/authRetry';
+import { errorText } from '@/lib/errorText';
 
 const SPECIALTIES = [
   'Medicina Geral e Familiar',
@@ -68,7 +69,7 @@ export default function ProfessionalSignup() {
         );
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Erro a anexar documento.');
+      setError(errorText(e, 'Não foi possível anexar o documento.'));
       if (target === 'license') setLicenseDoc(null);
     }
   }
@@ -112,7 +113,7 @@ export default function ProfessionalSignup() {
         })
       );
     } catch (e: any) {
-      setError(e?.message ?? strings.errors.generic);
+      setError(errorText(e, strings.errors.generic));
     } finally {
       setLoading(false);
     }
@@ -124,8 +125,7 @@ export default function ProfessionalSignup() {
     try {
       await signIn('anonymous-professional');
     } catch (e: any) {
-      const message = e?.message ?? String(e);
-      setError(`Guest professional falhou: ${message}`);
+      setError(errorText(e, 'Não foi possível entrar em modo de demonstração. Tenta de novo.'));
     } finally {
       setGuestLoading(false);
     }
@@ -230,6 +230,7 @@ export default function ProfessionalSignup() {
         <Pressable
           onPress={() => pickAndUpload('other')}
           style={({ pressed }) => [styles.dashed, pressed && styles.dim]}
+          accessibilityRole="button"
         >
           <Icon name={{ sf: 'plus.circle', ion: 'add-circle-outline' }} size={18} color={styles.ink.color} />
           <Text style={styles.dashedText}>Adicionar documento</Text>
@@ -269,7 +270,7 @@ export default function ProfessionalSignup() {
           <Button
             testID="prof-signup-guest-button"
             strongBorder
-            label="Entrar como profissional convidado"
+            label="Entrar como enfermeiro convidado"
             variant="secondary"
             onPress={handleGuest}
             loading={guestLoading}
@@ -283,9 +284,10 @@ export default function ProfessionalSignup() {
       <Pressable
         onPress={() => router.replace('/(auth)/professional-login')}
         style={styles.back}
+        accessibilityRole="link"
         hitSlop={8}
       >
-        <Text style={styles.backText}>← Já tenho conta profissional</Text>
+        <Text style={styles.backText}>← Já tenho conta de enfermeiro</Text>
       </Pressable>
     </ScrollView>
   );
@@ -304,13 +306,15 @@ function SpecialtyPicker({ value, onChange }: { value: string; onChange: (v: str
   return (
     <View style={styles.specWrap}>
       <Text style={styles.specLabel}>Especialidade</Text>
-      <View style={styles.specChips}>
+      <View style={styles.specChips} accessibilityRole="radiogroup" aria-label="Especialidade">
         {SPECIALTIES.map((opt) => {
           const active = value === opt;
           return (
             <Pressable
               key={opt}
               testID={`prof-signup-specialty-${opt.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`}
+              accessibilityRole="radio"
+              aria-checked={active}
               onPress={() => onChange(opt)}
               style={[styles.specChip, active ? styles.specChipOn : styles.specChipOff]}
             >
@@ -337,7 +341,11 @@ function DocSlot({ label, doc, required, onPress, onRemove }: DocSlotProps) {
   const { theme } = useUnistyles();
   if (!doc) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [styles.docEmpty, pressed && styles.dim]}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.docEmpty, pressed && styles.dim]}
+        accessibilityRole="button"
+      >
         <Icon name={{ sf: 'doc.badge.plus', ion: 'document-attach' }} size={20} color={theme.colors.inkText} />
         <Text style={styles.docEmptyLabel}>
           {label}
@@ -359,7 +367,7 @@ function DocSlot({ label, doc, required, onPress, onRemove }: DocSlotProps) {
       {doc.uploading ? (
         <ActivityIndicator color={theme.colors.inkText} size="small" />
       ) : (
-        <Pressable onPress={onRemove} hitSlop={8}>
+        <Pressable onPress={onRemove} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Remover ${doc.picked.fileName ?? "documento"}`}>
           <Icon name={{ sf: 'xmark.circle.fill', ion: 'close-circle' }} size={22} color={theme.colors.textTertiary} />
         </Pressable>
       )}
