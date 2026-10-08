@@ -106,6 +106,8 @@ const styles = StyleSheet.create((theme) => ({
   disabled: { opacity: 0.5 },
   label: {
     fontFamily: fonts.displayBold,
+    // Centred also when a long label wraps onto two lines.
+    textAlign: 'center',
     variants: {
       kind: {
         primary: { color: theme.colors.onInk },

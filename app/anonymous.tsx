@@ -201,7 +201,7 @@ export default function AnonymousChat() {
         visible={confirmLeave}
         title="Sair da conversa anónima?"
         message="Depois de saíres, esta conversa é apagada e não vais conseguir voltar a vê-la."
-        confirmLabel="Sair e apagar"
+        confirmLabel="Sair"
         onCancel={() => {
           pendingLeave.current = null;
           setConfirmLeave(false);
