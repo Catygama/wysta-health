@@ -28,6 +28,7 @@ export default function Ongoing() {
         conversations={(conversations ?? []) as any}
         basePath="/(professional)/cases"
         showPriority
+        showAlertLevel={false}
         onEnd={setToEnd}
         emptyComponent={
           conversations === undefined ? null : (

@@ -31,6 +31,8 @@ type Props = {
   conversations: Conversation[];
   basePath: string;
   showPriority?: boolean;
+  /** Triage alert badge ("Urgente", "Sensível ao tempo"…); the Pedidos list hides it. */
+  showAlertLevel?: boolean;
   /** Shown when the list is empty, so a filtered-out list doesn't look broken. */
   emptyComponent?: React.ReactElement | null;
   /** Shows a button on the right of each card that ends the conversation. */
@@ -43,6 +45,7 @@ export function ConversationList({
   conversations,
   basePath,
   showPriority = false,
+  showAlertLevel = true,
   emptyComponent,
   onEnd,
 }: Props) {
@@ -89,7 +92,7 @@ export function ConversationList({
                   {item.preview ? `"${item.preview}"` : 'Questionário de triagem concluído'}
                 </Text>
                 <View style={styles.pills}>
-                  {showPriority && item.alertLevel ? (
+                  {showPriority && showAlertLevel && item.alertLevel ? (
                     <AlertLevelBadge level={item.alertLevel} testID={`alert-level-${item._id}`} />
                   ) : null}
                   <View style={[styles.pill, styles.topicPill]}>

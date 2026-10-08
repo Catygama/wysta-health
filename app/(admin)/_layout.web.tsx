@@ -25,6 +25,11 @@ const ITEMS: NavItem[] = [
     href: '/ai',
     icon: { sf: 'sparkles', ion: 'sparkles-outline' },
   },
+  {
+    label: 'Perfil',
+    href: '/my-account',
+    icon: { sf: 'person', ion: 'person-outline' },
+  },
 ];
 
 export default function AdminLayoutWeb() {
