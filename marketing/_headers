@@ -1,0 +1,14 @@
+# wysta.health security headers (Cloudflare static assets _headers).
+# Same values as the app (worker/headers.ts). CSP in Report-Only first.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+# Fonts and the logo don't change name; cache them for a week.
+/fonts/*
+  Cache-Control: public, max-age=604800
+/logo-mark.svg
+  Cache-Control: public, max-age=604800
