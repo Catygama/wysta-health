@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { FlatList, View, Text, Pressable, ActivityIndicator, TextInput, Platform } from 'react-native';
 import { Link } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
-import { useAuthActions } from '@convex-dev/auth/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/Button';
@@ -23,7 +22,6 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default function AdminPanel() {
-  const { signOut } = useAuthActions();
   const users = useQuery(api.users.listUsers);
   const setRole = useMutation(api.users.setRole);
   const [search, setSearch] = useState('');
@@ -110,6 +108,15 @@ export default function AdminPanel() {
                   <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={16} color={theme.colors.textTertiary} />
                 </Pressable>
               </Link>
+              <Link href="/(admin)/my-account" asChild>
+                <Pressable testID="admin-profile-link" style={styles.linkCard}>
+                  <View style={styles.linkBody}>
+                    <Text style={styles.cardTitle}>Perfil</Text>
+                    <Text style={styles.cardSub}>Tema e terminar sessão.</Text>
+                  </View>
+                  <Icon name={{ sf: 'chevron.right', ion: 'chevron-forward' }} size={16} color={theme.colors.textTertiary} />
+                </Pressable>
+              </Link>
               <Link href="/(admin)/ai" asChild>
                 <Pressable testID="admin-ai-link" style={styles.linkCard}>
                   <View style={styles.linkBody}>
@@ -143,11 +150,6 @@ export default function AdminPanel() {
       ListEmptyComponent={
         <View style={styles.empty}>
           <Text style={styles.emptyText}>Nenhum utilizador encontrado.</Text>
-        </View>
-      }
-      ListFooterComponent={
-        <View style={styles.footer}>
-          <Button label="Terminar sessão" variant="secondary" onPress={() => signOut()} />
         </View>
       }
       renderItem={({ item }) => {
@@ -269,7 +271,6 @@ const styles = StyleSheet.create((theme) => ({
   searchInput: { flex: 1, paddingVertical: theme.spacing.sm, fontSize: 16, color: theme.colors.textPrimary },
   empty: { padding: theme.spacing.xl, alignItems: 'center' },
   emptyText: { fontSize: 16, color: theme.colors.textSecondary },
-  footer: { marginTop: theme.spacing.lg },
   userRow: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.md,
