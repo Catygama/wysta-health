@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery } from 'convex/react';
@@ -50,18 +50,17 @@ export default function AdminArticleEditor() {
         : null
   );
 
-  // Fill the form once the article loads.
-  useEffect(() => {
-    if (article && draft === null) {
-      setDraft({
-        title: article.title,
-        topic: article.topic as TopicId,
-        summary: article.summary,
-        content: article.content,
-        whenToSeekHelp: article.whenToSeekHelp ?? '',
-      });
-    }
-  }, [article, draft]);
+  // Fill the form once the article loads (state adjusted during render, not
+  // in an effect, so there's no extra empty render).
+  if (article && draft === null) {
+    setDraft({
+      title: article.title,
+      topic: article.topic as TopicId,
+      summary: article.summary,
+      content: article.content,
+      whenToSeekHelp: article.whenToSeekHelp ?? '',
+    });
+  }
 
   const goToList = () =>
     router.canGoBack() ? router.back() : router.replace('/(admin)/content');
@@ -220,8 +219,8 @@ export default function AdminArticleEditor() {
             minHeight={260}
           />
           <Text style={styles.hint}>
-            Parágrafos separados por uma linha em branco. Uma linha a terminar em ":" é um subtítulo
-            (ex.: "Pontos-chave:"). Linhas a começar por "- " são uma lista.
+            Parágrafos separados por uma linha em branco. Uma linha a terminar em &quot;:&quot; é um subtítulo
+            (ex.: &quot;Pontos-chave:&quot;). Linhas a começar por &quot;- &quot; são uma lista.
           </Text>
           <Input
             testID="content-help"
@@ -231,7 +230,7 @@ export default function AdminArticleEditor() {
             multiline
             minHeight={96}
           />
-          <Text style={styles.hint}>Um ponto por linha, a começar por "- ".</Text>
+          <Text style={styles.hint}>Um ponto por linha, a começar por &quot;- &quot;.</Text>
         </View>
       ) : (
         <View testID="content-preview" style={styles.preview}>
