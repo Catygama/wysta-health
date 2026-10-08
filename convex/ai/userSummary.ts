@@ -9,19 +9,20 @@ import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { runAgent } from './runAgent';
+import { userError, NOT_AUTHENTICATED } from '../lib/errors';
 
 export const generate = action({
   args: { patientId: v.id('users') },
   handler: async (ctx, { patientId }): Promise<{ summary: string; invocationId: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
 
     const access = await ctx.runQuery(internal.ai.userSummary.assertAccess, {
       callerId: userId,
       patientId,
     });
     if (!access.allowed) {
-      throw new Error('Only professionals or admins can generate user summaries');
+      throw userError('Só os profissionais podem gerar o perfil clínico.');
     }
 
     const result = await runAgent(ctx, {
@@ -31,6 +32,7 @@ export const generate = action({
         conversationSummaries: access.conversationSummaries,
       },
       userId,
+      subjectId: patientId,
     });
 
     await ctx.runMutation(internal.ai.userSummary.storeSummary, {

@@ -239,3 +239,31 @@ describe('runAgent', () => {
     expect(row).toBeNull();
   });
 });
+
+describe('pseudonymisation (subjectId)', () => {
+  it('replaces the patient name and email before the prompt reaches the provider', async () => {
+    const t = convexTest(schema, modules);
+    const { userId } = await seed(t);
+    const patientId = await t.run(async (ctx) => {
+      const id = (await ctx.db.insert('users', { email: 'ines.silva@exemplo.pt' } as any)) as Id<'users'>;
+      await ctx.db.insert('userProfiles', { userId: id, role: 'patient', displayName: 'Inês Silva' });
+      return id;
+    });
+    vi.mocked(callLlmText).mockResolvedValue({ output: 'ok', inputTokens: 1, outputTokens: 1 });
+    await t.run(async (ctx) =>
+      runAgent(ctx as any, {
+        purpose: 'chat-summary',
+        vars: {
+          conversationText:
+            'Profissional: Olá, Inês! Inês Silva, confirma o email ines.silva@exemplo.pt.\nUtente: Sou a INÊS. Foi inesperado.',
+        },
+        userId,
+        subjectId: patientId,
+      }),
+    );
+    const sent = vi.mocked(callLlmText).mock.calls[0][0].userPrompt;
+    expect(sent).toBe(
+      'Conversa:\nProfissional: Olá, [nome]! [nome], confirma o email [email].\nUtente: Sou a [nome]. Foi inesperado.',
+    );
+  });
+});

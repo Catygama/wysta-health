@@ -99,6 +99,20 @@ describe('A1: messages.send only for the conversation members', () => {
   });
 });
 
+describe('B1: an AI answer being prepared is never returned', () => {
+  it('messages.list hides the content of a streaming answer', async () => {
+    const { t, patient, patientId, convId } = await setup();
+    await t.run((ctx) =>
+      ctx.db.insert('messages', {
+        conversationId: convId, senderId: patientId, content: 'rascunho', messageType: 'ai-response', streaming: true,
+      }),
+    );
+    const msgs = await patient.query(api.messages.list, { conversationId: convId });
+    const ai = msgs.find((m: any) => m.messageType === 'ai-response');
+    expect(ai).toMatchObject({ content: '', streaming: true });
+  });
+});
+
 describe('A2: admins have no access to clinical content', () => {
   it('cannot read the queue, cases, messages or summaries', async () => {
     const { t, admin, adminId, patientId, convId } = await setup();

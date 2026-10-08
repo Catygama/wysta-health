@@ -42,6 +42,8 @@ export const list = query({
     return Promise.all(
       filtered.map(async (m) => ({
         ...m,
+        // An AI answer still being prepared has no content to show yet.
+        content: m.streaming ? '' : m.content,
         imageUrl: m.imageId ? await ctx.storage.getUrl(m.imageId) : null,
         attachmentUrl: m.attachmentId
           ? await ctx.storage.getUrl(m.attachmentId)

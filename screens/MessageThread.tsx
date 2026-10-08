@@ -552,10 +552,22 @@ export function AiResponseMessage({
         />
         <Text style={styles.aiLabel}>Assistente Wysta</Text>
       </View>
-      <Text style={styles.aiBody} selectable>
-        {content}
-        {streaming ? <Text style={styles.aiCursor}>{content ? ' ▍' : 'a escrever…'}</Text> : null}
-      </Text>
+      {streaming ? (
+        // The answer is shown only once the safety checks have approved it.
+        <View
+          testID="ai-response-preparing"
+          style={styles.aiPreparing}
+          accessibilityLiveRegion="polite"
+          accessibilityLabel="A preparar a resposta"
+        >
+          <ActivityIndicator size="small" color={styles.aiLabel.color} />
+          <Text style={styles.aiCursor}>A preparar a resposta…</Text>
+        </View>
+      ) : (
+        <Text style={styles.aiBody} selectable>
+          {content}
+        </Text>
+      )}
     </View>
   );
 }
@@ -728,7 +740,8 @@ const styles = StyleSheet.create((theme) => ({
     letterSpacing: 0.3,
   },
   aiBody: { fontSize: 14, color: theme.colors.textPrimary, lineHeight: 22 },
-  aiCursor: { color: theme.colors.textTertiary },
+  aiCursor: { fontSize: 15, color: theme.colors.textSecondary },
+  aiPreparing: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   suggestEnd: {
     flexDirection: 'row',
     alignItems: 'center',

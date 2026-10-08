@@ -3,9 +3,9 @@ import { vi } from 'vitest';
 vi.mock('./llm', () => ({
   callLlmText: vi.fn(),
   callLlmObject: vi.fn(),
-  callLlmStream: vi.fn(),
+  callLlmText: vi.fn(),
 }));
-import { callLlmStream, callLlmObject } from './llm';
+import { callLlmText, callLlmObject } from './llm';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { convexTest } from 'convex-test';
 import schema from '../schema';
@@ -72,14 +72,14 @@ async function aiMessage(t: ReturnType<typeof convexTest>, conversationId: Id<'c
 
 describe('assistant streaming (respondAuto)', () => {
   beforeEach(() => {
-    vi.mocked(callLlmStream).mockReset();
+    vi.mocked(callLlmText).mockReset();
     vi.mocked(callLlmObject).mockReset();
   });
 
   it('approved: streams draft then finalizes with the answer only', async () => {
     const t = convexTest(schema, modules);
     const { conversationId } = await seedChatChain(t);
-    vi.mocked(callLlmStream).mockImplementation(async (a: any) => {
+    vi.mocked(callLlmText).mockImplementation(async (a: any) => {
       await a.onDelta?.('Olá');
       await a.onDelta?.('Olá, aqui vai');
       return { output: 'Olá, aqui vai', inputTokens: 10, outputTokens: 5 };
@@ -95,13 +95,32 @@ describe('assistant streaming (respondAuto)', () => {
     expect(msg?.content).toContain('Olá, aqui vai');
     expect(msg?.content).toBe('Olá, aqui vai');
     expect(msg?.streaming).toBe(false);
-    expect(vi.mocked(callLlmStream).mock.calls[0][0].onDelta).toBeTypeOf('function');
+  });
+
+  it('the draft is never visible before the judge approves it', async () => {
+    const t = convexTest(schema, modules);
+    const { conversationId } = await seedChatChain(t);
+    vi.mocked(callLlmText).mockResolvedValue({ output: 'rascunho por validar', inputTokens: 1, outputTokens: 1 } as any);
+    const seenDuringValidation: Array<{ content: string; streaming?: boolean }> = [];
+    vi.mocked(callLlmObject).mockImplementation(async () => {
+      const m = await aiMessage(t, conversationId);
+      seenDuringValidation.push({ content: m?.content, streaming: m?.streaming });
+      return seenDuringValidation.length < 3
+        ? ({ output: { decision: 'approve', reason: 'ok' }, inputTokens: 1, outputTokens: 1 } as any)
+        : ({ output: { action: 'send', finalAnswer: 'x' }, inputTokens: 1, outputTokens: 1 } as any);
+    });
+
+    await t.action(internal.ai.assistant.respondAuto, { conversationId, query: 'olá' });
+
+    expect(seenDuringValidation).toHaveLength(3);
+    for (const seen of seenDuringValidation) expect(seen).toEqual({ content: '', streaming: true });
+    expect((await aiMessage(t, conversationId))?.content).toBe('rascunho por validar');
   });
 
   it('blocked: finalizes with the fixed forwarding message', async () => {
     const t = convexTest(schema, modules);
     const { conversationId } = await seedChatChain(t);
-    vi.mocked(callLlmStream).mockImplementation(async (a: any) => {
+    vi.mocked(callLlmText).mockImplementation(async (a: any) => {
       await a.onDelta?.('rascunho perigoso');
       return { output: 'rascunho perigoso', inputTokens: 10, outputTokens: 5 };
     });
@@ -144,7 +163,7 @@ describe('assistant streaming (respondAuto)', () => {
       });
       return proConvId;
     });
-    vi.mocked(callLlmStream).mockResolvedValue({ output: 'rascunho', inputTokens: 1, outputTokens: 1 });
+    vi.mocked(callLlmText).mockResolvedValue({ output: 'rascunho', inputTokens: 1, outputTokens: 1 });
     vi.mocked(callLlmObject)
       .mockResolvedValueOnce({ output: { decision: 'block', reason: 'clinical' }, inputTokens: 1, outputTokens: 1 })
       .mockResolvedValueOnce({ output: { decision: 'approve', reason: 'ok' }, inputTokens: 1, outputTokens: 1 })
@@ -173,7 +192,7 @@ describe('assistant streaming (respondAuto)', () => {
   it('error: finalizes with a fallback message', async () => {
     const t = convexTest(schema, modules);
     const { conversationId } = await seedChatChain(t);
-    vi.mocked(callLlmStream).mockRejectedValue(new Error('boom'));
+    vi.mocked(callLlmText).mockRejectedValue(new Error('boom'));
 
     await t.action(internal.ai.assistant.respondAuto, { conversationId, query: 'olá' });
 
@@ -288,7 +307,7 @@ describe('suggest close marker', () => {
   it('an approved answer with the marker is flagged suggestClose, marker hidden', async () => {
     const t = convexTest(schema, modules);
     const { conversationId } = await seedChatChain(t);
-    vi.mocked(callLlmStream).mockResolvedValue({
+    vi.mocked(callLlmText).mockResolvedValue({
       output: 'De nada, fico contente por ter ajudado.\n[[SUGERIR_TERMINAR]]',
       inputTokens: 1,
       outputTokens: 1,

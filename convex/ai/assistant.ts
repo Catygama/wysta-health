@@ -8,8 +8,8 @@
 //
 // Each step is a separate runAgent call linked via parentInvocationId so the
 // audit tree reconstructs the chain. A placeholder ai-response message is
-// created immediately (streaming: true) and patched live as tokens arrive;
-// it is finalized (streaming: false) with the draft+disclaimer on approval,
+// created immediately (streaming: true, empty) and stays empty while the draft
+// is generated and checked; it is finalized (streaming: false) with the draft on approval,
 // the fixed forwarding text on block, or a fallback on error.
 
 import {
@@ -69,8 +69,8 @@ type StreamVars = {
   topicAndRisk: string;
 };
 
-// Shared: create a placeholder ai-response message, stream the draft into it,
-// run the safety chain, then finalize (draft+disclaimer / blocked / fallback).
+// Shared: create an empty placeholder ai-response message, generate the draft,
+// run the safety chain, then finalize (approved draft / blocked / fallback).
 async function streamAndValidate(
   ctx: ActionCtx,
   args: {
@@ -86,25 +86,17 @@ async function streamAndValidate(
     { conversationId: args.conversationId, patientId: args.patientId }
   );
   try {
-    let lastWriteAt = 0;
-    let lastLen = 0;
+    // The draft is not written to the conversation while it is generated:
+    // the patient only ever sees an answer the validators and the judge
+    // approved (or the fixed forwarding message). Until then the placeholder
+    // stays empty and the app shows "A preparar a resposta…".
     const draft = await runAgent(ctx, {
       purpose: 'chat',
       topic: args.topic as any,
       vars: args.baseVars,
       userId: args.patientId,
+      subjectId: args.patientId,
       conversationId: args.conversationId,
-      onDelta: async (textSoFar) => {
-        const now = Date.now();
-        if (now - lastWriteAt >= 150 || textSoFar.length - lastLen >= 24) {
-          lastWriteAt = now;
-          lastLen = textSoFar.length;
-          await ctx.runMutation(internal.ai.assistant.patchStreamingMessage, {
-            messageId,
-            content: stripSuggestClose(textSoFar).text,
-          });
-        }
-      },
     });
     const { text: draftText, suggestClose } = stripSuggestClose(draft.output);
 
@@ -114,6 +106,7 @@ async function streamAndValidate(
         topic: args.topic as any,
         vars: { ...args.baseVars, draft: draftText },
         userId: args.patientId,
+        subjectId: args.patientId,
         conversationId: args.conversationId,
         parentInvocationId: draft.invocationId,
         outputSchema: validatorSchema,
@@ -123,6 +116,7 @@ async function streamAndValidate(
         topic: args.topic as any,
         vars: { ...args.baseVars, draft: draftText },
         userId: args.patientId,
+        subjectId: args.patientId,
         conversationId: args.conversationId,
         parentInvocationId: draft.invocationId,
         outputSchema: validatorSchema,
@@ -139,6 +133,7 @@ async function streamAndValidate(
         clinical: JSON.stringify(clinical.output),
       },
       userId: args.patientId,
+      subjectId: args.patientId,
       conversationId: args.conversationId,
       parentInvocationId: draft.invocationId,
       outputSchema: judgeSchema,
@@ -176,13 +171,6 @@ export const createAssistantPlaceholder = internalMutation({
     });
     await ctx.db.patch(conversationId, { lastMessageAt: Date.now() });
     return messageId;
-  },
-});
-
-export const patchStreamingMessage = internalMutation({
-  args: { messageId: v.id('messages'), content: v.string() },
-  handler: async (ctx, { messageId, content }) => {
-    await ctx.db.patch(messageId, { content });
   },
 });
 
@@ -247,12 +235,14 @@ export const respondAnonymous = action({
       purpose: 'chat',
       vars: baseVars,
       userId,
+      subjectId: userId,
     });
     const [safety, clinical] = await Promise.all([
       runAgent(ctx, {
         purpose: 'chat-validator-safety',
         vars: { ...baseVars, draft: stripSuggestClose(draft.output).text },
         userId,
+        subjectId: userId,
         parentInvocationId: draft.invocationId,
         outputSchema: validatorSchema,
       }),
@@ -260,6 +250,7 @@ export const respondAnonymous = action({
         purpose: 'chat-validator-clinical',
         vars: { ...baseVars, draft: stripSuggestClose(draft.output).text },
         userId,
+        subjectId: userId,
         parentInvocationId: draft.invocationId,
         outputSchema: validatorSchema,
       }),
@@ -273,6 +264,7 @@ export const respondAnonymous = action({
         clinical: JSON.stringify(clinical.output),
       },
       userId,
+      subjectId: userId,
       parentInvocationId: draft.invocationId,
       outputSchema: judgeSchema,
     });

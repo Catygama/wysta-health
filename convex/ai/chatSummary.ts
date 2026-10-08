@@ -9,19 +9,20 @@ import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { runAgent } from './runAgent';
+import { userError, NOT_AUTHENTICATED, ADMIN_ONLY } from '../lib/errors';
 
 export const generate = action({
   args: { conversationId: v.id('conversations') },
   handler: async (ctx, { conversationId }): Promise<{ summary: string; invocationId: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
 
     const access = await ctx.runQuery(internal.ai.chatSummary.assertAccess, {
       conversationId,
       userId,
     });
     if (!access.allowed) {
-      throw new Error('Only the assigned professional or an admin can generate summaries');
+      throw userError('Só o profissional atribuído pode gerar o sumário desta conversa.');
     }
 
     const text = renderConversation(access.messages);
@@ -29,6 +30,7 @@ export const generate = action({
       purpose: 'chat-summary',
       vars: { conversationText: text },
       userId,
+      subjectId: access.patientId,
       conversationId,
     });
 
@@ -64,6 +66,7 @@ export const assertAccess = internalQuery({
 
     return {
       allowed: true as const,
+      patientId: conversation.patientId,
       messages: messages
         .filter((m) => !m.isInternal && m.messageType !== 'system')
         .map((m) => ({
@@ -111,6 +114,7 @@ export const generateOnClose = internalAction({
         purpose: 'chat-summary',
         vars: { conversationText: text },
         userId: triggeredBy,
+        subjectId: access.patientId,
         conversationId,
       });
       await ctx.runMutation(internal.ai.chatSummary.storeSummary, {
@@ -133,9 +137,9 @@ export const adminTest = action({
   args: { conversationText: v.string() },
   handler: async (ctx, { conversationText }): Promise<{ summary: string; invocationId: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error('Not authenticated');
+    if (!userId) throw userError(NOT_AUTHENTICATED);
     const isAdmin = await ctx.runQuery(internal.ai.chatSummary.isCallerAdmin, { userId });
-    if (!isAdmin) throw new Error('Admin only');
+    if (!isAdmin) throw userError(ADMIN_ONLY);
     const result = await runAgent(ctx, {
       purpose: 'chat-summary',
       vars: { conversationText },
