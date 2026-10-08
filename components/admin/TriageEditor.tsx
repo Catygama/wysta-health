@@ -222,7 +222,7 @@ export function TriageEditor() {
                     {q.alert ? (
                       <View style={styles.alertRow}>
                         <AlertLevelBadge level={q.alert.level} />
-                        <Text style={styles.qMeta}>
+                        <Text style={[styles.qMeta, styles.alertWhen]}>
                           {q.type === 'yes-no'
                             ? 'se "Sim"'
                             : q.type === 'scale'
@@ -596,7 +596,8 @@ const styles = StyleSheet.create((theme) => ({
   cardBody: { flex: 1, gap: 4 },
   qText: { fontSize: 15, fontWeight: '600', color: theme.colors.textPrimary },
   qMeta: { fontSize: 13, color: theme.colors.textSecondary },
-  alertRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, flexWrap: 'wrap' },
+  alertRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginTop: 2 },
+  alertWhen: { flexShrink: 1 },
   tools: { flexDirection: 'row', gap: 2 },
   iconBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   form: {
