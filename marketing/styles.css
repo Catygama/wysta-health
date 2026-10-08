@@ -256,9 +256,9 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 
 /* Para quem é */
 .audience { display: grid; gap: 20px; margin-top: 32px; align-items: start; }
-.audience-lead { font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 16px; }
+.audience-lead { font-size: 18px; font-weight: 600; color: var(--text-2); margin-bottom: 16px; }
 .check-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
-.check-list li { display: flex; align-items: flex-start; gap: 12px; font-size: 17px; color: var(--text); }
+.check-list li { display: flex; align-items: flex-start; gap: 12px; font-size: 17px; color: var(--text-2); }
 .check-list .tick { margin-top: 1px; }
 
 /* Privacy */
