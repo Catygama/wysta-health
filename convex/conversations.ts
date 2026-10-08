@@ -230,39 +230,54 @@ export const get = query({
   },
 });
 
-// A patient keeps at most one open professional conversation per topic.
-export async function findOpenProfessionalConversation(
+// A patient keeps at most one open conversation per topic and kind: one with
+// a nurse and one with the AI.
+async function findOpenConversation(
   ctx: QueryCtx,
   patientId: Id<'users'>,
-  topicId: string
+  topicId: string,
+  kind: 'human-async' | 'ai-only'
 ): Promise<Doc<'conversations'> | null> {
   for await (const c of ctx.db
     .query('conversations')
     .withIndex('by_patient', (q) => q.eq('patientId', patientId))
     .order('desc')) {
-    if (c.topic === topicId && c.status !== 'closed' && c.kind !== 'ai-only') return c;
+    if (c.topic === topicId && c.status !== 'closed' && (c.kind ?? 'human-async') === kind) return c;
   }
   return null;
+}
+
+export function findOpenProfessionalConversation(ctx: QueryCtx, patientId: Id<'users'>, topicId: string) {
+  return findOpenConversation(ctx, patientId, topicId, 'human-async');
+}
+
+// Topic → open conversation of one kind, so Home can send the patient back to it.
+async function openByTopic(ctx: QueryCtx, kind: 'human-async' | 'ai-only') {
+  const userId = await getActiveUserId(ctx);
+  if (!userId) return {};
+  const byTopic: Record<string, Id<'conversations'>> = {};
+  for await (const c of ctx.db
+    .query('conversations')
+    .withIndex('by_patient', (q) => q.eq('patientId', userId))
+    .order('desc')) {
+    if (c.status !== 'closed' && (c.kind ?? 'human-async') === kind && !byTopic[c.topic]) {
+      byTopic[c.topic] = c._id;
+    }
+  }
+  return byTopic;
 }
 
 // Topic → open professional conversation, so Home can send the patient back
 // to it instead of starting a second one.
 export const openProfessionalByTopic = query({
   args: {},
-  handler: async (ctx) => {
-    const userId = await getActiveUserId(ctx);
-    if (!userId) return {};
-    const byTopic: Record<string, Id<'conversations'>> = {};
-    for await (const c of ctx.db
-      .query('conversations')
-      .withIndex('by_patient', (q) => q.eq('patientId', userId))
-      .order('desc')) {
-      if (c.status !== 'closed' && c.kind !== 'ai-only' && !byTopic[c.topic]) {
-        byTopic[c.topic] = c._id;
-      }
-    }
-    return byTopic;
-  },
+  handler: (ctx) => openByTopic(ctx, 'human-async'),
+});
+
+// Same for the AI: one open AI chat per topic.
+export const openAiByTopic = query({
+  args: {},
+  handler: (ctx) => openByTopic(ctx, 'ai-only'),
 });
 
 export const create = mutation({
@@ -283,11 +298,10 @@ export const create = mutation({
     const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
 
+    // Already one open conversation of this kind on the topic: reuse it.
     const kind = args.kind ?? 'human-async';
-    if (kind === 'human-async') {
-      const existing = await findOpenProfessionalConversation(ctx, userId, args.topic);
-      if (existing) return existing._id;
-    }
+    const existing = await findOpenConversation(ctx, userId, args.topic, kind);
+    if (existing) return existing._id;
 
     let riskLevel: 'low' | 'medium' | 'high' = 'low';
     let alertLevel: AlertLevel | undefined;
@@ -600,14 +614,15 @@ export const switchMode = mutation({
       }
     }
 
-    // Asking for a professional while one is already open on this topic: go
-    // back to it (one open professional conversation per topic).
-    if (targetKind === 'human-async') {
-      const existing = await findOpenProfessionalConversation(ctx, userId, conv.topic);
-      if (existing) {
-        await ctx.db.patch(conv._id, { counterpartConversationId: existing._id });
-        return { id: existing._id, created: false };
+    // One of the other kind is already open on this topic: go back to it
+    // (one open conversation per topic with a nurse, one with the AI).
+    const existing = await findOpenConversation(ctx, userId, conv.topic, targetKind);
+    if (existing) {
+      await ctx.db.patch(conv._id, { counterpartConversationId: existing._id });
+      if (!existing.counterpartConversationId) {
+        await ctx.db.patch(existing._id, { counterpartConversationId: conv._id });
       }
+      return { id: existing._id, created: false };
     }
 
     const now = Date.now();

@@ -48,12 +48,12 @@ export default function Triage() {
   const { theme } = useUnistyles();
   const triage = useQuery(api.triage.getByTopic, topic ? { topic } : 'skip');
   const createConversation = useMutation(api.conversations.create);
-  // One open professional conversation per topic: if there is one, skip the
-  // questionnaire and go straight to it.
+  // One open conversation per topic with a nurse and one with the AI: if the
+  // chosen kind is already open, skip the questionnaire and go straight to it.
   const wantsProfessional = kindForMode(mode) === 'human-async';
   const openByTopic = useQuery(
-    api.conversations.openProfessionalByTopic,
-    user && wantsProfessional ? {} : 'skip',
+    wantsProfessional ? api.conversations.openProfessionalByTopic : api.conversations.openAiByTopic,
+    user ? {} : 'skip',
   );
 
   const [step, setStep] = useState(0);
@@ -148,12 +148,12 @@ export default function Triage() {
   if (!user) return <Redirect href="/(auth)/login" />;
   if (role !== 'patient') return <Redirect href="/" />;
 
-  const openId = wantsProfessional ? openByTopic?.[topic] : undefined;
+  const openId = openByTopic?.[topic];
   if (openId) {
     return <Redirect href={{ pathname: '/(patient)/conversations/[id]', params: { id: openId } }} />;
   }
 
-  if (triage === undefined || (wantsProfessional && openByTopic === undefined)) {
+  if (triage === undefined || (user && openByTopic === undefined)) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={theme.colors.inkText} />
