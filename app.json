@@ -55,7 +55,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#50000D"
         }
-      ]
+      ],
+      "./plugins/withSceneLifecycle"
     ],
     "extra": {
       "router": {},
