@@ -1,7 +1,7 @@
-import { Pressable, Text, ActivityIndicator, Platform } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { Pressable, Text, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { fonts } from '@/lib/fonts';
+import { haptics } from '@/lib/haptics';
 
 type Kind = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -40,9 +40,7 @@ export function Button({
   styles.useVariants({ kind: resolvedKind, size });
 
   const handlePress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
+    haptics.tap();
     onPress();
   };
 
@@ -80,6 +78,8 @@ const styles = StyleSheet.create((theme) => ({
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
+    // Web: ease the press state in and out instead of snapping.
+    _web: { transition: 'transform 120ms ease-out, opacity 120ms ease-out' },
     variants: {
       kind: {
         primary: { backgroundColor: theme.colors.ink },
