@@ -93,8 +93,12 @@ describe('A1: messages.send only for the conversation members', () => {
 
   it('the client cannot forge system or triage lines', async () => {
     const { patient, convId } = await setup();
+    // The args validator rejects these before the handler's own check
+    // ('Tipo de mensagem inválido.'), which stays as a second line of defence.
     for (const messageType of ['system', 'triage-response']) {
-      await expect(send(patient, convId, { messageType })).rejects.toThrow('Tipo de mensagem inválido.');
+      await expect(send(patient, convId, { messageType })).rejects.toThrow(
+        /Tipo de mensagem inválido|Validator error/,
+      );
     }
   });
 });
