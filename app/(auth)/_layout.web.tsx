@@ -28,7 +28,9 @@ export default function AuthLayoutWeb() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  root: { flex: 1, minHeight: '100vh' as any },
+  // dvh: the visible height. On iPhone Safari 100vh is taller than what's
+  // shown, so the whole page could slide up under the status bar.
+  root: { flex: 1, minHeight: '100dvh' as any },
   rootMobile: { backgroundColor: theme.colors.background },
   rootDesktop: { backgroundColor: theme.colors.background },
   brandBar: { paddingHorizontal: theme.spacing.lg },

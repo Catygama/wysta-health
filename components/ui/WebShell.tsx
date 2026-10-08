@@ -242,7 +242,9 @@ const styles = StyleSheet.create((theme) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    minHeight: '100vh' as any,
+    // dvh: the visible height. On iPhone Safari 100vh is taller than what's
+    // shown, so the whole page could slide up under the status bar.
+    minHeight: '100dvh' as any,
   },
   header: { backgroundColor: theme.colors.background },
   headerInner: {
