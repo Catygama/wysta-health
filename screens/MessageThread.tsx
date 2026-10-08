@@ -21,6 +21,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
 import { Icon } from '@/components/ui/Icon';
+import { BoldText } from '@/components/ui/BoldText';
 import { ChatMessage } from '@/components/chat/ChatMessage';
 import {
   pickImage,
@@ -568,9 +569,9 @@ export function AiResponseMessage({
           <Text style={styles.aiCursor}>A preparar a resposta…</Text>
         </View>
       ) : (
-        <Text style={styles.aiBody} selectable>
+        <BoldText style={styles.aiBody} selectable>
           {content}
-        </Text>
+        </BoldText>
       )}
     </View>
   );

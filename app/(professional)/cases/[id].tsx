@@ -19,6 +19,7 @@ import { MessageThread } from '@/screens/MessageThread';
 import { AiContextBlock } from '@/screens/AiContextBlock';
 import { TriageSummary } from '@/screens/TriageSummary';
 import { Icon, type IconName } from '@/components/ui/Icon';
+import { BoldText } from '@/components/ui/BoldText';
 import { TOPICS } from '@/constants/topics';
 import { fonts } from '@/lib/fonts';
 import {
@@ -565,7 +566,7 @@ function SummaryPanel({
           {aiSummaryAt && <Text style={styles.aiDate}>{new Date(aiSummaryAt).toLocaleString('pt-PT')}</Text>}
         </View>
         {aiSummary ? (
-          <Text style={styles.aiBody}>{aiSummary}</Text>
+          <BoldText style={styles.aiBody}>{aiSummary}</BoldText>
         ) : (
           <Text style={styles.muted}>Ainda sem sumário. Gera um resumo clínico desta conversa com IA.</Text>
         )}
@@ -641,7 +642,7 @@ function ClinicalProfile({
       {open && (
         <View style={styles.profileBody}>
           {aiSummary ? (
-            <Text style={styles.profileText}>{aiSummary}</Text>
+            <BoldText style={styles.profileText}>{aiSummary}</BoldText>
           ) : (
             <Text style={styles.muted}>Sem perfil gerado.</Text>
           )}
