@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, Platform, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -29,7 +29,12 @@ export default function PatientConversations() {
     return (
       <View style={styles.list}>
         {header}
-        <View testID="conversations-empty" style={styles.empty}>
+        <View
+          testID="conversations-empty"
+          // Phones: the tab bar floats over the bottom of the screen, so centre
+          // in the part above it.
+          style={[styles.empty, Platform.OS !== 'web' && { paddingBottom: 110 }]}
+        >
           <View style={styles.iconChip}>
             <Icon
               name={{
