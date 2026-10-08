@@ -247,8 +247,12 @@ export default function Profile() {
         <View style={styles.privacyBody}>
           <Text style={styles.privacyTitle}>Privacidade dos dados</Text>
           <Text style={styles.privacyText}>
-            A tua informação é tratada com confidencialidade. Apenas profissionais
-            envolvidos no acompanhamento têm acesso aos dados clínicos.
+            As tuas conversas e dados de saúde só são vistos pela equipa de enfermagem
+            verificada da Wysta. A administração gere as contas, mas não tem acesso às
+            conversas. Para gerar as respostas da assistente e os resumos para a equipa,
+            partes das tuas conversas são enviadas a um fornecedor externo de IA
+            (atualmente a OpenAI, nos EUA), sem o teu nome nem o teu email. Podes
+            exportar ou apagar os teus dados em Gestão de conta.
           </Text>
         </View>
       </View>

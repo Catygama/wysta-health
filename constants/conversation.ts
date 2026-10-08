@@ -51,7 +51,7 @@ export const ESCALATION_LEVEL_LABELS: Record<string, string> = {
   emergency: 'Emergência imediata',
 };
 
-// Path chosen on the patient Home ("Profissional de saúde" / "Assistente IA"),
+// Path chosen on the patient Home ("Enfermeiro/a" / "Assistente IA"),
 // carried as the `mode` route param through topic picker → triage.
 export type ConversationMode = 'professional' | 'ai';
 

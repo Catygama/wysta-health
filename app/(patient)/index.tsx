@@ -74,7 +74,7 @@ export default function PatientHome() {
           testID="home-path-professional"
           icon={{ sf: 'stethoscope', ion: 'medkit-outline' }}
           iconFill={theme.colors.butter}
-          title="Profissional de saúde"
+          title="Enfermeiro/a"
           description="Responde a umas perguntas e um profissional responde-te em até 24h"
           onPress={() => setPickerMode('professional')}
         />

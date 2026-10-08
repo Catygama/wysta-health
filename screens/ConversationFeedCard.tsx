@@ -32,7 +32,7 @@ export function ConversationFeedCard({
   const topic = TOPICS.find((t) => t.id === conversation.topic);
   const pastel = theme.topic[topic?.color ?? 'general'];
   const who =
-    conversation.responderName ?? (conversation.isAiOnly ? 'Assistente IA' : 'Profissional de saúde');
+    conversation.responderName ?? (conversation.isAiOnly ? 'Assistente IA' : 'Enfermeiro/a');
 
   return (
     <View style={[styles.wrap, !isLast && styles.divider]}>

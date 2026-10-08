@@ -105,7 +105,7 @@ export default function Login() {
           <Button
             testID="auth-guest-button"
             strongBorder
-            label="Entrar como convidado"
+            label="Entrar sem conta"
             variant="secondary"
             onPress={handleGuest}
             loading={guestLoading}
@@ -137,7 +137,7 @@ export default function Login() {
           size={16}
           color={styles.proLinkText.color}
         />
-        <Text style={styles.proLinkText}>Sou profissional de saúde →</Text>
+        <Text style={styles.proLinkText}>Sou enfermeiro/a →</Text>
       </Pressable>
     </ScrollView>
   );

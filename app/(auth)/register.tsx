@@ -113,7 +113,7 @@ export default function Register() {
           size={16}
           color={styles.proLinkText.color}
         />
-        <Text style={styles.proLinkText}>Sou profissional de saúde →</Text>
+        <Text style={styles.proLinkText}>Sou enfermeiro/a →</Text>
       </Pressable>
     </ScrollView>
   );
