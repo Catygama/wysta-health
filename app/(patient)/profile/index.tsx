@@ -7,7 +7,7 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useConvex } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useRouter } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -21,6 +21,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ThemeCard } from '@/components/ThemeCard';
 import { WebPushCard } from '@/components/WebPushCard';
 import { fonts } from '@/lib/fonts';
+import { saveJson } from '@/lib/saveJson';
+import { errorText } from '@/lib/errorText';
 
 const AGE_RANGES = ['<18', '18-25', '26-35', '36-45', '46-55', '>55'];
 
@@ -29,6 +31,23 @@ export default function Profile() {
   const { signOut } = useAuthActions();
   const user = useQuery(api.users.currentUser);
   const updateProfile = useMutation(api.users.updateProfile);
+  const deleteAccount = useMutation(api.privacy.deleteMyAccount);
+  const convex = useConvex();
+  const [exporting, setExporting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteWord, setDeleteWord] = useState('');
+
+  async function exportData() {
+    setExporting(true);
+    try {
+      const data = await convex.query(api.privacy.exportMyData, {});
+      await saveJson(`wysta-os-meus-dados-${new Date().toISOString().slice(0, 10)}.json`, data);
+    } catch (e) {
+      setNotice({ title: 'Exportar dados', message: errorText(e, 'Não foi possível exportar os teus dados. Tenta de novo.') });
+    } finally {
+      setExporting(false);
+    }
+  }
   const { theme } = useUnistyles();
 
   const [editing, setEditing] = useState(false);
@@ -237,26 +256,19 @@ export default function Profile() {
       <View style={styles.manageCard}>
         <Text style={styles.manageTitle}>Gestão de conta</Text>
         <Pressable
-          onPress={() =>
-            setNotice({
-              title: 'Exportar dados',
-              message:
-                'Em breve poderás exportar uma cópia dos teus dados. Por agora contacta o suporte.',
-            })
-          }
+          testID="profile-export-button"
+          accessibilityRole="button"
+          onPress={exportData}
+          disabled={exporting}
           style={styles.manageRow}
         >
           <Icon name={{ sf: 'square.and.arrow.up', ion: 'cloud-download-outline' }} size={18} color={theme.colors.inkText} />
-          <Text style={styles.manageLink}>Exportar os meus dados</Text>
+          <Text style={styles.manageLink}>{exporting ? 'A preparar os teus dados…' : 'Exportar os meus dados'}</Text>
         </Pressable>
         <Pressable
-          onPress={() =>
-            setNotice({
-              title: 'Apagar conta',
-              message:
-                'A eliminação de conta requer confirmação manual. Contacta o suporte para procedermos.',
-            })
-          }
+          testID="profile-delete-account-button"
+          accessibilityRole="button"
+          onPress={() => setConfirmDelete(true)}
           style={styles.manageRow}
         >
           <Icon name={{ sf: 'trash', ion: 'trash-outline' }} size={18} color={theme.colors.danger} />
@@ -286,6 +298,32 @@ export default function Profile() {
           setConfirmSignOut(false);
         }}
       />
+      <ConfirmDialog
+        testID="delete-account-dialog"
+        visible={confirmDelete}
+        title="Apagar a tua conta?"
+        message="Vamos apagar o teu perfil, as tuas conversas e mensagens, os ficheiros que enviaste e os teus registos de bem-estar. Não é possível recuperar. Se quiseres uma cópia, exporta primeiro os teus dados. Para confirmar, escreve APAGAR."
+        confirmLabel="Apagar conta"
+        confirmDisabled={deleteWord.trim().toUpperCase() !== 'APAGAR'}
+        onCancel={() => {
+          setConfirmDelete(false);
+          setDeleteWord('');
+        }}
+        onConfirm={async () => {
+          await deleteAccount({ confirmation: 'APAGAR' });
+          setConfirmDelete(false);
+          await signOut();
+        }}
+      >
+        <Input
+          testID="delete-account-input"
+          label="Escreve APAGAR"
+          value={deleteWord}
+          onChangeText={setDeleteWord}
+          autoCapitalize="characters"
+          autoComplete="off"
+        />
+      </ConfirmDialog>
       <ConfirmDialog
         visible={notice !== null}
         title={notice?.title ?? ''}

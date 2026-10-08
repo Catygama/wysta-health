@@ -42,6 +42,7 @@ import type * as lib_topics from "../lib/topics.js";
 import type * as maintenance from "../maintenance.js";
 import type * as messages from "../messages.js";
 import type * as notifications from "../notifications.js";
+import type * as privacy from "../privacy.js";
 import type * as seed from "../seed.js";
 import type * as testing from "../testing.js";
 import type * as triage from "../triage.js";
@@ -90,6 +91,7 @@ declare const fullApi: ApiFromModules<{
   maintenance: typeof maintenance;
   messages: typeof messages;
   notifications: typeof notifications;
+  privacy: typeof privacy;
   seed: typeof seed;
   testing: typeof testing;
   triage: typeof triage;

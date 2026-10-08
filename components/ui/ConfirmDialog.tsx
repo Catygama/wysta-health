@@ -3,6 +3,7 @@ import { Modal, Pressable, Text, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { Button } from '@/components/ui/Button';
 import { fonts } from '@/lib/fonts';
+import { errorText } from '@/lib/errorText';
 
 type Props = {
   visible: boolean;
@@ -15,6 +16,10 @@ type Props = {
   onConfirm: () => Promise<unknown> | void;
   onCancel: () => void;
   testID?: string;
+  /** Extra content between the message and the buttons (e.g. a field). */
+  children?: React.ReactNode;
+  /** Keeps the confirm button disabled (e.g. until a word is typed). */
+  confirmDisabled?: boolean;
 };
 
 // Cross-platform confirmation dialog (Alert.alert is a no-op on web). With
@@ -31,6 +36,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   testID,
+  children,
+  confirmDisabled,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +48,7 @@ export function ConfirmDialog({
     try {
       await onConfirm();
     } catch (e: any) {
-      setError(e?.message ?? 'Não foi possível concluir.');
+      setError(errorText(e, 'Não foi possível concluir.'));
     } finally {
       setBusy(false);
     }
@@ -60,6 +67,7 @@ export function ConfirmDialog({
         <View testID={testID} style={styles.dialog} accessibilityRole="alert">
           <Text style={styles.title}>{title}</Text>
           {message && <Text style={styles.message}>{message}</Text>}
+          {children}
           {error && <Text style={styles.error}>{error}</Text>}
           <View style={styles.actions}>
             {!hideCancel && (
@@ -80,6 +88,7 @@ export function ConfirmDialog({
                 kind="primary"
                 onPress={confirm}
                 loading={busy}
+                disabled={confirmDisabled}
               />
             </View>
           </View>
