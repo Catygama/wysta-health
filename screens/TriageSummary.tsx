@@ -89,6 +89,6 @@ const styles = StyleSheet.create((theme) => ({
   riskText: { fontSize: 12, fontWeight: '500' },
   rows: { gap: theme.spacing.sm, marginTop: theme.spacing.xs },
   row: { gap: 2 },
-  question: { fontSize: 13, color: theme.colors.textSecondary },
-  answer: { fontSize: 14, fontWeight: '600', color: theme.colors.textPrimary },
+  question: { fontSize: 14, fontWeight: '600', color: theme.colors.textPrimary },
+  answer: { fontSize: 14, color: theme.colors.textSecondary },
 }));
