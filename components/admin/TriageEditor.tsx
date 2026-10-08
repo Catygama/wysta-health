@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, Switch, Text, TextInput, View, Platform } from 'react-native';
+import { Pressable, Text, TextInput, View, Platform } from 'react-native';
 import { useMutation, useQuery } from 'convex/react';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { api } from '@/convex/_generated/api';
@@ -356,14 +356,7 @@ function QuestionForm({
         </View>
         <View style={[styles.field, styles.switchField]}>
           <Text style={styles.label}>Obrigatória</Text>
-          <Switch
-            value={q.required}
-            onValueChange={(required) => onChange({ required })}
-            trackColor={{ true: theme.colors.ink, false: theme.colors.border }}
-            thumbColor={theme.colors.surface}
-            // Web: the thumb is otherwise drawn in the browser's teal when on.
-            {...({ activeThumbColor: theme.colors.surface } as object)}
-          />
+          <Toggle label="Obrigatória" value={q.required} onChange={(required) => onChange({ required })} />
         </View>
       </View>
 
@@ -494,6 +487,23 @@ function QuestionForm({
   );
 }
 
+// On/off switch whose knob has an outline, so it stays visible on the light
+// pink track in the dark theme (the native Switch knob can't have a border).
+function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: value }}
+      hitSlop={6}
+      onPress={() => onChange(!value)}
+      style={[styles.toggle, value && styles.toggleOn]}
+    >
+      <View style={[styles.toggleKnob, value && styles.toggleKnobOn]} />
+    </Pressable>
+  );
+}
+
 function NumberField({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
   const [text, setText] = useState(String(value));
   useEffect(() => setText(String(value)), [value]);
@@ -598,6 +608,24 @@ const styles = StyleSheet.create((theme) => ({
   formRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.lg, alignItems: 'flex-start' },
   field: { gap: theme.spacing.xs },
   switchField: { alignItems: 'flex-start' },
+  toggle: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    padding: 2,
+    justifyContent: 'center',
+    backgroundColor: theme.colors.border,
+  },
+  toggleOn: { backgroundColor: theme.colors.ink },
+  toggleKnob: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1.5,
+    borderColor: theme.colors.textSecondary,
+  },
+  toggleKnobOn: { alignSelf: 'flex-end' },
   label: { fontSize: 14, fontWeight: '500', color: theme.colors.textSecondary },
   optionRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
   smallInput: {
