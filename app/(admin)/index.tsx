@@ -21,6 +21,13 @@ const ROLE_COLORS: Record<string, string> = {
   admin: '#C77B16',
 };
 
+// Same hues, lightened so they stay readable on the dark theme.
+const ROLE_COLORS_DARK: Record<string, string> = {
+  patient: '#F2A0AC',
+  professional: '#6FD3B0',
+  admin: '#F0B45E',
+};
+
 export default function AdminPanel() {
   const users = useQuery(api.users.listUsers);
   const setRole = useMutation(api.users.setRole);
@@ -153,14 +160,15 @@ export default function AdminPanel() {
         </View>
       }
       renderItem={({ item }) => {
-        const roleColor = ROLE_COLORS[item.role] ?? theme.colors.textSecondary;
+        const dark = theme.name === 'dark';
+        const roleColor = (dark ? ROLE_COLORS_DARK : ROLE_COLORS)[item.role] ?? theme.colors.textSecondary;
         return (
           <View testID={`admin-user-row-${item.user?.email ?? item.userId}`} style={styles.userRow}>
             <View style={styles.userTop}>
               <Text style={styles.userEmail} selectable numberOfLines={1}>
                 {item.user?.email ?? item.userId}
               </Text>
-              <View style={[styles.roleBadge, { backgroundColor: roleColor + '20' }]}>
+              <View style={[styles.roleBadge, { backgroundColor: roleColor + (dark ? '29' : '20') }]}>
                 <Text style={[styles.roleBadgeText, { color: roleColor }]}>
                   {ROLE_LABELS[item.role] ?? item.role}
                 </Text>
