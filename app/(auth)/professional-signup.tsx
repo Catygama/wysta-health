@@ -269,7 +269,7 @@ export default function ProfessionalSignup() {
           <Button
             testID="prof-signup-guest-button"
             strongBorder
-            label="Entrar como profissional convidado"
+            label="Entrar como enfermeiro convidado"
             variant="secondary"
             onPress={handleGuest}
             loading={guestLoading}
@@ -285,7 +285,7 @@ export default function ProfessionalSignup() {
         style={styles.back}
         hitSlop={8}
       >
-        <Text style={styles.backText}>← Já tenho conta profissional</Text>
+        <Text style={styles.backText}>← Já tenho conta de enfermeiro</Text>
       </Pressable>
     </ScrollView>
   );

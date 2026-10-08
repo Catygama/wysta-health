@@ -44,8 +44,8 @@ export default function Wellbeing() {
   const submitCheckin = useMutation(api.wellbeing.submitCheckin);
   // Came for a professional and already has one open on this topic: go there.
   const openByTopic = useQuery(
-    api.conversations.openProfessionalByTopic,
-    user && mode === 'professional' ? {} : 'skip',
+    mode === 'professional' ? api.conversations.openProfessionalByTopic : api.conversations.openAiByTopic,
+    user ? {} : 'skip',
   );
   const pastel = theme.topic.wellbeing;
 
@@ -59,7 +59,7 @@ export default function Wellbeing() {
   if (authLoading) return null;
   if (!user) return <Redirect href="/(auth)/login" />;
   if (role !== 'patient') return <Redirect href="/" />;
-  const openId = mode === 'professional' ? openByTopic?.['sexual-wellbeing'] : undefined;
+  const openId = openByTopic?.['sexual-wellbeing'];
   if (openId) {
     return <Redirect href={{ pathname: '/(patient)/conversations/[id]', params: { id: openId } }} />;
   }
@@ -173,7 +173,7 @@ export default function Wellbeing() {
             </View>
           ))}
           <Text style={styles.note}>
-            Dor persistente merece avaliação de um profissional — vamos encaminhar-te.
+            Dor persistente merece avaliação de um enfermeiro — vamos encaminhar-te.
           </Text>
           <Button
             testID="wellbeing-pain-continue"

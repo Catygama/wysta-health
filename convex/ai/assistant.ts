@@ -56,13 +56,13 @@ const judgeSchema = z.object({
 });
 
 const FALLBACK_MESSAGE =
-  'Não consegui responder agora. Tenta novamente daqui a pouco ou fala com um profissional.';
+  'Não consegui responder agora. Tenta novamente daqui a pouco ou fala com um enfermeiro.';
 const BLOCKED_AUTO =
-  'Esta pergunta merece resposta de um profissional. Toca em "Falar com profissional" para entrar na fila.';
+  'Esta pergunta merece resposta de um enfermeiro. Toca em "Falar com enfermeiro" para entrar na fila.';
 const BLOCKED_RESPOND =
-  'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um profissional.';
+  'A tua pergunta foi encaminhada para a equipa clínica. Vais receber resposta de um enfermeiro.';
 const BLOCKED_ESCALATE =
-  'Esta pergunta precisa de um profissional. Encaminhei-a para a tua conversa com o profissional, que te vai responder lá.';
+  'Esta pergunta precisa de um enfermeiro. Encaminhei-a para a tua conversa com o enfermeiro, que te vai responder lá.';
 
 type StreamVars = {
   query: string;
@@ -269,17 +269,17 @@ export const respondAnonymous = action({
         : 'Conversa anónima, sem mensagens anteriores.',
       patientProfile: profile.patientProfile,
       recentSummary: profile.recentSummary,
-      topicAndRisk: 'Anónimo (sem conversa)\nProfissional: conversa anónima, sem profissional.',
+      topicAndRisk: 'Anónimo (sem conversa)\nEnfermeiro: conversa anónima, sem enfermeiro.',
     };
 
     const { sent, judged } = await runAssistantChain(ctx, { baseVars, userId, subjectId: userId });
     // The chat prompt ends every answer with "…espera pela resposta do
-    // profissional…"; there is no professional in an anonymous chat.
+    // enfermeiro…"; there is no nurse in an anonymous chat.
     const answer = sent
       ? stripSuggestClose(judged.output.finalAnswer)
-          .text.replace(/\s*Para a tua situação concreta, espera pela resposta do profissional ou marca consulta presencial\.?/g, '')
+          .text.replace(/\s*Para a tua situação concreta, espera pela resposta do (?:profissional|enfermeiro) ou marca consulta presencial\.?/g, '')
           .trim()
-      : 'Esta pergunta precisa de um profissional de saúde, por isso não lhe posso responder aqui. Para acompanhamento, abre uma conversa com um profissional no Início.';
+      : 'Esta pergunta precisa de um enfermeiro, por isso não lhe posso responder aqui. Para acompanhamento, abre uma conversa com um enfermeiro no Início.';
 
     return { sent, answer };
   },
@@ -422,7 +422,7 @@ export const gatherContext = internalQuery({
               ? 'AI (anterior)'
               : m.senderId === conv.patientId
                 ? 'Utente'
-                : 'Profissional';
+                : 'Enfermeiro';
           return `${role}: ${m.content}`;
         })
         .join('\n');
@@ -462,7 +462,7 @@ export const gatherContext = internalQuery({
       );
       if (contextVisible.length > 0) {
         const label =
-          contextConv.kind === 'ai-only' ? 'Conversa anterior (com a AI)' : 'Conversa com o profissional';
+          contextConv.kind === 'ai-only' ? 'Conversa anterior (com a AI)' : 'Conversa com o enfermeiro';
         conversationHistory = `${label}:\n${formatLines(contextVisible)}\n\nConversa atual:\n${conversationHistory}`;
       }
     }
@@ -501,8 +501,8 @@ export const gatherContext = internalQuery({
     // Tells the prompt whether a professional is involved (how to end answers).
     const professionalLine =
       escalatesOnBlock || hasOpenProfessional
-      ? 'Profissional: a utente tem uma conversa com um profissional em curso.'
-      : 'Profissional: a utente não tem nenhuma conversa com um profissional em curso.';
+      ? 'Enfermeiro: a utente tem uma conversa com um enfermeiro em curso.'
+      : 'Enfermeiro: a utente não tem nenhuma conversa com um enfermeiro em curso.';
     const topicAndRisk = `Tópico: ${conv.topic}${riskLabel}${goalLabel}\n${professionalLine}`;
 
     return {

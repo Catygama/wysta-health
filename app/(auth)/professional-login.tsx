@@ -66,8 +66,8 @@ export default function ProfessionalLogin() {
         <View style={styles.logo}>
           <Icon name={{ sf: 'stethoscope', ion: 'medkit' }} size={30} color={theme.colors.onInk} />
         </View>
-        <Text style={styles.title}>Profissional</Text>
-        <Text style={styles.tagline}>Acesso para profissionais de saúde verificados.</Text>
+        <Text style={styles.title}>Enfermeiro</Text>
+        <Text style={styles.tagline}>Acesso para enfermeiros verificados.</Text>
       </View>
 
       <AcademicNotice />
@@ -108,7 +108,7 @@ export default function ProfessionalLogin() {
           <Button
             testID="auth-professional-guest-button"
             strongBorder
-            label="Entrar como profissional convidado"
+            label="Entrar como enfermeiro convidado"
             variant="secondary"
             onPress={handleGuest}
             loading={guestLoading}

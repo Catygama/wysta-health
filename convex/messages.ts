@@ -114,7 +114,7 @@ export const send = mutation({
     }
     // Internal notes are for the assigned professional only.
     if (args.isInternal && !isAssignedProfessional) {
-      throw userError('Só o profissional atribuído pode escrever notas internas.');
+      throw userError('Só o enfermeiro atribuído pode escrever notas internas.');
     }
 
     const messageType = args.messageType ?? 'text';
@@ -185,7 +185,7 @@ export const send = mutation({
       userId: conv.patientId,
       title: senderName
         ? `Nova mensagem de ${senderName}`
-        : 'Nova mensagem de um profissional',
+        : 'Nova mensagem de um enfermeiro',
       data: { conversationId: args.conversationId },
     });
   },

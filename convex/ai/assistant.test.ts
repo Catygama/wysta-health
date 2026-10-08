@@ -132,7 +132,7 @@ describe('assistant streaming (respondAuto)', () => {
     await t.action(internal.ai.assistant.respondAuto, { conversationId, query: 'olá' });
 
     const msg = await aiMessage(t, conversationId);
-    expect(msg?.content).toContain('Falar com profissional');
+    expect(msg?.content).toContain('Falar com enfermeiro');
     expect(msg?.content).not.toContain('rascunho perigoso');
     expect(msg?.streaming).toBe(false);
   });
@@ -245,10 +245,10 @@ describe('assistant.gatherContext', () => {
     const res = (await t.run((ctx) =>
       ctx.runQuery(internal.ai.assistant.gatherContext, { conversationId, userId })
     )) as any;
-    expect(res.conversationHistory).toContain('Conversa com o profissional');
+    expect(res.conversationHistory).toContain('Conversa com o enfermeiro');
     expect(res.conversationHistory).toContain('Utente: Tenho náuseas todas as manhãs');
     expect(res.conversationHistory).not.toContain('Nota só para a equipa');
-    expect(res.topicAndRisk).toContain('tem uma conversa com um profissional em curso');
+    expect(res.topicAndRisk).toContain('tem uma conversa com um enfermeiro em curso');
   });
 
   it('returns the conversation topic', async () => {

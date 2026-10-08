@@ -230,39 +230,54 @@ export const get = query({
   },
 });
 
-// A patient keeps at most one open professional conversation per topic.
-export async function findOpenProfessionalConversation(
+// A patient keeps at most one open conversation per topic and kind: one with
+// a nurse and one with the AI.
+async function findOpenConversation(
   ctx: QueryCtx,
   patientId: Id<'users'>,
-  topicId: string
+  topicId: string,
+  kind: 'human-async' | 'ai-only'
 ): Promise<Doc<'conversations'> | null> {
   for await (const c of ctx.db
     .query('conversations')
     .withIndex('by_patient', (q) => q.eq('patientId', patientId))
     .order('desc')) {
-    if (c.topic === topicId && c.status !== 'closed' && c.kind !== 'ai-only') return c;
+    if (c.topic === topicId && c.status !== 'closed' && (c.kind ?? 'human-async') === kind) return c;
   }
   return null;
+}
+
+export function findOpenProfessionalConversation(ctx: QueryCtx, patientId: Id<'users'>, topicId: string) {
+  return findOpenConversation(ctx, patientId, topicId, 'human-async');
+}
+
+// Topic → open conversation of one kind, so Home can send the patient back to it.
+async function openByTopic(ctx: QueryCtx, kind: 'human-async' | 'ai-only') {
+  const userId = await getActiveUserId(ctx);
+  if (!userId) return {};
+  const byTopic: Record<string, Id<'conversations'>> = {};
+  for await (const c of ctx.db
+    .query('conversations')
+    .withIndex('by_patient', (q) => q.eq('patientId', userId))
+    .order('desc')) {
+    if (c.status !== 'closed' && (c.kind ?? 'human-async') === kind && !byTopic[c.topic]) {
+      byTopic[c.topic] = c._id;
+    }
+  }
+  return byTopic;
 }
 
 // Topic → open professional conversation, so Home can send the patient back
 // to it instead of starting a second one.
 export const openProfessionalByTopic = query({
   args: {},
-  handler: async (ctx) => {
-    const userId = await getActiveUserId(ctx);
-    if (!userId) return {};
-    const byTopic: Record<string, Id<'conversations'>> = {};
-    for await (const c of ctx.db
-      .query('conversations')
-      .withIndex('by_patient', (q) => q.eq('patientId', userId))
-      .order('desc')) {
-      if (c.status !== 'closed' && c.kind !== 'ai-only' && !byTopic[c.topic]) {
-        byTopic[c.topic] = c._id;
-      }
-    }
-    return byTopic;
-  },
+  handler: (ctx) => openByTopic(ctx, 'human-async'),
+});
+
+// Same for the AI: one open AI chat per topic.
+export const openAiByTopic = query({
+  args: {},
+  handler: (ctx) => openByTopic(ctx, 'ai-only'),
 });
 
 export const create = mutation({
@@ -283,11 +298,10 @@ export const create = mutation({
     const userId = await getActiveUserId(ctx);
     if (!userId) throw userError(NOT_AUTHENTICATED);
 
+    // Already one open conversation of this kind on the topic: reuse it.
     const kind = args.kind ?? 'human-async';
-    if (kind === 'human-async') {
-      const existing = await findOpenProfessionalConversation(ctx, userId, args.topic);
-      if (existing) return existing._id;
-    }
+    const existing = await findOpenConversation(ctx, userId, args.topic, kind);
+    if (existing) return existing._id;
 
     let riskLevel: 'low' | 'medium' | 'high' = 'low';
     let alertLevel: AlertLevel | undefined;
@@ -378,8 +392,8 @@ export const assign = mutation({
       professionalId: userId,
       action: 'assigned',
       details: wasAssignedToOther
-        ? 'Conversa reatribuída ao profissional (take-over)'
-        : 'Conversa atribuída ao profissional',
+        ? 'Conversa reatribuída ao enfermeiro (take-over)'
+        : 'Conversa atribuída ao enfermeiro',
     });
   },
 });
@@ -425,7 +439,7 @@ export const close = mutation({
       senderId: userId,
       content: byPatient
         ? 'Conversa terminada pela utente.'
-        : 'Conversa encerrada pelo profissional de saúde.',
+        : 'Conversa encerrada pelo enfermeiro.',
       messageType: 'system',
     });
     // auditLog rows are attributed to a professional; a patient closing a
@@ -540,7 +554,7 @@ export const recommendInPerson = mutation({
     const senderName = senderProfile?.displayName?.trim();
     await ctx.scheduler.runAfter(0, internal.notifications.sendToUser, {
       userId: conv.patientId,
-      title: senderName ? `Nova mensagem de ${senderName}` : 'Nova mensagem de um profissional',
+      title: senderName ? `Nova mensagem de ${senderName}` : 'Nova mensagem de um enfermeiro',
       data: { conversationId: args.id },
     });
 
@@ -600,14 +614,15 @@ export const switchMode = mutation({
       }
     }
 
-    // Asking for a professional while one is already open on this topic: go
-    // back to it (one open professional conversation per topic).
-    if (targetKind === 'human-async') {
-      const existing = await findOpenProfessionalConversation(ctx, userId, conv.topic);
-      if (existing) {
-        await ctx.db.patch(conv._id, { counterpartConversationId: existing._id });
-        return { id: existing._id, created: false };
+    // One of the other kind is already open on this topic: go back to it
+    // (one open conversation per topic with a nurse, one with the AI).
+    const existing = await findOpenConversation(ctx, userId, conv.topic, targetKind);
+    if (existing) {
+      await ctx.db.patch(conv._id, { counterpartConversationId: existing._id });
+      if (!existing.counterpartConversationId) {
+        await ctx.db.patch(existing._id, { counterpartConversationId: conv._id });
       }
+      return { id: existing._id, created: false };
     }
 
     const now = Date.now();
@@ -615,7 +630,7 @@ export const switchMode = mutation({
     const newId = await ctx.db.insert('conversations', {
       patientId: userId,
       topic: conv.topic,
-      title: toAi ? 'Conversa com AI' : 'Conversa com profissional',
+      title: toAi ? 'Conversa com AI' : 'Conversa com enfermeiro',
       priority: conv.priority,
       status: toAi ? 'active' : 'waiting',
       lastMessageAt: now,
@@ -647,8 +662,8 @@ export const switchMode = mutation({
       conversationId: newId,
       senderId: userId,
       content: toAi
-        ? 'Conversa com a assistente AI. A assistente tem acesso à tua conversa com o profissional.'
-        : 'Pediste acompanhamento por um profissional. O profissional terá acesso à tua conversa com a assistente AI.',
+        ? 'Conversa com a assistente AI. A assistente tem acesso à tua conversa com o enfermeiro.'
+        : 'Pediste acompanhamento por um enfermeiro. O enfermeiro terá acesso à tua conversa com a assistente AI.',
       messageType: 'system',
     });
     return { id: newId, created: true };
@@ -674,7 +689,7 @@ export const escalateAiConversation = internalMutation({
     await ctx.db.insert('messages', {
       conversationId: pro._id,
       senderId: pro.patientId,
-      content: 'A tua pergunta à assistente IA foi encaminhada para o profissional.',
+      content: 'A tua pergunta à assistente IA foi encaminhada para o enfermeiro.',
       messageType: 'system',
     });
   },
@@ -715,7 +730,7 @@ export const flagSafetyRule = internalMutation({
       await ctx.db.insert('messages', {
         conversationId: linkedId,
         senderId: linked.patientId,
-        content: 'A tua mensagem à assistente IA indica uma situação urgente e foi encaminhada para o profissional.',
+        content: 'A tua mensagem à assistente IA indica uma situação urgente e foi encaminhada para o enfermeiro.',
         messageType: 'system',
       });
       await ctx.db.insert('auditLog', {
