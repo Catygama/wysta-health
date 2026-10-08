@@ -28,6 +28,7 @@ import { SUGGEST_CLOSE_MARKER } from './defaults';
 import type { Doc, Id } from '../_generated/dataModel';
 import { findOpenProfessionalConversation } from '../conversations';
 import { userError, NOT_AUTHENTICATED } from '../lib/errors';
+import type { TopicId } from '../lib/topics';
 
 // Removes the suggest-close marker from planner output — also a partial
 // marker still arriving at the end of a stream — so the patient never sees it.
@@ -70,6 +71,69 @@ type StreamVars = {
   topicAndRisk: string;
 };
 
+// The chain itself: draft, then the two validators in parallel, then the judge.
+// Shared by the patient-facing actions and the offline evaluation
+// (ai/evaluation.ts). The draft is never shown before the judge decides.
+export async function runAssistantChain(
+  ctx: ActionCtx,
+  args: {
+    baseVars: StreamVars;
+    topic?: TopicId;
+    userId?: Id<'users'>;
+    /** The patient the content is about (pseudonymised before the provider). */
+    subjectId?: Id<'users'>;
+    conversationId?: Id<'conversations'>;
+  }
+) {
+  const { baseVars, topic, userId, subjectId, conversationId } = args;
+  const draft = await runAgent(ctx, {
+    purpose: 'chat',
+    topic,
+    vars: baseVars,
+    userId,
+    subjectId,
+    conversationId,
+  });
+  const { text: draftText, suggestClose } = stripSuggestClose(draft.output);
+  const validatorArgs = {
+    topic,
+    vars: { ...baseVars, draft: draftText },
+    userId,
+    subjectId,
+    conversationId,
+    parentInvocationId: draft.invocationId,
+    outputSchema: validatorSchema,
+  };
+  const [safety, clinical] = await Promise.all([
+    runAgent(ctx, { purpose: 'chat-validator-safety', ...validatorArgs }),
+    runAgent(ctx, { purpose: 'chat-validator-clinical', ...validatorArgs }),
+  ]);
+  const judged = await runAgent(ctx, {
+    purpose: 'chat-judge',
+    topic,
+    vars: {
+      ...baseVars,
+      draft: draftText,
+      safety: JSON.stringify(safety.output),
+      clinical: JSON.stringify(clinical.output),
+    },
+    userId,
+    subjectId,
+    conversationId,
+    parentInvocationId: draft.invocationId,
+    outputSchema: judgeSchema,
+  });
+  return {
+    sent: judged.output.action === 'send',
+    draftText,
+    suggestClose,
+    safety: safety.output,
+    clinical: clinical.output,
+    judged,
+    draftInvocationId: draft.invocationId,
+  };
+}
+
 // Shared: create an empty placeholder ai-response message, generate the draft,
 // run the safety chain, then finalize (approved draft / blocked / fallback).
 async function streamAndValidate(
@@ -78,7 +142,7 @@ async function streamAndValidate(
     conversationId: Id<'conversations'>;
     patientId: Id<'users'>;
     baseVars: StreamVars;
-    topic?: string;
+    topic?: TopicId;
     blockedMessage: string;
   }
 ): Promise<{ sent: boolean; blocked: boolean }> {
@@ -87,60 +151,15 @@ async function streamAndValidate(
     { conversationId: args.conversationId, patientId: args.patientId }
   );
   try {
-    // The draft is not written to the conversation while it is generated:
-    // the patient only ever sees an answer the validators and the judge
-    // approved (or the fixed forwarding message). Until then the placeholder
-    // stays empty and the app shows "A preparar a resposta…".
-    const draft = await runAgent(ctx, {
-      purpose: 'chat',
-      topic: args.topic as any,
-      vars: args.baseVars,
+    // The placeholder stays empty ("A preparar a resposta…" in the app) until
+    // the validators and the judge decide.
+    const { sent, draftText, suggestClose, judged } = await runAssistantChain(ctx, {
+      baseVars: args.baseVars,
+      topic: args.topic,
       userId: args.patientId,
       subjectId: args.patientId,
       conversationId: args.conversationId,
     });
-    const { text: draftText, suggestClose } = stripSuggestClose(draft.output);
-
-    const [safety, clinical] = await Promise.all([
-      runAgent(ctx, {
-        purpose: 'chat-validator-safety',
-        topic: args.topic as any,
-        vars: { ...args.baseVars, draft: draftText },
-        userId: args.patientId,
-        subjectId: args.patientId,
-        conversationId: args.conversationId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-      runAgent(ctx, {
-        purpose: 'chat-validator-clinical',
-        topic: args.topic as any,
-        vars: { ...args.baseVars, draft: draftText },
-        userId: args.patientId,
-        subjectId: args.patientId,
-        conversationId: args.conversationId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-    ]);
-
-    const judged = await runAgent(ctx, {
-      purpose: 'chat-judge',
-      topic: args.topic as any,
-      vars: {
-        ...args.baseVars,
-        draft: draftText,
-        safety: JSON.stringify(safety.output),
-        clinical: JSON.stringify(clinical.output),
-      },
-      userId: args.patientId,
-      subjectId: args.patientId,
-      conversationId: args.conversationId,
-      parentInvocationId: draft.invocationId,
-      outputSchema: judgeSchema,
-    });
-
-    const sent = judged.output.action === 'send';
     await ctx.runMutation(internal.ai.assistant.finalizeAssistantMessage, {
       messageId,
       content: sent ? draftText : args.blockedMessage,
@@ -232,45 +251,7 @@ export const respondAnonymous = action({
       topicAndRisk: 'Anónimo (sem conversa)\nProfissional: conversa anónima, sem profissional.',
     };
 
-    const draft = await runAgent(ctx, {
-      purpose: 'chat',
-      vars: baseVars,
-      userId,
-      subjectId: userId,
-    });
-    const [safety, clinical] = await Promise.all([
-      runAgent(ctx, {
-        purpose: 'chat-validator-safety',
-        vars: { ...baseVars, draft: stripSuggestClose(draft.output).text },
-        userId,
-        subjectId: userId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-      runAgent(ctx, {
-        purpose: 'chat-validator-clinical',
-        vars: { ...baseVars, draft: stripSuggestClose(draft.output).text },
-        userId,
-        subjectId: userId,
-        parentInvocationId: draft.invocationId,
-        outputSchema: validatorSchema,
-      }),
-    ]);
-    const judged = await runAgent(ctx, {
-      purpose: 'chat-judge',
-      vars: {
-        ...baseVars,
-        draft: stripSuggestClose(draft.output).text,
-        safety: JSON.stringify(safety.output),
-        clinical: JSON.stringify(clinical.output),
-      },
-      userId,
-      subjectId: userId,
-      parentInvocationId: draft.invocationId,
-      outputSchema: judgeSchema,
-    });
-
-    const sent = judged.output.action === 'send';
+    const { sent, judged } = await runAssistantChain(ctx, { baseVars, userId, subjectId: userId });
     // The chat prompt ends every answer with "…espera pela resposta do
     // profissional…"; there is no professional in an anonymous chat.
     const answer = sent

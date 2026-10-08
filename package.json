@@ -18,6 +18,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:triage-report": "bun scripts/triage-report.ts",
+    "test:ai-eval": "bun scripts/ai-eval.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -63,6 +65,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@edge-runtime/vm": "^5.0.0",
     "@playwright/test": "^1.59.1",
     "@types/react": "~19.2.10",
