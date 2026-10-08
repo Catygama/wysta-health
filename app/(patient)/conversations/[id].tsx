@@ -160,6 +160,7 @@ function EndButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       testID="conversation-end-button"
+      accessibilityRole="button"
       onPress={onPress}
       hitSlop={8}
       accessibilityLabel="Terminar conversa"

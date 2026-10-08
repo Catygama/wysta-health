@@ -222,6 +222,7 @@ export default function ProfessionalConversation() {
           <View style={styles.drawerWrap}>
             <Pressable
               style={styles.drawerShade}
+              accessibilityRole="button"
               accessibilityLabel="Fechar opções"
               onPress={() => setDrawerOpen(false)}
             />
@@ -609,6 +610,7 @@ function ClinicalProfile({
         testID="clinical-profile-toggle"
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
+        aria-expanded={open}
         onPress={() => setOpen((o) => !o)}
         style={({ pressed }) => [styles.profileHead, pressed && styles.dim]}
       >

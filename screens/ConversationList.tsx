@@ -65,6 +65,13 @@ export function ConversationList({
         const topic = TOPICS.find((t) => t.id === item.topic);
         const pastel = theme.topic[topic?.color ?? 'general'];
         const priorityColor = priorityColors(theme.name)[item.priority] ?? theme.colors.textSecondary;
+        // Chip text: the hues that don't reach 4.5:1 on their own tint use the
+        // nearest palette colour (WCAG 1.4.3); the tint stays the same.
+        const priorityTextColor =
+          ((theme.name === 'dark'
+            ? { high: theme.colors.warning }
+            : { low: theme.colors.success, medium: theme.colors.warning }) as Record<string, string>)[item.priority] ??
+          priorityColor;
         return (
           <Card
             testID={`conversation-row-${item._id}`}
@@ -100,7 +107,7 @@ export function ConversationList({
                   </View>
                   {showPriority && item.priority ? (
                     <View style={[styles.pill, { backgroundColor: priorityColor + (theme.name === 'dark' ? '29' : '18') }]}>
-                      <Text style={[styles.pillText, { color: priorityColor }]}>
+                      <Text style={[styles.pillText, { color: priorityTextColor }]}>
                         {PRIORITY_LABELS[item.priority] ?? item.priority}
                       </Text>
                     </View>

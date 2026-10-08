@@ -41,6 +41,7 @@ function AiChat({ chat }: { chat: Chat }) {
         testID="ai-context-toggle"
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
+        aria-expanded={open}
         onPress={() => setOpen((o) => !o)}
         style={({ pressed }) => [styles.header, pressed && styles.pressed]}
       >

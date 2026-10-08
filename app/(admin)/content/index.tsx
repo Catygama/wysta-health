@@ -51,6 +51,7 @@ export default function AdminContent() {
             testID={`content-tab-${t}`}
             accessibilityRole="tab"
             accessibilityState={{ selected: tab === t }}
+            aria-selected={tab === t}
             onPress={() => router.setParams({ tab: t === 'triage' ? 'triage' : undefined })}
             style={[styles.segmentItem, tab === t && styles.segmentItemOn]}
           >

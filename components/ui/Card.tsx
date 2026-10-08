@@ -42,6 +42,8 @@ export function Card({
   return (
     <View
       testID={testID}
+      // A label needs a role on the web (aria-prohibited-attr): group it.
+      accessibilityRole={accessibilityLabel ? 'summary' : undefined}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
       style={[styles.card, style]}

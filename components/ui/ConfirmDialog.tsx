@@ -63,7 +63,7 @@ export function ConfirmDialog({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={cancel}>
       <View style={styles.backdrop}>
-        <Pressable style={styles.dismiss} onPress={cancel} accessibilityLabel={cancelLabel} />
+        <Pressable style={styles.dismiss} onPress={cancel} accessibilityRole="button" accessibilityLabel={cancelLabel} />
         <View testID={testID} style={styles.dialog} accessibilityRole="alert">
           <Text style={styles.title}>{title}</Text>
           {message && <Text style={styles.message}>{message}</Text>}

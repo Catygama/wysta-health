@@ -38,6 +38,7 @@ export function DropdownMenu<T extends string>({ label, value, options, onChange
         testID={testID}
         accessibilityRole="button"
         accessibilityState={{ expanded: !!anchor }}
+        aria-expanded={!!anchor}
         hitSlop={8}
         onPress={open}
         style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}
@@ -47,17 +48,18 @@ export function DropdownMenu<T extends string>({ label, value, options, onChange
       </Pressable>
 
       <Modal visible={!!anchor} transparent animationType="none" onRequestClose={close}>
-        <Pressable style={styles.backdrop} onPress={close} accessibilityLabel="Fechar menu">
+        <Pressable style={styles.backdrop} onPress={close} accessibilityRole="button" accessibilityLabel="Fechar menu">
           {anchor && (
-            <View style={[styles.menu, { top: anchor.y, left: anchor.x }]}>
+            <View style={[styles.menu, { top: anchor.y, left: anchor.x }]} accessibilityRole="radiogroup" aria-label={label}>
               {options.map((o) => {
                 const selected = o.value === value;
                 return (
                   <Pressable
                     key={o.value}
                     testID={testID ? `${testID}-${o.value}` : undefined}
-                    accessibilityRole="menuitem"
+                    accessibilityRole="radio"
                     accessibilityState={{ selected }}
+                    aria-checked={selected}
                     onPress={() => {
                       onChange(o.value);
                       close();

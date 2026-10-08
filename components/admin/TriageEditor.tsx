@@ -520,6 +520,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked: on }}
+      aria-checked={on}
       onPress={onPress}
       style={[styles.chip, on && styles.chipOn]}
     >
