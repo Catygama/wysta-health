@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { gotoApp, loginAs } from '../../helpers/auth';
+import { chooseTriageOption } from '../../helpers/triage';
 import { TEST_USERS, seedConversation, seedUser } from '../../helpers/convex';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
@@ -54,8 +55,8 @@ test.describe('Accessibility (axe, WCAG 2.1 AA)', () => {
     await page.goto('/triage?topic=pregnancy&mode=professional');
     await expect(page.getByTestId('triage-screen')).toBeVisible({ timeout: 15_000 });
     await audit(page, 'triage-question');
-    await page.getByTestId('triage-option-1').click();
-    await page.getByTestId('triage-option-yes').click();
+    await chooseTriageOption(page, 'triage-option-1');
+    await chooseTriageOption(page, 'triage-option-yes');
     await expect(page.getByTestId('triage-alert')).toBeVisible();
     await audit(page, 'triage-alert');
 
