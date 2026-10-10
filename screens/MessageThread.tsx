@@ -522,13 +522,13 @@ function TriageMessage({
         />
         <Text style={styles.triageTitle}>Triagem concluída</Text>
       </View>
-      {/* In AI chats the answers also reach a professional: switching to one
-          copies the triage over, and professionals can open the AI chat. */}
+      {/* In AI chats the answers reach a professional only if the patient asks
+          for one: switching copies the triage over and links this chat. */}
       <Text style={styles.triageBody}>
         {forProfessional
           ? 'A utente respondeu à triagem. Consulta as respostas no painel lateral.'
           : aiOnly
-          ? 'Respostas guardadas para a assistente IA. O enfermeiro também tem acesso.'
+          ? 'Respostas guardadas para a assistente IA. Se pedires um enfermeiro, ele também as vê.'
           : 'Respostas guardadas para o enfermeiro.'}
       </Text>
     </View>

@@ -1,8 +1,9 @@
-import { internalMutation } from './_generated/server';
+import { internalMutation, type MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import { v } from 'convex/values';
 import { CHAT_CLOSING_RULE } from './ai/defaults';
 import { toNurseWording } from './lib/nurseWording';
+import { toPatientWording } from './lib/patientWording';
 import type { Doc } from './_generated/dataModel';
 
 // One-off cleanup: before AI chats became read-only context, an escalated or
@@ -86,34 +87,55 @@ export const updateChatClosingRule = internalMutation({
 // with '{"dryRun": true}' first to only list what would change.
 export const useNurseWording = internalMutation({
   args: { dryRun: v.optional(v.boolean()) },
-  handler: async (ctx, { dryRun }) => {
-    // Latest version per purpose + topic (versions are rows; newest wins).
-    const latest = new Map<string, Doc<'aiPrompts'>>();
-    for (const p of await ctx.db.query('aiPrompts').order('desc').take(2000)) {
-      const key = `${p.purpose}/${p.topic ?? ''}`;
-      if (!latest.has(key)) latest.set(key, p);
-    }
-    const updated: string[] = [];
-    for (const [key, p] of latest) {
-      const systemPrompt = toNurseWording(p.systemPrompt);
-      const userTemplate = p.userTemplate === undefined ? undefined : toNurseWording(p.userTemplate);
-      if (systemPrompt === p.systemPrompt && userTemplate === p.userTemplate) continue;
-      updated.push(key);
-      if (dryRun) continue;
-      await ctx.db.insert('aiPrompts', {
-        purpose: p.purpose,
-        topic: p.topic,
-        systemPrompt,
-        userTemplate,
-        temperature: p.temperature,
-        maxTokens: p.maxTokens,
-        notes: '"profissional" passa a "enfermeiro"',
-        createdBy: p.createdBy,
-      });
-    }
-    return { updated, dryRun: !!dryRun };
-  },
+  handler: (ctx, { dryRun }) =>
+    rewriteStoredPrompts(ctx, toNurseWording, '"profissional" passa a "enfermeiro"', !!dryRun),
 });
+
+// One-off: prompts said "o utente", and the models wrote summaries in the
+// masculine ("O utente referiu..."). Inserts a new version of every stored
+// prompt with "a utente" (lib/patientWording, same rewording as the defaults).
+// Run: "bunx convex run maintenance:usePatientWording" (add --prod for prod),
+// with '{"dryRun": true}' first to only list what would change.
+export const usePatientWording = internalMutation({
+  args: { dryRun: v.optional(v.boolean()) },
+  handler: (ctx, { dryRun }) =>
+    rewriteStoredPrompts(ctx, toPatientWording, '"o utente" passa a "a utente"', !!dryRun),
+});
+
+// Inserts a new version (history kept) of every stored prompt that `rewrite`
+// changes. Returns the purpose/topic keys it touched.
+async function rewriteStoredPrompts(
+  ctx: MutationCtx,
+  rewrite: (text: string) => string,
+  notes: string,
+  dryRun: boolean
+) {
+  // Latest version per purpose + topic (versions are rows; newest wins).
+  const latest = new Map<string, Doc<'aiPrompts'>>();
+  for (const p of await ctx.db.query('aiPrompts').order('desc').take(2000)) {
+    const key = `${p.purpose}/${p.topic ?? ''}`;
+    if (!latest.has(key)) latest.set(key, p);
+  }
+  const updated: string[] = [];
+  for (const [key, p] of latest) {
+    const systemPrompt = rewrite(p.systemPrompt);
+    const userTemplate = p.userTemplate === undefined ? undefined : rewrite(p.userTemplate);
+    if (systemPrompt === p.systemPrompt && userTemplate === p.userTemplate) continue;
+    updated.push(key);
+    if (dryRun) continue;
+    await ctx.db.insert('aiPrompts', {
+      purpose: p.purpose,
+      topic: p.topic,
+      systemPrompt,
+      userTemplate,
+      temperature: p.temperature,
+      maxTokens: p.maxTokens,
+      notes,
+      createdBy: p.createdBy,
+    });
+  }
+  return { updated, dryRun };
+}
 
 // "AI" (inteligência artificial) is written "IA" in the app. Rewrites the
 // texts already stored: system messages and conversation titles (one page per

@@ -27,7 +27,7 @@ test('Patient toggles between professional and AI conversations', async ({ page 
 
   // New AI conversation with the visibility notice.
   await expect(page).not.toHaveURL(professionalUrl, { timeout: 10_000 });
-  await expect(page.getByText('Um enfermeiro pode ou não')).toBeVisible();
+  await expect(page.getByText('Um enfermeiro só vê esta')).toBeVisible();
 
   // Back to the same professional conversation, now with the waiting notice.
   await page.getByTestId('conversation-switch-to-professional').click();

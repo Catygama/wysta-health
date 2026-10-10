@@ -102,7 +102,7 @@ export type Pipeline = {
 export const AI_PIPELINES: readonly Pipeline[] = [
   {
     id: 'assistant',
-    label: 'Assistente — resposta ao utente',
+    label: 'Assistente — resposta à utente',
     description:
       'O rascunho passa por dois validadores em paralelo; o juiz decide enviar ou bloquear.',
     steps: [
@@ -138,14 +138,14 @@ export const AI_PURPOSE_META: Record<AiPurpose, PurposeMeta> = {
   'user-summary': {
     label: 'Resumo de perfil',
     description:
-      'Constrói um resumo de perfil do utente para o enfermeiro ver ao abrir a conversa.',
+      'Constrói um resumo de perfil da utente para o enfermeiro ver ao abrir a conversa.',
     group: 'resumos',
     variables: ['profileData', 'conversationSummaries'],
     producesJson: false,
   },
   chat: {
     label: 'Assistente — rascunho',
-    description: 'Gera o rascunho da resposta ao utente (passo 1 da cadeia).',
+    description: 'Gera o rascunho da resposta à utente (passo 1 da cadeia).',
     group: 'assistente',
     variables: [
       'topicAndRisk',

@@ -77,7 +77,7 @@ export default function PatientHome() {
           icon={{ sf: 'stethoscope', ion: 'medkit-outline' }}
           iconFill={theme.colors.butter}
           title="Enfermeiro/a"
-          description="Responde a umas perguntas e um enfermeiro responde-te em até 24h"
+          description="Responde a umas perguntas e um enfermeiro responde-te por mensagem"
           onPress={() => setPickerMode('professional')}
         />
         <PathCard
@@ -140,7 +140,7 @@ function TopicPickerSheet({
           <Text style={styles.sheetNote}>
             {mode === 'ai'
               ? 'Escolhe o tema. Depois de umas perguntas, a assistente responde-te na hora.'
-              : 'Escolhe o tema. Depois de umas perguntas, um enfermeiro responde-te em até 24h.'}
+              : 'Escolhe o tema. Depois de umas perguntas, um enfermeiro responde-te por mensagem.'}
           </Text>
           <View style={[styles.topicList, twoColumns && styles.topicGrid]}>
             {/* The five topics, then the catch-all "general" as "Outro assunto". */}

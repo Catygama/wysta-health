@@ -37,6 +37,33 @@ describe('maintenance.useNurseWording', () => {
   });
 });
 
+describe('maintenance.usePatientWording', () => {
+  it('adds a new prompt version saying "a utente"', async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      const createdBy = (await ctx.db.insert('users', {} as any)) as Id<'users'>;
+      await ctx.db.insert('aiPrompts', {
+        purpose: 'chat-summary',
+        systemPrompt: 'Motivo: o que o utente trouxe. Sem o nome do utente. O utente já sabe quem é.',
+        createdBy,
+      });
+    });
+
+    const dry = await t.mutation(internal.maintenance.usePatientWording, { dryRun: true });
+    expect(dry.updated).toEqual(['chat-summary/']);
+
+    await t.mutation(internal.maintenance.usePatientWording, {});
+    const prompts = await t.run((ctx) => ctx.db.query('aiPrompts').order('desc').collect());
+    expect(prompts).toHaveLength(2);
+    expect(prompts[0].systemPrompt).toBe(
+      'Motivo: o que a utente trouxe. Sem o nome da utente. A utente já sabe quem é.'
+    );
+
+    // Running again changes nothing.
+    expect((await t.mutation(internal.maintenance.usePatientWording, {})).updated).toEqual([]);
+  });
+});
+
 describe('maintenance.useIaWording', () => {
   it('rewrites "AI" as "IA" in system messages, titles and prompts', async () => {
     const t = convexTest(schema, modules);
