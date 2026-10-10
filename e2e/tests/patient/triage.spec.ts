@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAs } from '../../helpers/auth';
-import { answerTriage } from '../../helpers/triage';
+import { answerTriage, chooseTriageOption } from '../../helpers/triage';
 import {
   TEST_USERS,
   listConversationsForPatient,
@@ -47,10 +47,10 @@ test.describe('Triage flow (dynamic answers)', () => {
     await loginAs(page, TEST_USERS.patientB.email);
     await page.goto(`/triage?topic=pregnancy`);
     // weeks question first (multiple-choice), pick first option
-    await page.getByTestId('triage-option-0').click();
+    await chooseTriageOption(page, 'triage-option-0');
     // bleeding (emergency level) → "yes" shows the 112 alert.
     await expect(page.getByTestId('triage-option-yes')).toBeVisible();
-    await page.getByTestId('triage-option-yes').click();
+    await chooseTriageOption(page, 'triage-option-yes');
     await expect(page.getByTestId('triage-alert')).toBeVisible({
       timeout: 5_000,
     });
@@ -69,11 +69,11 @@ test.describe('Triage flow (dynamic answers)', () => {
     await loginAs(page, TEST_USERS.patientB.email);
     await page.goto(`/triage?topic=pregnancy`);
     // 'Não tenho a certeza' hides the baby-movements question (24+ weeks only).
-    await page.getByTestId('triage-option-0').click(); // weeks
-    await page.getByTestId('triage-option-no').click(); // bleeding
-    await page.getByTestId('triage-option-no').click(); // abdominal-pain
-    await page.getByTestId('triage-option-no').click(); // preeclampsia-signs
-    await page.getByTestId('triage-option-yes').click(); // fluid-loss (last)
+    await chooseTriageOption(page, 'triage-option-0'); // weeks
+    await chooseTriageOption(page, 'triage-option-no'); // bleeding
+    await chooseTriageOption(page, 'triage-option-no'); // abdominal-pain
+    await chooseTriageOption(page, 'triage-option-no'); // preeclampsia-signs
+    await chooseTriageOption(page, 'triage-option-yes'); // fluid-loss (last)
 
     await expect(page.getByTestId('triage-alert')).toBeVisible({ timeout: 5_000 });
     await expect(page).toHaveURL(/\/triage/);
@@ -92,9 +92,9 @@ test.describe('Triage flow (dynamic answers)', () => {
   }) => {
     await loginAs(page, TEST_USERS.patientB.email);
     await page.goto(`/triage?topic=contraception`);
-    await page.getByTestId('triage-option-0').click(); // current-method
-    await page.getByTestId('triage-option-1').click(); // main-concern: Eficácia do método
-    await page.getByTestId('triage-option-yes').click(); // unprotected
+    await chooseTriageOption(page, 'triage-option-0'); // current-method
+    await chooseTriageOption(page, 'triage-option-1'); // main-concern: Eficácia do método
+    await chooseTriageOption(page, 'triage-option-yes'); // unprotected
     const alert = page.getByTestId('triage-alert');
     await expect(alert).toBeVisible({ timeout: 5_000 });
     await expect(alert).toContainText('Sensível ao tempo');
@@ -112,11 +112,11 @@ test.describe('Triage flow (dynamic answers)', () => {
   test('priority: visible lesions show no alert but raise the conversation', async ({ page }) => {
     await loginAs(page, TEST_USERS.patientB.email);
     await page.goto(`/triage?topic=sti`);
-    await page.getByTestId('triage-option-no').click(); // discharge
-    await page.getByTestId('triage-option-yes').click(); // lesions
+    await chooseTriageOption(page, 'triage-option-no'); // discharge
+    await chooseTriageOption(page, 'triage-option-yes'); // lesions
     await expect(page.getByTestId('triage-alert')).toHaveCount(0);
-    await page.getByTestId('triage-option-no').click(); // urination-pain
-    await page.getByTestId('triage-option-no').click(); // fever-pain (last)
+    await chooseTriageOption(page, 'triage-option-no'); // urination-pain
+    await chooseTriageOption(page, 'triage-option-no'); // fever-pain (last)
 
     await expect(page).toHaveURL(/\/conversations\//, { timeout: 15_000 });
     const latest = (await listConversationsForPatient(TEST_USERS.patientB.email))[0];

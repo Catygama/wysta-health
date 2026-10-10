@@ -55,6 +55,23 @@ async function waitForMeta(
   return last!;
 }
 
+// Taps a triage option and waits for what it leads to: the next question, the
+// alert, or leaving the triage. The chosen option stays on screen for a moment
+// (CHOICE_HOLD_MS in app/triage.tsx) and taps meanwhile are ignored, so a
+// second click straight away would land on the same question.
+export async function chooseTriageOption(page: Page, testId: string) {
+  const progress = page.getByText(/^Pergunta \d+ de \d+$/);
+  const before = await progress.textContent();
+  await page.getByTestId(testId).click();
+  await expect
+    .poll(async () => {
+      if (!/\/triage/.test(page.url())) return 'left';
+      if (await page.getByTestId('triage-alert').count()) return 'alert';
+      return (await progress.textContent().catch(() => null)) ?? 'gone';
+    })
+    .not.toBe(before);
+}
+
 // An emergency, urgent or time-sensitive answer halts the triage on the alert
 // until it's dismissed; priority-level answers show nothing.
 async function dismissTriageAlert(page: Page) {
@@ -71,18 +88,18 @@ async function answerSingle(
 ) {
   if (meta.type === 'yes-no') {
     const value = target === 'urgent' && meta.alert ? 'yes' : 'no';
-    await page.getByTestId(`triage-option-${value}`).click();
+    await chooseTriageOption(page, `triage-option-${value}`);
     if (value === 'yes' && showsAlert(meta)) await dismissTriageAlert(page);
     return;
   }
   if (meta.type === 'multiple-choice') {
     // Deterministic safe choice — first option.
-    await page.getByTestId('triage-option-0').click();
+    await chooseTriageOption(page, 'triage-option-0');
     return;
   }
   if (meta.type === 'scale') {
     const value = target === 'urgent' ? '10' : '1';
-    await page.getByTestId(`triage-scale-${value}`).click();
+    await chooseTriageOption(page, `triage-scale-${value}`);
     if (value === '10' && showsAlert(meta)) await dismissTriageAlert(page);
     return;
   }
