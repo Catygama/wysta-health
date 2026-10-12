@@ -194,8 +194,8 @@ function AiOnlyBanner() {
       <View style={styles.body}>
         <Text style={styles.title}>Conversa com a assistente IA</Text>
         <Text style={styles.sub}>
-          Cada mensagem tua recebe resposta automática. Um enfermeiro pode ou não
-          ver esta conversa.
+          Cada mensagem tua recebe resposta imediata. Um enfermeiro só vê esta
+          conversa se pedires para falar com um.
         </Text>
       </View>
     </View>

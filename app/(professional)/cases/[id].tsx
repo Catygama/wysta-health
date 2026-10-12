@@ -584,7 +584,7 @@ function SummaryPanel({
         >
           {busy && <ActivityIndicator color={theme.colors.onInk} size="small" />}
           <Text style={[styles.genBtnText, genDisabled && styles.genBtnTextOff]}>
-            {busy ? 'A gerar...' : aiSummary ? 'Re-gerar sumário' : 'Gerar sumário IA'}
+            {busy ? 'A gerar...' : aiSummary ? 'Gerar de novo' : 'Gerar sumário IA'}
           </Text>
         </Pressable>
         {!canGenerate && !busy && (
